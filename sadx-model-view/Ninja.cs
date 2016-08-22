@@ -1,28 +1,20 @@
-﻿using System;
+﻿using SharpDX;
+using System;
 using System.Collections.Generic;
 using System.IO;
-using SharpDX;
 using System.Runtime.InteropServices;
-
 
 namespace Ninja
 {
-	using Bool    = System.Boolean; /*  Bool                        */
-	using Double  = System.Double;  /*  8 byte real number          */
-	using Float32 = System.Single;  /*  4 byte real number          */
-	using Float64 = System.Double;  /*  8 byte real number          */
-	using Float   = System.Single;  /*  4 byte real number          */
-	using Sint16  = System.Int16;   /*  signed 2 byte integer       */
-	using Sint32  = System.Int32;   /*  signed 4 byte integer       */
-	using Sint8   = System.SByte;   /*  signed 1 byte integer       */
-	using Uint16  = System.UInt16;  /*  unsigned 2 byte integer     */
-	using Uint32  = System.UInt32;  /*  unsigned 4 byte integer     */
-	using Uint8   = System.Byte;    /*  unsigned 1 byte integer     */
-
-	using Angle = System.Int32;
-
-	using NJS_VECTOR = Vector3;
+	using Angle      = Int32;
+	using Float      = Single;  /*  4 byte real number          */
 	using NJS_POINT3 = Vector3;
+	using NJS_VECTOR = Vector3;
+	using Sint16     = Int16;   /*  signed 2 byte integer       */
+	using Sint32     = Int32;   /*  signed 4 byte integer       */
+	using Uint16     = UInt16;  /*  unsigned 2 byte integer     */
+	using Uint32     = UInt32;  /*  unsigned 4 byte integer     */
+	using Uint8      = Byte;    /*  unsigned 1 byte integer     */
 
 	static class Ninja
 	{
@@ -49,10 +41,12 @@ namespace Ninja
 
 	struct Rotation3
 	{
+		public static int SizeInBytes => sizeof(Angle) * 3;
 		public Angle X, Y, Z;
 	}
 	struct NJS_TEX
 	{
+		public static int SizeInBytes => sizeof(Sint16) * 2;
 		public NJS_TEX(ref byte[] buffer, int offset = 0)
 		{
 			u = BitConverter.ToInt16(buffer, offset);
@@ -64,17 +58,23 @@ namespace Ninja
 
 	struct NJS_BGRA
 	{
+		public static int SizeInBytes => sizeof(uint);
+		// ReSharper disable once InconsistentNaming
 		public Uint8 b, g, r, a;
 	}
 
 	[StructLayout(LayoutKind.Explicit)]
 	struct NJS_COLOR // union
 	{
+		public static int SizeInBytes => sizeof(Sint32);
 		public NJS_COLOR(Sint32 color)
 		{
 			argb = new NJS_BGRA
 			{
-				b = 255, g = 255, r = 255, a = 255
+				b = 255,
+				g = 255,
+				r = 255,
+				a = 255
 			};
 
 			this.color = color;
@@ -89,14 +89,24 @@ namespace Ninja
 		[FieldOffset(0)]
 		public Sint32 color;
 
-		[FieldOffset(0)] public NJS_BGRA argb;
+		[FieldOffset(0)]
+		public NJS_BGRA argb;
 	}
 
 	struct NJS_MATERIAL
 	{
+		public static int SizeInBytes => 0x14;
+
 		public NJS_MATERIAL(Stream file)
 		{
-			
+			var buffer = new byte[SizeInBytes];
+			file.Read(buffer, 0, buffer.Length);
+
+			diffuse    = new NJS_COLOR(BitConverter.ToInt32(buffer, 0x00));
+			specular   = new NJS_COLOR(BitConverter.ToInt32(buffer, 0x04));
+			exponent   = BitConverter.ToSingle(buffer, 0x08);
+			attr_texId = BitConverter.ToUInt32(buffer, 0x0C);
+			attrflags  = BitConverter.ToUInt32(buffer, 0x10);
 		}
 
 		public NJS_COLOR diffuse;
@@ -136,20 +146,22 @@ namespace Ninja
 			set
 			{
 				if (value >= 16384)
-					throw new ArgumentOutOfRangeException("Value must be < 16384");
+					throw new ArgumentOutOfRangeException("Number must be < 16384");
 
 				type_matId &= (Uint16)NJD_MESHSET._MASK;
 				type_matId |= value;
 			}
 		}
 
+		public static int SizeInBytes => 0x18;
+
 		public NJS_MESHSET(Stream file)
 		{
-			var buffer = new byte[0x18];
+			var buffer = new byte[SizeInBytes];
 			file.Read(buffer, 0, buffer.Length);
 
-			type_matId        = BitConverter.ToUInt16(buffer, 0x00);
-			nbMesh            = BitConverter.ToUInt16(buffer, 0x02);
+			type_matId = BitConverter.ToUInt16(buffer, 0x00);
+			nbMesh     = BitConverter.ToUInt16(buffer, 0x02);
 
 			var meshes_ptr    = BitConverter.ToUInt32(buffer, 0x04);
 			var attrs_ptr     = BitConverter.ToUInt32(buffer, 0x08);
@@ -157,11 +169,11 @@ namespace Ninja
 			var vertcolor_ptr = BitConverter.ToUInt32(buffer, 0x10);
 			var vertuv_ptr    = BitConverter.ToUInt32(buffer, 0x14);
 
-			meshes = new List<short>();
-			attrs = new List<uint>();
-			normals = new List<NJS_VECTOR>();
+			meshes    = new List<short>();
+			attrs     = new List<uint>();
+			normals   = new List<NJS_VECTOR>();
 			vertcolor = new List<NJS_COLOR>();
-			vertuv = new List<NJS_TEX>();
+			vertuv    = new List<NJS_TEX>();
 
 			var position = file.Position;
 
@@ -180,7 +192,7 @@ namespace Ninja
 				file.Position = attrs_ptr;
 				var attrsBuffer = new byte[sizeof(uint) * nbMesh];
 				file.Read(attrsBuffer, 0, attrsBuffer.Length);
-				
+
 				for (var i = 0; i < nbMesh; i++)
 					attrs.Add(BitConverter.ToUInt32(attrsBuffer, sizeof(uint) * i));
 			}
@@ -188,13 +200,13 @@ namespace Ninja
 			if (normals_ptr != 0)
 			{
 				file.Position = normals_ptr;
-				var normalsBuffer = new byte[sizeof(float) * 3 * nbMesh];
+				var normalsBuffer = new byte[Vector3.SizeInBytes * nbMesh];
 				file.Read(normalsBuffer, 0, normalsBuffer.Length);
 
 				for (var i = 0; i < nbMesh; i++)
 				{
 					NJS_VECTOR vector = new NJS_VECTOR();
-					vector.FromStream(ref normalsBuffer, i * sizeof(float) * 3);
+					vector.FromStream(ref normalsBuffer, i * Vector3.SizeInBytes);
 					normals.Add(vector);
 				}
 			}
@@ -214,11 +226,11 @@ namespace Ninja
 			if (vertuv_ptr != 0)
 			{
 				file.Position = vertuv_ptr;
-				var vertuvBuffer = new byte[(sizeof(short) * 2) * nbMesh];
+				var vertuvBuffer = new byte[NJS_TEX.SizeInBytes * nbMesh];
 				file.Read(vertuvBuffer, 0, vertuvBuffer.Length);
 
 				for (var i = 0; i < nbMesh; i++)
-					vertuv.Add(new NJS_TEX(ref vertuvBuffer, (sizeof(short) * 2) * i));
+					vertuv.Add(new NJS_TEX(ref vertuvBuffer, NJS_TEX.SizeInBytes * i));
 			}
 
 			file.Position = position;
@@ -237,9 +249,10 @@ namespace Ninja
 
 	class NJS_MODEL
 	{
+		public static int SizeInBytes => 0x28;
 		public NJS_MODEL(Stream file)
 		{
-			var buffer = new byte[0x28];
+			var buffer = new byte[SizeInBytes];
 			file.Read(buffer, 0, buffer.Length);
 
 			nbPoint   = BitConverter.ToInt32(buffer, 0x08);
@@ -249,6 +262,10 @@ namespace Ninja
 			center.Y  = BitConverter.ToSingle(buffer, 0x18 + 4);
 			center.Z  = BitConverter.ToSingle(buffer, 0x18 + 8);
 			r         = BitConverter.ToSingle(buffer, 0x24);
+			points    = new List<NJS_POINT3>();
+			normals   = new List<NJS_VECTOR>();
+			meshsets  = new List<NJS_MESHSET>();
+			mats      = new List<NJS_MATERIAL>();
 
 			var position = file.Position;
 
@@ -259,7 +276,6 @@ namespace Ninja
 				if (points_ptr > 0)
 				{
 					file.Position = points_ptr;
-					points = new List<NJS_POINT3>();
 
 					for (var i = 0; i < nbPoint; i++)
 					{
@@ -274,7 +290,6 @@ namespace Ninja
 				if (normals_ptr > 0)
 				{
 					file.Position = normals_ptr;
-					normals = new List<NJS_VECTOR>();
 
 					for (var i = 0; i < nbPoint; i++)
 					{
@@ -288,13 +303,17 @@ namespace Ninja
 			var meshsets_ptr = BitConverter.ToUInt32(buffer, 0x0C);
 			if (nbMeshset > 0 && meshsets_ptr > 0)
 			{
-				// TODO	
+				file.Position = meshsets_ptr;
+				for (var i = 0; i < nbMeshset; i++)
+					meshsets.Add(new NJS_MESHSET(file));
 			}
 
 			var mats_ptr = BitConverter.ToUInt32(buffer, 0x10);
 			if (nbMat > 0 && mats_ptr > 0)
 			{
-				// TODO
+				file.Position = mats_ptr;
+				for (var i = 0; i < nbMeshset; i++)
+					mats.Add(new NJS_MATERIAL(file));
 			}
 
 			file.Position = position;
@@ -313,9 +332,10 @@ namespace Ninja
 
 	class NJS_OBJECT
 	{
+		public static int SizeInBytes => 0x34;
 		public NJS_OBJECT(Stream file)
 		{
-			var buffer = new byte[0x34];
+			var buffer = new byte[SizeInBytes];
 			file.Read(buffer, 0, buffer.Length);
 
 			evalflags = BitConverter.ToUInt32(buffer, 0);
