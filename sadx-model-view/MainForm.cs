@@ -16,6 +16,7 @@ namespace sadx_model_view
 		private PresentParameters present;
 		private Matrix projection;
 		private int step;
+		private NJS_OBJECT obj = null;
 
 		private Light light = new Light
 		{ 
@@ -58,12 +59,13 @@ namespace sadx_model_view
 
 				file.Read(buffer, 0, sizeof(int) * 2);
 
-				var object_ptr = BitConverter.ToUInt32(buffer, 0);
-				var metadata_ptr  = BitConverter.ToUInt32(buffer, 4);
+				var object_ptr   = BitConverter.ToUInt32(buffer, 0);
+				var metadata_ptr = BitConverter.ToUInt32(buffer, 4);
 
 				file.Position = object_ptr;
 
-				var objects = new NJS_OBJECT(file);
+				obj = new NJS_OBJECT(file);
+				// TODO: parse the rest of the sa1mdl file
 			}
 		}
 
@@ -115,9 +117,12 @@ namespace sadx_model_view
 		{
 			device.Clear(ClearFlags.Target | ClearFlags.ZBuffer, new ColorBGRA(0, (byte)step, (byte)step, 0), 1.0f, 0);
 			device.BeginScene();
+
 			device.SetTransform(TransformState.View, Matrix.Identity /*camera.Transform*/);
+
 			device.EndScene();
 			device.Present();
+
 			step = step + 1 % 256;
 		}
 

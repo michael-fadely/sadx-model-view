@@ -16,7 +16,7 @@ namespace Ninja
 	using Uint32     = UInt32;  /*  unsigned 4 byte integer     */
 	using Uint8      = Byte;    /*  unsigned 1 byte integer     */
 
-	static class Ninja
+	public static class Ninja
 	{
 		public static void FromStream(this NJS_VECTOR vector, Stream stream)
 		{
@@ -39,12 +39,12 @@ namespace Ninja
 		}
 	}
 
-	struct Rotation3
+	public struct Rotation3
 	{
 		public static int SizeInBytes => sizeof(Angle) * 3;
 		public Angle X, Y, Z;
 	}
-	struct NJS_TEX
+	public struct NJS_TEX
 	{
 		public static int SizeInBytes => sizeof(Sint16) * 2;
 		public NJS_TEX(ref byte[] buffer, int offset = 0)
@@ -56,7 +56,7 @@ namespace Ninja
 		public Sint16 u, v;
 	}
 
-	struct NJS_BGRA
+	public struct NJS_BGRA
 	{
 		public static int SizeInBytes => sizeof(uint);
 		// ReSharper disable once InconsistentNaming
@@ -64,7 +64,7 @@ namespace Ninja
 	}
 
 	[StructLayout(LayoutKind.Explicit)]
-	struct NJS_COLOR // union
+	public struct NJS_COLOR // union
 	{
 		public static int SizeInBytes => sizeof(Sint32);
 		public NJS_COLOR(Sint32 color)
@@ -93,7 +93,7 @@ namespace Ninja
 		public NJS_BGRA argb;
 	}
 
-	struct NJS_MATERIAL
+	public struct NJS_MATERIAL
 	{
 		public static int SizeInBytes => 0x14;
 
@@ -116,23 +116,22 @@ namespace Ninja
 		public Uint32 attrflags;   /* attribute flags                            */
 	}
 
-	enum NJD_MESHSET : Uint16
+	public enum NJD_MESHSET : Uint16
 	{
-		_3       = 0x0000,
-		_4       = 0x4000,
-		_N       = 0x8000,
-		_TRIMESH = 0xc000,
-		_MASK    = 0xc000
+		Tri    = 0x0000,
+		Quad   = 0x4000,
+		NSided = 0x8000,
+		Strip  = 0xc000
 	}
 
-	struct NJS_MESHSET
+	public struct NJS_MESHSET
 	{
 		public NJD_MESHSET Type
 		{
-			get { return (NJD_MESHSET)(type_matId & (UInt16)NJD_MESHSET._MASK); }
+			get { return (NJD_MESHSET)(type_matId & (UInt16)NJD_MESHSET.Strip); }
 			set
 			{
-				type_matId &= (Uint16)~NJD_MESHSET._MASK;
+				type_matId &= (Uint16)~NJD_MESHSET.Strip;
 				type_matId |= (Uint16)value;
 			}
 		}
@@ -141,14 +140,14 @@ namespace Ninja
 		{
 			get
 			{
-				return (Uint16)(type_matId & (Uint16)~NJD_MESHSET._MASK);
+				return (Uint16)(type_matId & (Uint16)~NJD_MESHSET.Strip);
 			}
 			set
 			{
 				if (value >= 16384)
 					throw new ArgumentOutOfRangeException("Number must be < 16384");
 
-				type_matId &= (Uint16)NJD_MESHSET._MASK;
+				type_matId &= (Uint16)NJD_MESHSET.Strip;
 				type_matId |= value;
 			}
 		}
@@ -200,13 +199,13 @@ namespace Ninja
 			if (normals_ptr != 0)
 			{
 				file.Position = normals_ptr;
-				var normalsBuffer = new byte[Vector3.SizeInBytes * nbMesh];
+				var normalsBuffer = new byte[NJS_VECTOR.SizeInBytes * nbMesh];
 				file.Read(normalsBuffer, 0, normalsBuffer.Length);
 
 				for (var i = 0; i < nbMesh; i++)
 				{
 					NJS_VECTOR vector = new NJS_VECTOR();
-					vector.FromStream(ref normalsBuffer, i * Vector3.SizeInBytes);
+					vector.FromStream(ref normalsBuffer, i * NJS_VECTOR.SizeInBytes);
 					normals.Add(vector);
 				}
 			}
@@ -247,7 +246,7 @@ namespace Ninja
 		public List<NJS_TEX> vertuv;       /* polygon vertex uv list       */
 	}
 
-	class NJS_MODEL
+	public class NJS_MODEL
 	{
 		public static int SizeInBytes => 0x28;
 		public NJS_MODEL(Stream file)
@@ -330,7 +329,7 @@ namespace Ninja
 		public Float r;                    /* radius                       */
 	}
 
-	class NJS_OBJECT
+	public class NJS_OBJECT
 	{
 		public static int SizeInBytes => 0x34;
 		public NJS_OBJECT(Stream file)
