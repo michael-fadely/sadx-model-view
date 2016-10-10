@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
 using Ninja;
@@ -17,6 +16,18 @@ namespace sadx_model_view
 		private Matrix projection;
 		private int step;
 		private NJS_OBJECT obj = null;
+
+		public enum ChunkTypes : uint
+		{
+			Label       = 0x4C42414C,
+			Animation   = 0x4D494E41,
+			Morph       = 0x46524F4D,
+			Author      = 0x48545541,
+			Tool        = 0x4C4F4F54,
+			Description = 0x43534544,
+			Texture     = 0x584554,
+			End         = 0x444E45
+		}
 
 		private Light light = new Light
 		{ 
@@ -65,7 +76,41 @@ namespace sadx_model_view
 				file.Position = object_ptr;
 
 				obj = new NJS_OBJECT(file);
-				// TODO: parse the rest of the sa1mdl file
+
+				if (metadata_ptr == 0)
+					return;
+
+				file.Position = metadata_ptr;
+				bool done = false;
+
+				// TODO: this
+				while (!done)
+				{
+					file.Read(buffer, 0, 8);
+					var type = (ChunkTypes)BitConverter.ToUInt32(buffer, 0);
+
+					switch (type)
+					{
+						case ChunkTypes.Label:
+							break;
+						case ChunkTypes.Animation:
+							break;
+						case ChunkTypes.Morph:
+							break;
+						case ChunkTypes.Author:
+							break;
+						case ChunkTypes.Tool:
+							break;
+						case ChunkTypes.Description:
+							break;
+						case ChunkTypes.Texture:
+							break;
+						case ChunkTypes.End:
+							break;
+						default:
+							throw new ArgumentOutOfRangeException();
+					}
+				}
 			}
 		}
 
@@ -73,16 +118,11 @@ namespace sadx_model_view
 		{
 			present = new PresentParameters(ClientSize.Width, ClientSize.Height)
 			{
-				SwapEffect             = SwapEffect.Discard,
-				BackBufferCount        = 1,
-				BackBufferFormat       = Format.X8R8G8B8,
-				EnableAutoDepthStencil = true,
-				AutoDepthStencilFormat = Format.D24X8,
-				PresentationInterval   = PresentInterval.One
+				SwapEffect = SwapEffect.Discard, BackBufferCount = 1, BackBufferFormat = Format.X8R8G8B8, EnableAutoDepthStencil = true, AutoDepthStencilFormat = Format.D24X8, PresentationInterval = PresentInterval.One
 			};
 
 			direct3d = new Direct3D();
-			device   = new Device(direct3d, 0, DeviceType.Hardware, Handle, CreateFlags.HardwareVertexProcessing, present);
+			device = new Device(direct3d, 0, DeviceType.Hardware, Handle, CreateFlags.HardwareVertexProcessing, present);
 
 			RefreshDevice();
 		}
