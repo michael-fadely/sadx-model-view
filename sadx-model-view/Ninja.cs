@@ -18,6 +18,11 @@ namespace Ninja
 
 	public static class Ninja
 	{
+		/// <summary>
+		/// <para>Populates <paramref name="vector"/> with data provided by a stream.</para>
+		/// </summary>
+		/// <param name="vector">Destination vector.</param>
+		/// <param name="stream">Stream containing data.</param>
 		public static void FromStream(this NJS_VECTOR vector, Stream stream)
 		{
 			var buffer = new byte[sizeof(float)];
@@ -31,6 +36,12 @@ namespace Ninja
 			vector.Z = BitConverter.ToSingle(buffer, 0);
 		}
 
+		/// <summary>
+		/// <para>Populates <paramref name="vector"/> with data provided by a buffer.</para>
+		/// </summary>
+		/// <param name="vector">Destination vector.</param>
+		/// <param name="buffer">Buffer containing data.</param>
+		/// <param name="offset">Offset in buffer to read from.</param>
 		public static void FromStream(this NJS_VECTOR vector, ref byte[] buffer, int offset = 0)
 		{
 			vector.X = BitConverter.ToSingle(buffer, offset + 0);
@@ -39,14 +50,31 @@ namespace Ninja
 		}
 	}
 
+	/// <summary>
+	/// A structure defining rotation on 3 axes in BAMS.
+	/// </summary>
 	public struct Rotation3
 	{
+		/// <summary>
+		/// Native structure size in bytes.
+		/// </summary>
 		public static int SizeInBytes => sizeof(Angle) * 3;
+
 		public Angle X, Y, Z;
 	}
+
+	/// <summary>
+	/// <para>Defines UV coordinates for <see cref="NJS_MESHSET"/>.</para>
+	/// See also:
+	/// <seealso cref="NJS_MESHSET"/>
+	/// </summary>
 	public struct NJS_TEX
 	{
+		/// <summary>
+		/// Native structure size in bytes.
+		/// </summary>
 		public static int SizeInBytes => sizeof(Sint16) * 2;
+
 		public NJS_TEX(ref byte[] buffer, int offset = 0)
 		{
 			u = BitConverter.ToInt16(buffer, offset);
@@ -56,17 +84,37 @@ namespace Ninja
 		public Sint16 u, v;
 	}
 
+	/// <summary>
+	/// A color represented by 4 bytes.
+	/// </summary>
 	public struct NJS_BGRA
 	{
+		/// <summary>
+		/// Native structure size in bytes.
+		/// </summary>
 		public static int SizeInBytes => sizeof(uint);
-		// ReSharper disable once InconsistentNaming
+
 		public Uint8 b, g, r, a;
 	}
 
+	/// <summary>
+	/// <para>A union defining a color represented by 4 bytes.
+	/// It can be manipulated with direct access to the color integer, or on an individual byte level.</para>
+	/// See also:
+	/// <seealso cref="NJS_BGRA"/>
+	/// </summary>
 	[StructLayout(LayoutKind.Explicit)]
 	public struct NJS_COLOR // union
 	{
+		/// <summary>
+		/// Native structure size in bytes.
+		/// </summary>
 		public static int SizeInBytes => sizeof(Sint32);
+
+		/// <summary>
+		/// Constructs <see cref="NJS_COLOR"/> from a 32-bit integer.
+		/// </summary>
+		/// <param name="color">An integer containing an ARGB color.</param>
 		public NJS_COLOR(Sint32 color)
 		{
 			argb = new NJS_BGRA
@@ -80,6 +128,12 @@ namespace Ninja
 			this.color = color;
 		}
 
+		/// <summary>
+		/// Constructs <see cref="NJS_COLOR"/> from <see cref="NJS_BGRA"/>.<para/>
+		/// See also:
+		/// <seealso cref="NJS_BGRA"/>
+		/// </summary>
+		/// <param name="argb"></param>
 		public NJS_COLOR(NJS_BGRA argb)
 		{
 			color = -1;
@@ -93,10 +147,22 @@ namespace Ninja
 		public NJS_BGRA argb;
 	}
 
+	/// <summary>
+	/// A material for a model containing lighting parameters and other attributes.
+	/// </summary>
 	public struct NJS_MATERIAL
 	{
+		/// <summary>
+		/// Native structure size in bytes.
+		/// </summary>
 		public static int SizeInBytes => 0x14;
 
+		/// <summary>
+		/// Constructs <see cref="NJS_MATERIAL"/> from a file.<para/>
+		/// See also:
+		/// <seealso cref="NJS_COLOR"/>
+		/// </summary>
+		/// <param name="file">A file stream containing the data.</param>
 		public NJS_MATERIAL(Stream file)
 		{
 			var buffer = new byte[SizeInBytes];
@@ -116,16 +182,58 @@ namespace Ninja
 		public Uint32 attrflags;   /* attribute flags                            */
 	}
 
+	/// <summary>
+	/// Used to identify different types of <see cref="NJS_MESHSET"/>.
+	/// </summary>
 	public enum NJD_MESHSET : Uint16
 	{
-		Tri    = 0x0000,
-		Quad   = 0x4000,
+		/// <summary>
+		/// <para>List of triangular polygons.</para>
+		///<para> Indicates that each polygon is defined by 3 vertices.
+		/// The number of polygons is defined by <seealso cref="NJS_MESHSET.nbMesh"/>,
+		/// and the number of vertices is <seealso cref="NJS_MESHSET.nbMesh"/> * 3.</para>
+		/// </summary>
+		Tri = 0x0000,
+		/// <summary>
+		/// <para>List of quadrilateral polygons.</para>
+		/// <para>Indicates that each polygon is defined by 4 vertices.
+		/// The number of polygons is defined by <seealso cref="NJS_MESHSET.nbMesh"/>,
+		/// and the number of vertices is <seealso cref="NJS_MESHSET.nbMesh"/> * 4.</para>
+		/// </summary>
+		Quad = 0x4000,
+		/// <summary>
+		/// <para>List of N-sided polygons, where N is 5 or more.</para>
+		/// <para>Each polygon is preceded by the number of vertices defining it. Subsequently,
+		/// the number of vertices must be calculated by iterating over <see cref="NJS_MESHSET.meshes"/>.
+		/// The number of polygons is defined by <seealso cref="NJS_MESHSET.nbMesh"/>.</para>
+		/// </summary>
 		NSided = 0x8000,
-		Strip  = 0xc000
+		/// <summary>
+		/// <para>List of contiguous polygons (triangle strip).</para>
+		/// <para>Each polygon is preceded by the number of vertices defining it. Subsequently,
+		/// the number of vertices must be calculated by iterating over <see cref="NJS_MESHSET.meshes"/>.
+		/// The number of polygons is defined by <seealso cref="NJS_MESHSET.nbMesh"/>.</para>
+		/// </summary>
+		Strip = 0xc000
 	}
 
+	/// <summary>
+	/// <para>Defines a list of polygons and their type for <see cref="NJS_MODEL"/>.</para>
+	/// See also:
+	/// <seealso cref="NJD_MESHSET"/>
+	/// <seealso cref="NJS_MODEL"/>
+	/// </summary>
 	public struct NJS_MESHSET
 	{
+		/// <summary>
+		/// Native structure size in bytes.
+		/// </summary>
+		public static int SizeInBytes => 0x18;
+
+		/// <summary>
+		/// The mesh type for this meshset.<para/>
+		/// See <seealso cref="NJD_MESHSET"/> for more information
+		/// </summary>
 		public NJD_MESHSET Type
 		{
 			get { return (NJD_MESHSET)(type_matId & (UInt16)NJD_MESHSET.Strip); }
@@ -136,6 +244,9 @@ namespace Ninja
 			}
 		}
 
+		/// <summary>
+		/// The material ID for this meshset.
+		/// </summary>
 		public Uint16 MaterialId
 		{
 			get
@@ -145,14 +256,21 @@ namespace Ninja
 			set
 			{
 				if (value >= 16384)
-					throw new ArgumentOutOfRangeException("Number must be < 16384");
+					throw new ArgumentOutOfRangeException(nameof(value), "Number must be less than 16384");
 
 				type_matId &= (Uint16)NJD_MESHSET.Strip;
 				type_matId |= value;
 			}
 		}
+		/// <summary>
+		/// <para>The actual number of vertices referenced by this meshset.</para>
+		/// <para>
+		/// The number of vertcies varies from <see cref="nbMesh"/> to different degrees
+		/// depending on the type of polygon managed by this meshset. (see <seealso cref="Type"/>, <seealso cref="NJD_MESHSET"/>)
+		/// </para>
+		/// </summary>
+		public int VertexCount { get; }
 
-		public static int SizeInBytes => 0x18;
 
 		public NJS_MESHSET(Stream file)
 		{
@@ -176,33 +294,67 @@ namespace Ninja
 
 			var position = file.Position;
 
+			VertexCount = 0;
+
 			if (meshes_ptr != 0)
 			{
 				file.Position = meshes_ptr;
-				var meshesBuffer = new byte[sizeof(ushort) * nbMesh];
-				file.Read(meshesBuffer, 0, meshesBuffer.Length);
+				var meshesBuffer = new byte[2];
 
-				for (var i = 0; i < nbMesh; i++)
-					meshes.Add(BitConverter.ToInt16(meshesBuffer, sizeof(ushort) * i));
+				switch (Type)
+				{
+					case NJD_MESHSET.Tri:
+					case NJD_MESHSET.Quad:
+						VertexCount = nbMesh * (Type == NJD_MESHSET.Tri ? 3 : 4);
+						for (int i = 0; i < VertexCount; i++)
+						{
+							file.Read(meshesBuffer, 0, sizeof(short));
+							meshes.Add(BitConverter.ToInt16(meshesBuffer, 0));
+						}
+						break;
+
+					case NJD_MESHSET.NSided:
+					case NJD_MESHSET.Strip:
+						for (int i = 0; i < nbMesh; i++)
+						{
+							file.Read(meshesBuffer, 0, sizeof(short));
+							var n = BitConverter.ToInt16(meshesBuffer, 0);
+							meshes.Add(n);
+
+							// n is casted to byte because there are cases where
+							// the number has garbage data after the first byte.
+							for (int j = 0; j < (byte)n; j++)
+							{
+								file.Read(meshesBuffer, 0, sizeof(short));
+								meshes.Add(BitConverter.ToInt16(meshesBuffer, 0));
+							}
+
+							VertexCount += (byte)n;
+						}
+						break;
+
+					default:
+						throw new ArgumentOutOfRangeException();
+				}
 			}
 
 			if (attrs_ptr != 0)
 			{
 				file.Position = attrs_ptr;
-				var attrsBuffer = new byte[sizeof(uint) * nbMesh];
+				var attrsBuffer = new byte[sizeof(uint) * VertexCount];
 				file.Read(attrsBuffer, 0, attrsBuffer.Length);
 
-				for (var i = 0; i < nbMesh; i++)
+				for (var i = 0; i < VertexCount; i++)
 					attrs.Add(BitConverter.ToUInt32(attrsBuffer, sizeof(uint) * i));
 			}
 
 			if (normals_ptr != 0)
 			{
 				file.Position = normals_ptr;
-				var normalsBuffer = new byte[NJS_VECTOR.SizeInBytes * nbMesh];
+				var normalsBuffer = new byte[NJS_VECTOR.SizeInBytes * VertexCount];
 				file.Read(normalsBuffer, 0, normalsBuffer.Length);
 
-				for (var i = 0; i < nbMesh; i++)
+				for (var i = 0; i < VertexCount; i++)
 				{
 					NJS_VECTOR vector = new NJS_VECTOR();
 					vector.FromStream(ref normalsBuffer, i * NJS_VECTOR.SizeInBytes);
@@ -213,10 +365,10 @@ namespace Ninja
 			if (vertcolor_ptr != 0)
 			{
 				file.Position = vertcolor_ptr;
-				var vertcolorBuffer = new byte[sizeof(int) * nbMesh];
+				var vertcolorBuffer = new byte[sizeof(int) * VertexCount];
 				file.Read(vertcolorBuffer, 0, vertcolorBuffer.Length);
 
-				for (var i = 0; i < nbMesh; i++)
+				for (var i = 0; i < VertexCount; i++)
 				{
 					vertcolor.Add(new NJS_COLOR(BitConverter.ToInt32(vertcolorBuffer, sizeof(int) * i)));
 				}
@@ -225,10 +377,10 @@ namespace Ninja
 			if (vertuv_ptr != 0)
 			{
 				file.Position = vertuv_ptr;
-				var vertuvBuffer = new byte[NJS_TEX.SizeInBytes * nbMesh];
+				var vertuvBuffer = new byte[NJS_TEX.SizeInBytes * VertexCount];
 				file.Read(vertuvBuffer, 0, vertuvBuffer.Length);
 
-				for (var i = 0; i < nbMesh; i++)
+				for (var i = 0; i < VertexCount; i++)
 					vertuv.Add(new NJS_TEX(ref vertuvBuffer, NJS_TEX.SizeInBytes * i));
 			}
 
@@ -248,7 +400,18 @@ namespace Ninja
 
 	public class NJS_MODEL
 	{
+		/// <summary>
+		/// Native structure size in bytes.
+		/// </summary>
 		public static int SizeInBytes => 0x28;
+
+		/// <summary>
+		/// Constructs <see cref="NJS_MODEL"/>, its points, normals, materials, and meshsets from a file.<para/>
+		/// See also:
+		/// <seealso cref="NJS_MESHSET"/>
+		/// <seealso cref="NJS_MATERIAL"/>
+		/// </summary>
+		/// <param name="file">A file stream containing the data.</param>
 		public NJS_MODEL(Stream file)
 		{
 			var buffer = new byte[SizeInBytes];
@@ -329,9 +492,22 @@ namespace Ninja
 		public Float r;                    /* radius                       */
 	}
 
+	/// <summary>
+	/// <para>An object in the world which has a model, position, angle, and scale.</para>
+	/// See also:
+	/// <seealso cref="NJS_MODEL"/>
+	/// </summary>
 	public class NJS_OBJECT
 	{
+		/// <summary>
+		/// Native structure size in bytes.
+		/// </summary>
 		public static int SizeInBytes => 0x34;
+
+		/// <summary>
+		/// Constructs <see cref="NJS_OBJECT"/>, its children, and all of its available members from a file.
+		/// </summary>
+		/// <param name="file">A file stream containing the data.</param>
 		public NJS_OBJECT(Stream file)
 		{
 			var buffer = new byte[SizeInBytes];
