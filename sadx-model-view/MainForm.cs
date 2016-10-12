@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
+using System.Text;
 using Ninja;
 using SharpDX.Direct3D9;
 using SharpDX;
@@ -30,7 +32,7 @@ namespace sadx_model_view
 		}
 
 		private Light light = new Light
-		{ 
+		{
 			Type      = LightType.Directional,
 			Ambient   = new RawColor4(1.0f, 1.0f, 1.0f, 1.0f),
 			Diffuse   = new RawColor4(1.0f, 1.0f, 1.0f, 1.0f),
@@ -70,7 +72,7 @@ namespace sadx_model_view
 
 				file.Read(buffer, 0, sizeof(int) * 2);
 
-				var object_ptr   = BitConverter.ToUInt32(buffer, 0);
+				var object_ptr = BitConverter.ToUInt32(buffer, 0);
 				var metadata_ptr = BitConverter.ToUInt32(buffer, 4);
 
 				file.Position = object_ptr;
@@ -83,42 +85,114 @@ namespace sadx_model_view
 				file.Position = metadata_ptr;
 				bool done = false;
 
+				var labels = new List<KeyValuePair<uint, string>>();
+				var description = string.Empty;
+				var tool = string.Empty;
+
 				// TODO: this
 				while (!done)
 				{
 					file.Read(buffer, 0, 8);
+					var offset = file.Position;
 					var type = (ChunkTypes)BitConverter.ToUInt32(buffer, 0);
+					var size = BitConverter.ToInt32(buffer, 4);
 
 					switch (type)
 					{
 						case ChunkTypes.Label:
+							while (true)
+							{
+								file.Read(buffer, 0, 8);
+								var addr = BitConverter.ToUInt32(buffer, 0);
+
+								if (addr == 0xFFFFFFFF)
+									break;
+
+								var name_addr = BitConverter.ToUInt32(buffer, 4);
+
+								if (name_addr == 0 || name_addr == 0xFFFFFFFF)
+									break;
+
+								var pos = file.Position;
+								file.Position = offset + name_addr;
+
+								var i = ReadString(file, ref buffer);
+
+								file.Position = pos;
+								var name = Encoding.UTF8.GetString(buffer, 0, i);
+								labels.Add(new KeyValuePair<uint, string>(addr, name));
+							}
 							break;
+
 						case ChunkTypes.Animation:
-							break;
+							// TODO: this; same as Tool & Description
+							throw new NotImplementedException();
+
 						case ChunkTypes.Morph:
-							break;
+							throw new NotImplementedException();
+
 						case ChunkTypes.Author:
-							break;
+							// TODO: this; same as Tool & Description
+							throw new NotImplementedException();
+
 						case ChunkTypes.Tool:
+							if (size == 0)
+								break;
+
+							tool = Encoding.UTF8.GetString(buffer, 0, ReadString(file, ref buffer));
 							break;
+
 						case ChunkTypes.Description:
+							if (size == 0)
+								break;
+
+							description = Encoding.UTF8.GetString(buffer, 0, ReadString(file, ref buffer));
 							break;
+
 						case ChunkTypes.Texture:
-							break;
+							throw new NotImplementedException();
+
 						case ChunkTypes.End:
+							done = true;
 							break;
+
 						default:
 							throw new ArgumentOutOfRangeException();
 					}
+
+					file.Position = offset + size;
 				}
+
+				MessageBox.Show(this, $"Description: {description}\nTool: {tool}");
 			}
+		}
+
+		/// <summary>
+		/// Reads a null terminated string from <paramref name="stream"/> into <paramref name="buffer"/>.
+		/// </summary>
+		/// <param name="stream">The stream to read from.</param>
+		/// <param name="buffer">The buffer to output to.</param>
+		/// <returns>The length of the string.</returns>
+		private static int ReadString(Stream stream, ref byte[] buffer)
+		{
+			int i = 0;
+			do
+			{
+				stream.Read(buffer, i, 1);
+			} while (buffer[i++] != 0);
+			return i > 0 ? i - 1 : i;
 		}
 
 		private void OnShown(object sender, EventArgs e)
 		{
 			present = new PresentParameters(ClientSize.Width, ClientSize.Height)
 			{
-				SwapEffect = SwapEffect.Discard, BackBufferCount = 1, BackBufferFormat = Format.X8R8G8B8, EnableAutoDepthStencil = true, AutoDepthStencilFormat = Format.D24X8, PresentationInterval = PresentInterval.One
+				SwapEffect             = SwapEffect.Discard,
+				BackBufferCount        = 1,
+				BackBufferFormat       = Format.X8R8G8B8,
+				EnableAutoDepthStencil = true,
+				AutoDepthStencilFormat = Format.D24X8,
+				PresentationInterval   = PresentInterval.One
 			};
 
 			direct3d = new Direct3D();
