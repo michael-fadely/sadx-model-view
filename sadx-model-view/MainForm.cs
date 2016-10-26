@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 using System.Text;
 using Ninja;
@@ -22,8 +23,8 @@ namespace sadx_model_view
 		public enum ChunkTypes : uint
 		{
 			Label       = 0x4C42414C,
-			Animation   = 0x4D494E41,
-			Morph       = 0x46524F4D,
+			Animations  = 0x4D494E41,
+			Morphs      = 0x46524F4D,
 			Author      = 0x48545541,
 			Tool        = 0x4C4F4F54,
 			Description = 0x43534544,
@@ -86,8 +87,11 @@ namespace sadx_model_view
 				bool done = false;
 
 				var labels = new List<KeyValuePair<uint, string>>();
+
 				var description = string.Empty;
-				var tool = string.Empty;
+				var tool        = string.Empty;
+				var animations  = string.Empty;
+				var author      = string.Empty;
 
 				// TODO: this
 				while (!done)
@@ -124,16 +128,22 @@ namespace sadx_model_view
 							}
 							break;
 
-						case ChunkTypes.Animation:
-							// TODO: this; same as Tool & Description
-							throw new NotImplementedException();
+						case ChunkTypes.Animations:
+							if (size == 0)
+								break;
 
-						case ChunkTypes.Morph:
-							throw new NotImplementedException();
+							animations = Encoding.UTF8.GetString(buffer, 0, ReadString(file, ref buffer));
+							break;
+
+						case ChunkTypes.Morphs:
+							throw new NotImplementedException(ChunkTypes.Morphs.ToString());
 
 						case ChunkTypes.Author:
-							// TODO: this; same as Tool & Description
-							throw new NotImplementedException();
+							if (size == 0)
+								break;
+
+							author = Encoding.UTF8.GetString(buffer, 0, ReadString(file, ref buffer));
+							break;
 
 						case ChunkTypes.Tool:
 							if (size == 0)
@@ -150,7 +160,7 @@ namespace sadx_model_view
 							break;
 
 						case ChunkTypes.Texture:
-							throw new NotImplementedException();
+							throw new NotImplementedException(ChunkTypes.Texture.ToString());
 
 						case ChunkTypes.End:
 							done = true;
@@ -163,7 +173,14 @@ namespace sadx_model_view
 					file.Position = offset + size;
 				}
 
-				MessageBox.Show(this, $"Description: {description}\nTool: {tool}");
+				MessageBox.Show(this, $"Description: {description}"
+					+ $"\nTool: {tool}"
+					+ $"\nAuthor: {author}"
+					+ $"\nAnimations: {animations}");
+
+				var thing = string.Join(" | ", (from x in labels select $"{x.Key}: {x.Value}"));
+
+				MessageBox.Show(this, $"Labels:\n{thing}");
 			}
 		}
 
