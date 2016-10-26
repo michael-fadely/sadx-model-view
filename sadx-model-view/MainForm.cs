@@ -79,6 +79,7 @@ namespace sadx_model_view
 				file.Position = object_ptr;
 
 				obj = new NJS_OBJECT(file);
+				obj.CommitVertexBuffer(device);
 
 				if (metadata_ptr == 0)
 					return;

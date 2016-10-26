@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using SharpDX.Direct3D9;
+using SharpDX.Mathematics.Interop;
 
 namespace Ninja
 {
@@ -19,12 +21,14 @@ namespace Ninja
 	public static class Ninja
 	{
 		/// <summary>
-		/// <para>Populates <paramref name="vector"/> with data provided by a stream.</para>
+		/// <para>Constructs a new <see cref="NJS_VECTOR"/> with data provided by a stream.</para>
 		/// </summary>
-		/// <param name="vector">Destination vector.</param>
 		/// <param name="stream">Stream containing data.</param>
-		public static void FromStream(this NJS_VECTOR vector, Stream stream)
+		/// <returns>The new vector.</returns>
+		public static NJS_VECTOR VectorFromStream(Stream stream)
 		{
+			NJS_VECTOR vector;
+
 			var buffer = new byte[sizeof(float)];
 			stream.Read(buffer, 0, buffer.Length);
 			vector.X = BitConverter.ToSingle(buffer, 0);
@@ -34,19 +38,19 @@ namespace Ninja
 
 			stream.Read(buffer, 0, buffer.Length);
 			vector.Z = BitConverter.ToSingle(buffer, 0);
+
+			return vector;
 		}
 
 		/// <summary>
-		/// <para>Populates <paramref name="vector"/> with data provided by a buffer.</para>
+		/// <para>Constructs a new <see cref="NJS_VECTOR"/> with data provided by a buffer.</para>
 		/// </summary>
-		/// <param name="vector">Destination vector.</param>
 		/// <param name="buffer">Buffer containing data.</param>
 		/// <param name="offset">Offset in buffer to read from.</param>
-		public static void FromStream(this NJS_VECTOR vector, ref byte[] buffer, int offset = 0)
+		/// <returns>The new vector.</returns>
+		public static NJS_VECTOR VectorFromStream(ref byte[] buffer, int offset = 0)
 		{
-			vector.X = BitConverter.ToSingle(buffer, offset + 0);
-			vector.Y = BitConverter.ToSingle(buffer, offset + 4);
-			vector.Z = BitConverter.ToSingle(buffer, offset + 8);
+			return new NJS_VECTOR(BitConverter.ToSingle(buffer, offset + 0), BitConverter.ToSingle(buffer, offset + 4), BitConverter.ToSingle(buffer, offset + 8));
 		}
 	}
 
@@ -217,13 +221,23 @@ namespace Ninja
 		Strip = 0xc000
 	}
 
+	struct Vertex
+	{
+		public static VertexFormat Format = VertexFormat.Position | VertexFormat.Normal | VertexFormat.Diffuse | VertexFormat.Texture0;
+		public static int SizeInBytes => 36;
+		public RawVector3 position;
+		public RawVector3 normal;
+		public RawColorBGRA diffuse;
+		public RawVector2 uv;
+	}
+
 	/// <summary>
 	/// <para>Defines a list of polygons and their type for <see cref="NJS_MODEL"/>.</para>
 	/// See also:
 	/// <seealso cref="NJD_MESHSET"/>
 	/// <seealso cref="NJS_MODEL"/>
 	/// </summary>
-	public struct NJS_MESHSET
+	public class NJS_MESHSET
 	{
 		/// <summary>
 		/// Native structure size in bytes.
@@ -262,6 +276,7 @@ namespace Ninja
 				type_matId |= value;
 			}
 		}
+
 		/// <summary>
 		/// <para>The actual number of vertices referenced by this meshset.</para>
 		/// <para>
@@ -271,11 +286,17 @@ namespace Ninja
 		/// </summary>
 		public int VertexCount { get; }
 
+		/// <summary>
+		/// The vertex buffer used to render this meshset.
+		/// </summary>
+		public VertexBuffer Buffer;
 
 		public NJS_MESHSET(Stream file)
 		{
 			var buffer = new byte[SizeInBytes];
 			file.Read(buffer, 0, buffer.Length);
+
+			Buffer = null;
 
 			type_matId = BitConverter.ToUInt16(buffer, 0x00);
 			nbMesh     = BitConverter.ToUInt16(buffer, 0x02);
@@ -356,8 +377,7 @@ namespace Ninja
 
 				for (var i = 0; i < VertexCount; i++)
 				{
-					NJS_VECTOR vector = new NJS_VECTOR();
-					vector.FromStream(ref normalsBuffer, i * NJS_VECTOR.SizeInBytes);
+					NJS_VECTOR vector = Ninja.VectorFromStream(ref normalsBuffer, i * NJS_VECTOR.SizeInBytes);
 					normals.Add(vector);
 				}
 			}
@@ -441,8 +461,7 @@ namespace Ninja
 
 					for (var i = 0; i < nbPoint; i++)
 					{
-						NJS_POINT3 v = new NJS_VECTOR();
-						v.FromStream(file);
+						NJS_POINT3 v = Ninja.VectorFromStream(file);
 						points.Add(v);
 					}
 				}
@@ -455,8 +474,7 @@ namespace Ninja
 
 					for (var i = 0; i < nbPoint; i++)
 					{
-						NJS_POINT3 v = new NJS_VECTOR();
-						v.FromStream(file);
+						NJS_POINT3 v = Ninja.VectorFromStream(file);
 						normals.Add(v);
 					}
 				}
@@ -490,6 +508,119 @@ namespace Ninja
 		public Uint16 nbMat;               /* material count               */
 		public NJS_POINT3 center;          /* model center                 */
 		public Float r;                    /* radius                       */
+
+		public void CommitVertexBuffer(Device device)
+		{
+			foreach (NJS_MESHSET set in meshsets)
+			{
+				// TODO: use vertex declaration and render with a shader
+				List<Vertex> vertices = new List<Vertex>();
+
+				switch (set.Type)
+				{
+					case NJD_MESHSET.Tri:
+					case NJD_MESHSET.Quad:
+						for (var i = 0; i < set.VertexCount; i++)
+						{
+							byte x = (byte)set.meshes[i];
+
+							Vertex vertex = new Vertex
+							{
+								position = points[x],
+								normal   = (normals.Count != 0)       ? normals[x] : NJS_VECTOR.Up,
+								diffuse  = (set.vertcolor.Count != 0) ? new RawColorBGRA(set.vertcolor[x].argb.b, set.vertcolor[x].argb.g, set.vertcolor[x].argb.r, set.vertcolor[x].argb.a) : Color.White,
+								uv       = (set.vertuv.Count != 0)    ? new Vector2(set.vertuv[x].u / 255.0f, set.vertuv[x].v / 255.0f) : new Vector2(0.0f, 0.0f)
+							};
+
+							vertices.Add(vertex);
+						}
+						break;
+
+					case NJD_MESHSET.Strip:
+					case NJD_MESHSET.NSided:
+						int n = 0;
+						int vcount = 0;
+
+						for (var i = 0; i < set.nbMesh; i++)
+						{
+							var count = (byte)set.meshes[n];
+
+							for (int j = 0; j < count; j++)
+							{
+								// Point/Normal index
+								var pi = set.meshes[++n];
+
+								RawColorBGRA color;
+
+								if (set.vertcolor.Count != 0)
+								{
+									NJS_BGRA vcolor = set.vertcolor[vcount].argb;
+									color = new RawColorBGRA(vcolor.b, vcolor.g, vcolor.r, vcolor.a);
+								}
+								else
+								{
+									color = Color.White;
+								}
+
+								Vector2 uv = set.vertuv.Count != 0
+									? new Vector2(set.vertuv[vcount].u / 255.0f, set.vertuv[vcount].v / 255.0f)
+									: new Vector2(0.0f, 0.0f);
+
+								Vertex vertex = new Vertex
+								{
+									position = points[pi],
+									normal = (normals.Count != 0) ? normals[pi] : NJS_VECTOR.Up,
+									diffuse = color,
+									uv = uv
+								};
+
+
+								vertices.Add(vertex);
+								++vcount;
+							}
+
+							++n;
+						}
+						break;
+
+					default:
+						throw new ArgumentOutOfRangeException();
+				}
+
+				if (vertices.Count == 0)
+				{
+					return;
+				}
+
+				set.Buffer = new VertexBuffer(device, Vertex.SizeInBytes * set.VertexCount, Usage.None, Vertex.Format, Pool.Managed);
+				using (var stream = set.Buffer.Lock(0, Vertex.SizeInBytes * set.VertexCount, LockFlags.NoOverwrite))
+				{
+					foreach (var v in vertices)
+					{
+						stream.Write(v.position.X);
+						stream.Write(v.position.Y);
+						stream.Write(v.position.Z);
+
+						stream.Write(v.normal.X);
+						stream.Write(v.normal.Y);
+						stream.Write(v.normal.Z);
+
+						stream.Write(v.diffuse.B);
+						stream.Write(v.diffuse.G);
+						stream.Write(v.diffuse.R);
+						stream.Write(v.diffuse.A);
+
+						stream.Write(v.uv.X);
+						stream.Write(v.uv.Y);
+					}
+
+					if (stream.RemainingLength != 0)
+						throw new Exception("what");
+				}
+
+				set.Buffer.Unlock();
+			}
+		}
 	}
 
 	/// <summary>
@@ -561,5 +692,12 @@ namespace Ninja
 		public NJS_VECTOR scl;       /* scaling                      */
 		public NJS_OBJECT child;     /* child object                 */
 		public NJS_OBJECT sibling;   /* sibling object               */
+
+		public void CommitVertexBuffer(Device device)
+		{
+			model?.CommitVertexBuffer(device);
+			child?.CommitVertexBuffer(device);
+			sibling?.CommitVertexBuffer(device);
+		}
 	}
 }
