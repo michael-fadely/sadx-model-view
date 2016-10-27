@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Windows.Forms;
 using System.Text;
 using Ninja;
@@ -17,8 +16,11 @@ namespace sadx_model_view
 		private Device device;
 		private PresentParameters present;
 		private Matrix projection;
+		private Matrix view;
+		private Vector3 cam_pos = new Vector3(0.0f, 10.0f, -50.0f);
+
 		private int step;
-		private NJS_OBJECT obj = null;
+		private NJS_OBJECT obj;
 
 		public enum ChunkTypes : uint
 		{
@@ -37,6 +39,7 @@ namespace sadx_model_view
 			Type      = LightType.Directional,
 			Ambient   = new RawColor4(1.0f, 1.0f, 1.0f, 1.0f),
 			Diffuse   = new RawColor4(1.0f, 1.0f, 1.0f, 1.0f),
+			Specular  = new RawColor4(1.0f, 1.0f, 1.0f, 1.0f),
 			Direction = new RawVector3(0.0f, -1.0f, 0.0f)
 		};
 
@@ -78,6 +81,7 @@ namespace sadx_model_view
 
 				file.Position = object_ptr;
 
+				obj?.Dispose();
 				obj = new NJS_OBJECT(file);
 				obj.CommitVertexBuffer(device);
 
@@ -174,6 +178,7 @@ namespace sadx_model_view
 					file.Position = offset + size;
 				}
 
+#if false
 				MessageBox.Show(this, $"Description: {description}"
 					+ $"\nTool: {tool}"
 					+ $"\nAuthor: {author}"
@@ -182,6 +187,7 @@ namespace sadx_model_view
 				var thing = string.Join(" | ", (from x in labels select $"{x.Key}: {x.Value}"));
 
 				MessageBox.Show(this, $"Labels:\n{thing}");
+#endif
 			}
 		}
 
@@ -221,6 +227,21 @@ namespace sadx_model_view
 
 		private void RefreshDevice()
 		{
+			present.BackBufferWidth = ClientSize.Width;
+			present.BackBufferHeight = ClientSize.Height;
+			var w = (float)ClientSize.Width;
+			var h = (float)ClientSize.Height;
+
+			projection = Matrix.PerspectiveFovLH(MathUtil.DegreesToRadians(45), w / h, 0.1f, float.MaxValue);
+			SetViewMatrix();
+
+			device.Reset(present);
+
+			SetupScene();
+		}
+
+		private void SetupScene()
+		{
 			device.SetRenderState(RenderState.ZEnable, true);
 			device.SetRenderState(RenderState.CullMode, Cull.None);
 			device.SetRenderState(RenderState.AlphaBlendEnable, true);
@@ -229,28 +250,59 @@ namespace sadx_model_view
 			device.SetRenderState(RenderState.AlphaFunc, Compare.Equal);
 			device.SetRenderState(RenderState.AlphaRef, 255);
 
-			present.BackBufferWidth = ClientSize.Width;
-			present.BackBufferHeight = ClientSize.Height;
-			var w = (float)ClientSize.Width;
-			var h = (float)ClientSize.Height;
-			projection = Matrix.PerspectiveFovLH(MathUtil.DegreesToRadians(45), w / h, 0.1f, 10000.0f);
-
-			device.Reset(present);
-
 			device.SetRenderState(RenderState.ZEnable, true);
-			device.SetTransform(TransformState.View, Matrix.Identity /*camera.Transform*/);
 			device.SetTransform(TransformState.Projection, projection);
+			device.SetTransform(TransformState.World, Matrix.Identity);
+			SetViewMatrix();
 
 			device.SetLight(0, ref light);
 			device.EnableLight(0, true);
 		}
 
+		private void SetViewMatrix()
+		{
+			if (dir != Direction.None)
+			{
+				if (dir.HasFlag(Direction.Forward))
+				{
+					cam_pos.Z += 0.75f;
+				}
+				if (dir.HasFlag(Direction.Backward))
+				{
+					cam_pos.Z -= 0.75f;
+				}
+
+				if (dir.HasFlag(Direction.Right))
+				{
+					cam_pos.X += 0.75f;
+				}
+				if (dir.HasFlag(Direction.Left))
+				{
+					cam_pos.X -= 0.75f;
+				}
+
+				if (dir.HasFlag(Direction.Up))
+				{
+					cam_pos.Y += 0.75f;
+				}
+				if (dir.HasFlag(Direction.Down))
+				{
+					cam_pos.Y -= 0.75f;
+				}
+
+			}
+
+			view = Matrix.LookAtLH(cam_pos, obj?.pos ?? Vector3.Zero, Vector3.Up);
+			device.SetTransform(TransformState.View, view);
+		}
+
 		public void MainLoop()
 		{
-			device.Clear(ClearFlags.Target | ClearFlags.ZBuffer, new ColorBGRA(0, (byte)step, (byte)step, 0), 1.0f, 0);
+			device.Clear(ClearFlags.Target | ClearFlags.ZBuffer, new ColorBGRA(0xFF, 0xFF, 0xFF, 0xFF), 1.0f, 0);
 			device.BeginScene();
 
-			device.SetTransform(TransformState.View, Matrix.Identity /*camera.Transform*/);
+			SetupScene();
+			obj?.Draw(device);
 
 			device.EndScene();
 			device.Present();
@@ -267,6 +319,88 @@ namespace sadx_model_view
 		{
 			device.Dispose();
 			direct3d.Dispose();
+		}
+
+		[Flags]
+		private enum Direction
+		{
+			None,
+			Forward  = 1 << 0,
+			Backward = 1 << 1,
+			Left     = 1 << 2,
+			Right    = 1 << 3,
+			Up       = 1 << 4,
+			Down     = 1 << 5
+		}
+
+		private Direction dir = Direction.None;
+
+		private void MainForm_KeyDown(object sender, KeyEventArgs e)
+		{ 
+			switch (e.KeyCode)
+			{
+				case Keys.Up:
+				case Keys.W:
+					dir |= Direction.Forward;
+					break;
+
+				case Keys.Down:
+				case Keys.S:
+					dir |= Direction.Backward;
+					break;
+
+				case Keys.Left:
+				case Keys.A:
+					dir |= Direction.Left;
+					break;
+
+				case Keys.Right:
+				case Keys.D:
+					dir |= Direction.Right;
+					break;
+
+				case Keys.Space:
+					dir |= Direction.Up;
+					break;
+
+				case Keys.ShiftKey:
+					dir |= Direction.Down;
+					break;
+			}
+		}
+
+		private void MainForm_KeyUp(object sender, KeyEventArgs e)
+		{
+			switch (e.KeyCode)
+			{
+				case Keys.Up:
+				case Keys.W:
+					dir &= ~Direction.Forward;
+					break;
+
+				case Keys.Down:
+				case Keys.S:
+					dir &= ~Direction.Backward;
+					break;
+
+				case Keys.Left:
+				case Keys.A:
+					dir &= ~Direction.Left;
+					break;
+
+				case Keys.Right:
+				case Keys.D:
+					dir &= ~Direction.Right;
+					break;
+
+				case Keys.Space:
+					dir &= ~Direction.Up;
+					break;
+
+				case Keys.ShiftKey:
+					dir &= ~Direction.Down;
+					break;
+			}
 		}
 	}
 }

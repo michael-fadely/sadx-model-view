@@ -72,6 +72,8 @@
 			this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.OnClosed);
 			this.Shown += new System.EventHandler(this.OnShown);
 			this.SizeChanged += new System.EventHandler(this.OnSizeChanged);
+			this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MainForm_KeyDown);
+			this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.MainForm_KeyUp);
 			this.menuStrip1.ResumeLayout(false);
 			this.menuStrip1.PerformLayout();
 			this.ResumeLayout(false);

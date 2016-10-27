@@ -52,6 +52,42 @@ namespace Ninja
 		{
 			return new NJS_VECTOR(BitConverter.ToSingle(buffer, offset + 0), BitConverter.ToSingle(buffer, offset + 4), BitConverter.ToSingle(buffer, offset + 8));
 		}
+
+		public static float DegreeToRadian(float n)
+		{
+			return (float)(n * Math.PI / 180.0f);
+		}
+		public static Angle DegreeToAngle(float n)
+		{
+			return (Angle)(n * 65536.0 / 360.0);
+		}
+
+		public static Angle RadToAngle(float n)
+		{
+			return (Angle)(n * 65536.0 / (2 * Math.PI));
+		}
+		public static float RadToDegree(float n)
+		{
+			return (float)(n * 180.0 / Math.PI);
+		}
+
+		public static float AngleToDegree(Angle n)
+		{
+			return (float)(n * 360.0 / 65536.0);
+		}
+		public static float AngleToRadian(Angle n)
+		{
+			return (float)(n * (2 * Math.PI) / 65536.0);
+		}
+
+		public static NJS_VECTOR AngleToRadian(Rotation3 n)
+		{
+			return new NJS_VECTOR(AngleToRadian(n.X), AngleToRadian(n.Y), AngleToRadian(n.Z));
+		}
+		public static NJS_VECTOR AngleToDegree(Rotation3 n)
+		{
+			return new NJS_VECTOR(AngleToDegree(n.X), AngleToDegree(n.Y), AngleToDegree(n.Z));
+		}
 	}
 
 	/// <summary>
@@ -65,6 +101,22 @@ namespace Ninja
 		public static int SizeInBytes => sizeof(Angle) * 3;
 
 		public Angle X, Y, Z;
+
+		public Rotation3(Angle x, Angle y, Angle z)
+		{
+			X = x;
+			Y = y;
+			Z = z;
+		}
+
+		public static Rotation3 operator +(Rotation3 lhs, Rotation3 rhs)
+		{
+			return new Rotation3(lhs.X + rhs.X, lhs.Y + rhs.Y, lhs.Z + rhs.Z);
+		}
+		public static Rotation3 operator -(Rotation3 lhs, Rotation3 rhs)
+		{
+			return new Rotation3(lhs.X - rhs.X, lhs.Y - rhs.Y, lhs.Z - rhs.Z);
+		}
 	}
 
 	/// <summary>
@@ -223,7 +275,7 @@ namespace Ninja
 
 	struct Vertex
 	{
-		public static VertexFormat Format = VertexFormat.Position | VertexFormat.Normal | VertexFormat.Diffuse | VertexFormat.Texture0;
+		public static VertexFormat Format = VertexFormat.Position | VertexFormat.Normal | VertexFormat.Diffuse | VertexFormat.Texture1;
 		public static int SizeInBytes => 36;
 		public RawVector3 position;
 		public RawVector3 normal;
@@ -237,7 +289,7 @@ namespace Ninja
 	/// <seealso cref="NJD_MESHSET"/>
 	/// <seealso cref="NJS_MODEL"/>
 	/// </summary>
-	public class NJS_MESHSET
+	public class NJS_MESHSET : IDisposable
 	{
 		/// <summary>
 		/// Native structure size in bytes.
@@ -255,8 +307,30 @@ namespace Ninja
 			{
 				type_matId &= (Uint16)~NJD_MESHSET.Strip;
 				type_matId |= (Uint16)value;
+
+				switch (Type)
+				{
+					case NJD_MESHSET.Tri:
+						PrimitiveType = PrimitiveType.TriangleList;
+						break;
+
+					case NJD_MESHSET.NSided:
+						PrimitiveType = PrimitiveType.TriangleFan;
+						break;
+
+					case NJD_MESHSET.Quad:
+					case NJD_MESHSET.Strip:
+						PrimitiveType = PrimitiveType.TriangleStrip;
+						break;
+					default:
+						throw new ArgumentOutOfRangeException();
+				}
 			}
 		}
+
+		public PrimitiveType PrimitiveType { get; private set; }
+
+		public int PrimitiveCount { get; private set; }
 
 		/// <summary>
 		/// The material ID for this meshset.
@@ -289,14 +363,24 @@ namespace Ninja
 		/// <summary>
 		/// The vertex buffer used to render this meshset.
 		/// </summary>
-		public VertexBuffer Buffer;
+		public VertexBuffer VertexBuffer;
+
+		public Uint16 type_matId;          /* meshset type and attr index
+											14-15 : meshset type bits
+											0-13 : material id(0-4095)     */
+		public Uint16 nbMesh;              /* mesh count                   */
+		public List<Sint16> meshes;        /* mesh array                   */
+		public List<Uint32> attrs;         /* attribure                    */
+		public List<NJS_VECTOR> normals;   /* mesh normal list             */
+		public List<NJS_COLOR> vertcolor;  /* polygon vertex color list    */
+		public List<NJS_TEX> vertuv;       /* polygon vertex uv list       */
 
 		public NJS_MESHSET(Stream file)
 		{
 			var buffer = new byte[SizeInBytes];
 			file.Read(buffer, 0, buffer.Length);
 
-			Buffer = null;
+			VertexBuffer = null;
 
 			type_matId = BitConverter.ToUInt16(buffer, 0x00);
 			nbMesh     = BitConverter.ToUInt16(buffer, 0x02);
@@ -316,17 +400,32 @@ namespace Ninja
 			var position = file.Position;
 
 			VertexCount = 0;
+			PrimitiveCount = 0;
 
 			if (meshes_ptr != 0)
 			{
 				file.Position = meshes_ptr;
 				var meshesBuffer = new byte[2];
 
+				Type = Type;
+
 				switch (Type)
 				{
 					case NJD_MESHSET.Tri:
+						VertexCount = nbMesh * 3;
+						PrimitiveCount = VertexCount;
+
+						for (int i = 0; i < VertexCount; i++)
+						{
+							file.Read(meshesBuffer, 0, sizeof(short));
+							meshes.Add(BitConverter.ToInt16(meshesBuffer, 0));
+						}
+						break;
+
 					case NJD_MESHSET.Quad:
-						VertexCount = nbMesh * (Type == NJD_MESHSET.Tri ? 3 : 4);
+						VertexCount = nbMesh * 4;
+						PrimitiveCount = nbMesh * 6;
+
 						for (int i = 0; i < VertexCount; i++)
 						{
 							file.Read(meshesBuffer, 0, sizeof(short));
@@ -342,15 +441,24 @@ namespace Ninja
 							var n = BitConverter.ToInt16(meshesBuffer, 0);
 							meshes.Add(n);
 
-							// n is casted to byte because there are cases where
+							// n is being maked because there are cases where
 							// the number has garbage data after the first byte.
-							for (int j = 0; j < (byte)n; j++)
+							n &= 0x3FFF;
+
+							for (int j = 0; j < n; j++)
 							{
 								file.Read(meshesBuffer, 0, sizeof(short));
 								meshes.Add(BitConverter.ToInt16(meshesBuffer, 0));
 							}
 
-							VertexCount += (byte)n;
+							VertexCount += n;
+						}
+
+						CalculatePrimitiveCount();
+
+						if (VertexCount != meshes.Count - nbMesh)
+						{
+							throw new Exception("Recorded vertex count is incorrect.");
 						}
 						break;
 
@@ -407,18 +515,31 @@ namespace Ninja
 			file.Position = position;
 		}
 
-		public Uint16 type_matId;          /* meshset type and attr index
-											14-15 : meshset type bits
-											0-13 : material id(0-4095)     */
-		public Uint16 nbMesh;              /* mesh count                   */
-		public List<Sint16> meshes;        /* mesh array                   */
-		public List<Uint32> attrs;         /* attribure                    */
-		public List<NJS_VECTOR> normals;   /* mesh normal list             */
-		public List<NJS_COLOR> vertcolor;  /* polygon vertex color list    */
-		public List<NJS_TEX> vertuv;       /* polygon vertex uv list       */
+		private void CalculatePrimitiveCount()
+		{
+			PrimitiveCount = 0;
+			var count = nbMesh;
+			int i = 0;
+
+			do
+			{
+				--count;
+				var n = meshes[i] & 0x3FFF;
+				PrimitiveCount += n + 2;
+				i += (n + 1);
+			} while (count > 0);
+
+			PrimitiveCount -= 2;
+		}
+
+		public void Dispose()
+		{
+			VertexBuffer.Dispose();
+			VertexBuffer = null;
+		}
 	}
 
-	public class NJS_MODEL
+	public class NJS_MODEL : IDisposable
 	{
 		/// <summary>
 		/// Native structure size in bytes.
@@ -516,39 +637,101 @@ namespace Ninja
 				// TODO: use vertex declaration and render with a shader
 				List<Vertex> vertices = new List<Vertex>();
 
+				int size;
+
 				switch (set.Type)
 				{
 					case NJD_MESHSET.Tri:
-					case NJD_MESHSET.Quad:
+						size = Vertex.SizeInBytes * set.PrimitiveCount;
+
 						for (var i = 0; i < set.VertexCount; i++)
 						{
-							byte x = (byte)set.meshes[i];
+							var point_i = set.meshes[i];
+
+							RawColorBGRA color;
+
+							if (set.vertcolor.Count != 0)
+							{
+								NJS_BGRA vcolor = set.vertcolor[i].argb;
+								color = new RawColorBGRA(vcolor.b, vcolor.g, vcolor.r, vcolor.a);
+							}
+							else
+							{
+								color = Color.White;
+							}
+
+							Vector2 uv = set.vertuv.Count != 0
+								? new Vector2(set.vertuv[i].u / 255.0f, set.vertuv[i].v / 255.0f)
+								: new Vector2(0.0f, 0.0f);
 
 							Vertex vertex = new Vertex
 							{
-								position = points[x],
-								normal   = (normals.Count != 0)       ? normals[x] : NJS_VECTOR.Up,
-								diffuse  = (set.vertcolor.Count != 0) ? new RawColorBGRA(set.vertcolor[x].argb.b, set.vertcolor[x].argb.g, set.vertcolor[x].argb.r, set.vertcolor[x].argb.a) : Color.White,
-								uv       = (set.vertuv.Count != 0)    ? new Vector2(set.vertuv[x].u / 255.0f, set.vertuv[x].v / 255.0f) : new Vector2(0.0f, 0.0f)
+								position = points[point_i],
+								normal   = normals.Count != 0 ? normals[point_i] : NJS_VECTOR.Up,
+								diffuse  = color,
+								uv       = uv
 							};
 
 							vertices.Add(vertex);
 						}
 						break;
 
+						// TODO: Treat like triangle list? That's how SADX does it.
+					case NJD_MESHSET.Quad:
+						size = Vertex.SizeInBytes * set.PrimitiveCount;
+
+						for (var i = 0; i < set.VertexCount; i++)
+						{
+							var point_i = set.meshes[i];
+
+							RawColorBGRA color;
+
+							if (set.vertcolor.Count != 0)
+							{
+								NJS_BGRA vcolor = set.vertcolor[i].argb;
+								color = new RawColorBGRA(vcolor.b, vcolor.g, vcolor.r, vcolor.a);
+							}
+							else
+							{
+								color = Color.White;
+							}
+
+							Vector2 uv = set.vertuv.Count != 0
+								? new Vector2(set.vertuv[i].u / 255.0f, set.vertuv[i].v / 255.0f)
+								: new Vector2(0.0f, 0.0f);
+
+							Vertex vertex = new Vertex
+							{
+								position = points[point_i],
+								normal = normals.Count != 0 ? normals[point_i] : NJS_VECTOR.Up,
+								diffuse = color,
+								uv = uv
+							};
+
+							vertices.Add(vertex);
+
+							var x = i % 4;
+							if (x == 0 || x == 3)
+							{
+								vertices.Add(vertex);
+							}
+						}
+						break;
+
+
 					case NJD_MESHSET.Strip:
 					case NJD_MESHSET.NSided:
+						size = Vertex.SizeInBytes * (set.PrimitiveCount + 2);
 						int n = 0;
 						int vcount = 0;
 
 						for (var i = 0; i < set.nbMesh; i++)
 						{
-							var count = (byte)set.meshes[n];
+							var count = set.meshes[n] & 0x3FFF;
 
 							for (int j = 0; j < count; j++)
 							{
-								// Point/Normal index
-								var pi = set.meshes[++n];
+								var point_i = set.meshes[++n];
 
 								RawColorBGRA color;
 
@@ -566,21 +749,32 @@ namespace Ninja
 									? new Vector2(set.vertuv[vcount].u / 255.0f, set.vertuv[vcount].v / 255.0f)
 									: new Vector2(0.0f, 0.0f);
 
+								if (point_i < 0)
+									throw new ArgumentOutOfRangeException();
+
 								Vertex vertex = new Vertex
 								{
-									position = points[pi],
-									normal = (normals.Count != 0) ? normals[pi] : NJS_VECTOR.Up,
-									diffuse = color,
-									uv = uv
+									position = points[point_i],
+									normal   = normals.Count != 0 ? normals[point_i] : NJS_VECTOR.Up,
+									diffuse  = color,
+									uv       = uv
 								};
 
-
 								vertices.Add(vertex);
+
+								// add it twice
+								// why you ask? reasons
+								if (j == 0 || j == count - 1)
+								{
+									vertices.Add(vertex);
+								}
+
 								++vcount;
 							}
 
 							++n;
 						}
+
 						break;
 
 					default:
@@ -592,8 +786,8 @@ namespace Ninja
 					return;
 				}
 
-				set.Buffer = new VertexBuffer(device, Vertex.SizeInBytes * set.VertexCount, Usage.None, Vertex.Format, Pool.Managed);
-				using (var stream = set.Buffer.Lock(0, Vertex.SizeInBytes * set.VertexCount, LockFlags.NoOverwrite))
+				set.VertexBuffer = new VertexBuffer(device, size, Usage.None, Vertex.Format, Pool.Managed);
+				using (var stream = set.VertexBuffer.Lock(0, size, LockFlags.None))
 				{
 					foreach (var v in vertices)
 					{
@@ -615,11 +809,34 @@ namespace Ninja
 					}
 
 					if (stream.RemainingLength != 0)
-						throw new Exception("what");
+						throw new Exception("Failed to fill vertex buffer.");
 				}
 
-				set.Buffer.Unlock();
+				set.VertexBuffer.Unlock();
 			}
+		}
+
+		public void Draw(Device device)
+		{
+			device.VertexFormat = Vertex.Format;
+
+			foreach (var set in meshsets)
+			{
+				device.SetStreamSource(0, set.VertexBuffer, 0, Vertex.SizeInBytes);
+				device.DrawPrimitives(set.PrimitiveType, 0, set.PrimitiveCount);
+			}
+
+			device.SetStreamSource(0, null, 0, 0);
+		}
+
+		public void Dispose()
+		{
+			foreach (var set in meshsets)
+			{
+				set.Dispose();
+			}
+
+			meshsets.Clear();
 		}
 	}
 
@@ -628,7 +845,7 @@ namespace Ninja
 	/// See also:
 	/// <seealso cref="NJS_MODEL"/>
 	/// </summary>
-	public class NJS_OBJECT
+	public class NJS_OBJECT : IDisposable
 	{
 		/// <summary>
 		/// Native structure size in bytes.
@@ -698,6 +915,46 @@ namespace Ninja
 			model?.CommitVertexBuffer(device);
 			child?.CommitVertexBuffer(device);
 			sibling?.CommitVertexBuffer(device);
+		}
+
+		public void Draw(Device device)
+		{
+			NJS_VECTOR _pos = NJS_VECTOR.Zero;
+			NJS_VECTOR _scl = new NJS_VECTOR(1, 1, 1);
+			Rotation3 _ang = new Rotation3(0, 0, 0);
+
+			Draw(device, ref _pos, ref _ang, ref _scl);
+		}
+
+		public void Draw(Device device, ref NJS_VECTOR parent_pos, ref Rotation3 parent_ang, ref NJS_VECTOR parent_scl)
+		{
+			var _pos = pos;
+			var _ang = ang;
+			var _scl = scl;
+
+			_pos += parent_pos;
+			_ang += parent_ang;
+			_scl *= parent_scl;
+
+			// TODO: don't assume XYZ rotation
+			var r = Ninja.AngleToRadian(_ang);;
+
+			var m = Matrix.Scaling(_scl)
+				* Matrix.RotationX(r.X)
+				* Matrix.RotationY(r.Y)
+				* Matrix.RotationZ(r.Z)
+				* Matrix.Translation(_pos);
+
+			device.SetTransform(TransformState.World, Matrix.Identity);
+
+			model?.Draw(device);
+			child?.Draw(device, ref _pos, ref _ang, ref _scl);
+			sibling?.Draw(device);
+		}
+
+		public void Dispose()
+		{
+			model?.Dispose();
 		}
 	}
 }
