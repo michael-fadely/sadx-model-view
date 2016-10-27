@@ -924,6 +924,8 @@ namespace Ninja
 
 		public void Draw(Device device)
 		{
+			// Since the overload for this function offsets position rotation and scale
+			// by the provided versions, we use default values for root objects.
 			NJS_VECTOR _pos = NJS_VECTOR.Zero;
 			NJS_VECTOR _scl = new NJS_VECTOR(1, 1, 1);
 			Rotation3 _ang = new Rotation3(0, 0, 0);
@@ -931,15 +933,12 @@ namespace Ninja
 			Draw(device, ref _pos, ref _ang, ref _scl);
 		}
 
-		public void Draw(Device device, ref NJS_VECTOR parent_pos, ref Rotation3 parent_ang, ref NJS_VECTOR parent_scl)
+		public void Draw(Device device, ref NJS_VECTOR _pos, ref Rotation3 _ang, ref NJS_VECTOR _scl)
 		{
-			var _pos = pos;
-			var _ang = ang;
-			var _scl = scl;
-
-			_pos += parent_pos;
-			_ang += parent_ang;
-			_scl *= parent_scl;
+			// TODO: check evalflags before translating, rotating, scaling, rendering children, etc.
+			_pos += pos;
+			_ang += ang;
+			_scl *= scl;
 
 			// TODO: don't assume XYZ rotation
 			var r = Ninja.AngleToRadian(_ang);;
@@ -950,7 +949,7 @@ namespace Ninja
 				* Matrix.RotationZ(r.Z)
 				* Matrix.Translation(_pos);
 
-			device.SetTransform(TransformState.World, Matrix.Identity);
+			device.SetTransform(TransformState.World, m);
 
 			model?.Draw(device);
 			child?.Draw(device, ref _pos, ref _ang, ref _scl);
