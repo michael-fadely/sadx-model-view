@@ -311,6 +311,7 @@ namespace Ninja
 				switch (Type)
 				{
 					case NJD_MESHSET.Tri:
+					case NJD_MESHSET.Quad:
 						PrimitiveType = PrimitiveType.TriangleList;
 						break;
 
@@ -318,7 +319,6 @@ namespace Ninja
 						PrimitiveType = PrimitiveType.TriangleFan;
 						break;
 
-					case NJD_MESHSET.Quad:
 					case NJD_MESHSET.Strip:
 						PrimitiveType = PrimitiveType.TriangleStrip;
 						break;
@@ -377,6 +377,8 @@ namespace Ninja
 
 		public NJS_MESHSET(Stream file)
 		{
+			// TODO: Use indexed everything
+
 			var buffer = new byte[SizeInBytes];
 			file.Read(buffer, 0, buffer.Length);
 
@@ -424,7 +426,7 @@ namespace Ninja
 
 					case NJD_MESHSET.Quad:
 						VertexCount = nbMesh * 4;
-						PrimitiveCount = nbMesh * 6;
+						PrimitiveCount = nbMesh * 6 / 3;
 
 						for (int i = 0; i < VertexCount; i++)
 						{
@@ -676,19 +678,28 @@ namespace Ninja
 						}
 						break;
 
-						// TODO: Treat like triangle list? That's how SADX does it.
 					case NJD_MESHSET.Quad:
-						size = Vertex.SizeInBytes * set.PrimitiveCount;
+						size = Vertex.SizeInBytes * (set.PrimitiveCount * 3);
 
-						for (var i = 0; i < set.VertexCount; i++)
+						var indeces = new List<KeyValuePair<int, Sint16>>();
+
+						for (var i = 0; i < set.VertexCount; i += 4)
 						{
-							var point_i = set.meshes[i];
+							indeces.Add(new KeyValuePair<int, Sint16>(i + 0, set.meshes[i + 0]));
+							indeces.Add(new KeyValuePair<int, Sint16>(i + 1, set.meshes[i + 1]));
+							indeces.Add(new KeyValuePair<int, Sint16>(i + 2, set.meshes[i + 2]));
+							indeces.Add(new KeyValuePair<int, Sint16>(i + 2, set.meshes[i + 2]));
+							indeces.Add(new KeyValuePair<int, Sint16>(i + 1, set.meshes[i + 1]));
+							indeces.Add(new KeyValuePair<int, Sint16>(i + 3, set.meshes[i + 3]));
+						}
 
+						foreach (var pair in indeces)
+						{
 							RawColorBGRA color;
 
 							if (set.vertcolor.Count != 0)
 							{
-								NJS_BGRA vcolor = set.vertcolor[i].argb;
+								NJS_BGRA vcolor = set.vertcolor[pair.Key].argb;
 								color = new RawColorBGRA(vcolor.b, vcolor.g, vcolor.r, vcolor.a);
 							}
 							else
@@ -697,27 +708,21 @@ namespace Ninja
 							}
 
 							Vector2 uv = set.vertuv.Count != 0
-								? new Vector2(set.vertuv[i].u / 255.0f, set.vertuv[i].v / 255.0f)
+								? new Vector2(set.vertuv[pair.Key].u / 255.0f, set.vertuv[pair.Key].v / 255.0f)
 								: new Vector2(0.0f, 0.0f);
 
 							Vertex vertex = new Vertex
 							{
-								position = points[point_i],
-								normal = normals.Count != 0 ? normals[point_i] : NJS_VECTOR.Up,
+								position = points[pair.Value],
+								normal = normals.Count != 0 ? normals[pair.Value] : NJS_VECTOR.Up,
 								diffuse = color,
 								uv = uv
 							};
 
 							vertices.Add(vertex);
-
-							var x = i % 4;
-							if (x == 0 || x == 3)
-							{
-								vertices.Add(vertex);
-							}
 						}
-						break;
 
+						break;
 
 					case NJD_MESHSET.Strip:
 					case NJD_MESHSET.NSided:
