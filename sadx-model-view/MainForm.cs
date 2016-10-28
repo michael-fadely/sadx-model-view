@@ -10,6 +10,7 @@ using SharpDX.Mathematics.Interop;
 
 // TODO: textures (maybe using texture packs for now to be lazy)
 // TODO: landtables
+// TODO: delta time camera movement
 
 namespace sadx_model_view
 {
@@ -331,7 +332,7 @@ namespace sadx_model_view
 
 		public void MainLoop()
 		{
-			device.Clear(ClearFlags.Target | ClearFlags.ZBuffer, new ColorBGRA(0, 127, 127, 255), 1.0f, 0);
+			device.Clear(ClearFlags.Target | ClearFlags.ZBuffer, new ColorBGRA(0, 191, 191, 255), 1.0f, 0);
 			device.BeginScene();
 
 			SetupScene();
