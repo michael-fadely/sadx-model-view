@@ -228,7 +228,6 @@ namespace sadx_model_view.Ninja
 						}
 						break;
 
-						// TODO: Handle reverse faces (i & 0x8000)
 					case NJD_MESHSET.NSided:
 					case NJD_MESHSET.Strip:
 						for (int i = 0; i < nbMesh; i++)
