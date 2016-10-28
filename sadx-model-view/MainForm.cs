@@ -248,6 +248,7 @@ namespace sadx_model_view
 			var w = (float)ClientSize.Width;
 			var h = (float)ClientSize.Height;
 
+			// TODO: adjust FOV properly based on aspect ratio
 			projection = Matrix.PerspectiveFovLH(MathUtil.DegreesToRadians(45), w / h, 0.1f, float.MaxValue);
 			SetViewMatrix();
 
