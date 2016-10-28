@@ -21,7 +21,7 @@ namespace sadx_model_view
 		private int step;
 		private NJS_OBJECT obj;
 
-		public enum ChunkTypes : uint
+		private enum ChunkTypes : uint
 		{
 			Label       = 0x4C42414C,
 			Animations  = 0x4D494E41,
@@ -90,14 +90,18 @@ namespace sadx_model_view
 				file.Position = metadata_ptr;
 				bool done = false;
 
+				// ReSharper disable once CollectionNeverQueried.Local
 				var labels = new List<KeyValuePair<uint, string>>();
 
+				// ReSharper disable once NotAccessedVariable
 				var description = string.Empty;
-				var tool        = string.Empty;
-				var animations  = string.Empty;
-				var author      = string.Empty;
+				// ReSharper disable once NotAccessedVariable
+				var tool = string.Empty;
+				// ReSharper disable once NotAccessedVariable
+				var animations = string.Empty;
+				// ReSharper disable once NotAccessedVariable
+				var author = string.Empty;
 
-				// TODO: this
 				while (!done)
 				{
 					file.Read(buffer, 0, 8);
@@ -136,6 +140,7 @@ namespace sadx_model_view
 							if (size == 0)
 								break;
 
+							// ReSharper disable once RedundantAssignment
 							animations = Encoding.UTF8.GetString(buffer, 0, ReadString(file, ref buffer));
 							break;
 
@@ -146,6 +151,7 @@ namespace sadx_model_view
 							if (size == 0)
 								break;
 
+							// ReSharper disable once RedundantAssignment
 							author = Encoding.UTF8.GetString(buffer, 0, ReadString(file, ref buffer));
 							break;
 
@@ -153,6 +159,7 @@ namespace sadx_model_view
 							if (size == 0)
 								break;
 
+							// ReSharper disable once RedundantAssignment
 							tool = Encoding.UTF8.GetString(buffer, 0, ReadString(file, ref buffer));
 							break;
 
@@ -160,6 +167,7 @@ namespace sadx_model_view
 							if (size == 0)
 								break;
 
+							// ReSharper disable once RedundantAssignment
 							description = Encoding.UTF8.GetString(buffer, 0, ReadString(file, ref buffer));
 							break;
 
@@ -242,7 +250,7 @@ namespace sadx_model_view
 		private void SetupScene()
 		{
 			device.SetRenderState(RenderState.ZEnable, true);
-			device.SetRenderState(RenderState.CullMode, Cull.None);
+			device.SetRenderState(RenderState.CullMode, Cull.Counterclockwise);
 			device.SetRenderState(RenderState.AlphaBlendEnable, true);
 			device.SetRenderState(RenderState.SourceBlend, Blend.SourceAlpha);
 			device.SetRenderState(RenderState.DestinationBlend, Blend.InverseSourceAlpha);
@@ -297,7 +305,7 @@ namespace sadx_model_view
 
 		public void MainLoop()
 		{
-			device.Clear(ClearFlags.Target | ClearFlags.ZBuffer, new ColorBGRA(0xFF, 0xFF, 0xFF, 0xFF), 1.0f, 0);
+			device.Clear(ClearFlags.Target | ClearFlags.ZBuffer, new ColorBGRA(0, 127, 127, 255), 1.0f, 0);
 			device.BeginScene();
 
 			SetupScene();

@@ -204,9 +204,29 @@ namespace sadx_model_view
 	}
 
 	/// <summary>
+	/// Flags used for materials.
+	/// </summary>
+	enum NJD_FLAG : Uint32
+	{
+		PICK            = 0x80,
+		USE_ANISOTROPIC = 0x1000,
+		CLAMP_V         = 0x8000,
+		CLAMP_U         = 0x10000,
+		FLIP_V          = 0x20000,
+		FLIP_U          = 0x40000,
+		IGNORE_SPECULAR = 0x80000,
+		USE_ALPHA       = 0x100000,
+		USE_TEXTURE     = 0x200000,
+		USE_ENV         = 0x400000,
+		DOUBLE_SIDE     = 0x800000,
+		USE_FLAT        = 0x1000000,
+		IGNORE_LIGHT    = 0x2000000,
+	}
+
+	/// <summary>
 	/// A material for a model containing lighting parameters and other attributes.
 	/// </summary>
-	public struct NJS_MATERIAL
+	public class NJS_MATERIAL
 	{
 		/// <summary>
 		/// Native structure size in bytes.
@@ -343,7 +363,7 @@ namespace sadx_model_view
 			}
 			set
 			{
-				if (value >= 16384)
+				if (value > 16383)
 					throw new ArgumentOutOfRangeException(nameof(value), "Number must be less than 16384");
 
 				type_matId &= (Uint16)NJD_MESHSET.Strip;
@@ -456,7 +476,7 @@ namespace sadx_model_view
 							VertexCount += n;
 						}
 
-						CalculatePrimitiveCount();
+						CalculateStripPrimitiveCount();
 
 						if (VertexCount != meshes.Count - nbMesh)
 						{
@@ -517,7 +537,7 @@ namespace sadx_model_view
 			file.Position = position;
 		}
 
-		private void CalculatePrimitiveCount()
+		private void CalculateStripPrimitiveCount()
 		{
 			PrimitiveCount = 0;
 			var count = nbMesh;
@@ -821,17 +841,108 @@ namespace sadx_model_view
 			}
 		}
 
-		public void Draw(Device device)
+		private void SetSADXMaterial(Device device, NJS_MATERIAL material)
 		{
-			device.VertexFormat = Vertex.Format;
+			if (material == null)
+				return;
 
-			foreach (var set in meshsets)
+			var flags = (NJD_FLAG)material.attrflags;
+
+			if (flags.HasFlag(NJD_FLAG.USE_TEXTURE))
 			{
-				device.SetStreamSource(0, set.VertexBuffer, 0, Vertex.SizeInBytes);
-				device.DrawPrimitives(set.PrimitiveType, 0, set.PrimitiveCount);
+				if (flags.HasFlag(NJD_FLAG.PICK))
+				{
+					// TODO: not even implemented in SADX
+				}
+
+				if (flags.HasFlag(NJD_FLAG.USE_ANISOTROPIC))
+				{
+					// TODO: not even implemented in SADX
+				}
+
+				if (flags.HasFlag(NJD_FLAG.CLAMP_V))
+				{
+					device.SetSamplerState(0, SamplerState.AddressV, TextureAddress.Clamp);
+				}
+
+				if (flags.HasFlag(NJD_FLAG.CLAMP_U))
+				{
+					device.SetSamplerState(0, SamplerState.AddressU, TextureAddress.Clamp);
+				}
+
+				if (flags.HasFlag(NJD_FLAG.FLIP_V))
+				{
+					device.SetSamplerState(0, SamplerState.AddressV, TextureAddress.Mirror);
+				}
+
+				if (flags.HasFlag(NJD_FLAG.FLIP_U))
+				{
+					device.SetSamplerState(0, SamplerState.AddressU, TextureAddress.Mirror);
+				}
+
+				if (flags.HasFlag(NJD_FLAG.USE_ENV))
+				{
+					// TODO
+				}
+
+				if (flags.HasFlag(NJD_FLAG.USE_ALPHA))
+				{
+					// TODO
+				}
 			}
 
-			device.SetStreamSource(0, null, 0, 0);
+			device.SetRenderState(RenderState.SpecularEnable, !flags.HasFlag(NJD_FLAG.IGNORE_SPECULAR));
+			device.SetRenderState(RenderState.CullMode, flags.HasFlag(NJD_FLAG.DOUBLE_SIDE) ? Cull.None : Cull.Counterclockwise);
+
+			if (flags.HasFlag(NJD_FLAG.USE_FLAT))
+			{
+				// TODO: not even implemented in SADX
+			}
+
+			device.EnableLight(0, !flags.HasFlag(NJD_FLAG.IGNORE_LIGHT));
+
+			Material m = new Material
+			{
+				Specular = new Color4(material.specular.color),
+				Diffuse  = new Color4(material.diffuse.color),
+				Power    = material.exponent
+			};
+
+			// default SADX behavior is to use diffuse for both ambient and diffuse.
+			m.Ambient = m.Diffuse;
+
+			device.Material = m;
+		}
+
+		public void Draw(Device device)
+		{
+			using (var block = new StateBlock(device, StateBlockType.All))
+			{
+				// Set the correct vertex format for model rendering.
+				device.VertexFormat = Vertex.Format;
+
+				foreach (var set in meshsets)
+				{
+					// Begin a state block so changes made by the material
+					// can be reverted.
+					block.Capture();
+
+					var i = set.MaterialId;
+					var material = mats[i];
+
+					// Set up rendering parameters based on this material.
+					SetSADXMaterial(device, material);
+
+					// Set the stream source to the current meshset's vertex buffer.
+					device.SetStreamSource(0, set.VertexBuffer, 0, Vertex.SizeInBytes);
+
+					// Draw the model.
+					device.DrawPrimitives(set.PrimitiveType, 0, set.PrimitiveCount);
+
+					// Restore the previous render state.
+					block.Apply();
+				}
+			}
 		}
 
 		public void Dispose()
