@@ -1,12 +1,12 @@
-﻿using SharpDX;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using SharpDX;
 using SharpDX.Direct3D9;
 using SharpDX.Mathematics.Interop;
 
-namespace Ninja
+namespace sadx_model_view
 {
 	using Angle      = Int32;
 	using Float      = Single;  /*  4 byte real number          */
@@ -80,11 +80,11 @@ namespace Ninja
 			return (float)(n * (2 * Math.PI) / 65536.0);
 		}
 
-		public static NJS_VECTOR AngleToRadian(Rotation3 n)
+		public static NJS_VECTOR AngleToRadian(ref Rotation3 n)
 		{
 			return new NJS_VECTOR(AngleToRadian(n.X), AngleToRadian(n.Y), AngleToRadian(n.Z));
 		}
-		public static NJS_VECTOR AngleToDegree(Rotation3 n)
+		public static NJS_VECTOR AngleToDegree(ref Rotation3 n)
 		{
 			return new NJS_VECTOR(AngleToDegree(n.X), AngleToDegree(n.Y), AngleToDegree(n.Z));
 		}
@@ -845,6 +845,51 @@ namespace Ninja
 		}
 	}
 
+	[Flags]
+	enum NJD_EVAL : Uint32
+	{
+		/// <summary>
+		/// Ignore translation.
+		/// </summary>
+		UNIT_POS = 1 << 0,
+		/// <summary>
+		/// Ignore rotation.
+		/// </summary>
+		UNIT_ANG = 1 << 1,
+		/// <summary>
+		/// Ignore scale.
+		/// </summary>
+		UNIT_SCL = 1 << 2,
+		/// <summary>
+		/// Don't draw this model.
+		/// </summary>
+		HIDE = 1 << 3,
+		/// <summary>
+		/// Terminate tracing children. (Don't draw children)
+		/// </summary>
+		BREAK = 1 << 4,
+		/// <summary>
+		/// Use ZXY rotation.
+		/// </summary>
+		ZXY_ANG = 1 << 5,
+		/// <summary>
+		/// Skip animation.
+		/// </summary>
+		SKIP = 1 << 6,
+		/// <summary>
+		/// Unknown.
+		/// </summary>
+		SHAPE_SKIP = 1 << 7,
+		/// <summary>
+		/// Unknown.
+		/// </summary>
+		CLIP = 1 << 8,
+		/// <summary>
+		/// Unknown.
+		/// </summary>
+		MODIFIER = 1 << 9
+	}
+
 	/// <summary>
 	/// <para>An object in the world which has a model, position, angle, and scale.</para>
 	/// See also:
@@ -915,6 +960,98 @@ namespace Ninja
 		public NJS_OBJECT child;     /* child object                 */
 		public NJS_OBJECT sibling;   /* sibling object               */
 
+		public bool IgnoreTranslation
+		{
+			get { return ((NJD_EVAL)evalflags).HasFlag(NJD_EVAL.UNIT_POS); }
+			set
+			{
+				if (value)
+				{
+					evalflags |= (Uint32)NJD_EVAL.UNIT_POS;
+				}
+				else
+				{
+					evalflags &= (Uint32)~NJD_EVAL.UNIT_POS;
+				}
+			}
+		}
+		public bool IgnoreRotation
+		{
+			get { return ((NJD_EVAL)evalflags).HasFlag(NJD_EVAL.UNIT_ANG); }
+			set
+			{
+				if (value)
+				{
+					evalflags |= (Uint32)NJD_EVAL.UNIT_ANG;
+				}
+				else
+				{
+					evalflags &= (Uint32)~NJD_EVAL.UNIT_ANG;
+				}
+			}
+		}
+		public bool IgnoreScale
+		{
+			get { return ((NJD_EVAL)evalflags).HasFlag(NJD_EVAL.UNIT_SCL); }
+			set
+			{
+				if (value)
+				{
+					evalflags |= (Uint32)NJD_EVAL.UNIT_SCL;
+				}
+				else
+				{
+					evalflags &= (Uint32)~NJD_EVAL.UNIT_SCL;
+				}
+			}
+		}
+		public bool SkipDraw
+		{
+			get { return ((NJD_EVAL)evalflags).HasFlag(NJD_EVAL.HIDE); }
+			set
+			{
+				if (value)
+				{
+					evalflags |= (Uint32)NJD_EVAL.HIDE;
+				}
+				else
+				{
+					evalflags &= (Uint32)~NJD_EVAL.HIDE;
+				}
+			}
+		}
+		public bool SkipChildren
+		{
+			get { return ((NJD_EVAL)evalflags).HasFlag(NJD_EVAL.BREAK); }
+			set
+			{
+				if (value)
+				{
+					evalflags |= (Uint32)NJD_EVAL.BREAK;
+				}
+				else
+				{
+					evalflags &= (Uint32)~NJD_EVAL.BREAK;
+				}
+			}
+		}
+		public bool UseZXYRotation
+		{
+			get { return ((NJD_EVAL)evalflags).HasFlag(NJD_EVAL.ZXY_ANG); }
+			set
+			{
+				if (value)
+				{
+					evalflags |= (Uint32)NJD_EVAL.ZXY_ANG;
+				}
+				else
+				{
+					evalflags &= (Uint32)~NJD_EVAL.ZXY_ANG;
+				}
+			}
+
+		}
+
 		public void CommitVertexBuffer(Device device)
 		{
 			model?.CommitVertexBuffer(device);
@@ -924,35 +1061,36 @@ namespace Ninja
 
 		public void Draw(Device device)
 		{
-			// Since the overload for this function offsets position rotation and scale
-			// by the provided versions, we use default values for root objects.
-			NJS_VECTOR _pos = NJS_VECTOR.Zero;
-			NJS_VECTOR _scl = new NJS_VECTOR(1, 1, 1);
-			Rotation3 _ang = new Rotation3(0, 0, 0);
+			MatrixStack.Push();
 
-			Draw(device, ref _pos, ref _ang, ref _scl);
-		}
+			if (!IgnoreTranslation)
+			{
+				MatrixStack.Translate(ref pos);
+			}
 
-		public void Draw(Device device, ref NJS_VECTOR _pos, ref Rotation3 _ang, ref NJS_VECTOR _scl)
-		{
-			// TODO: check evalflags before translating, rotating, scaling, rendering children, etc.
-			_pos += pos;
-			_ang += ang;
-			_scl *= scl;
+			if (!IgnoreRotation)
+			{
+				MatrixStack.Rotate(ref ang, UseZXYRotation);
+			}
 
-			// TODO: don't assume XYZ rotation
-			var r = Ninja.AngleToRadian(_ang);;
+			if (!IgnoreScale)
+			{
+				MatrixStack.Scale(ref scl);
+			}
 
-			var m = Matrix.Scaling(_scl)
-				* Matrix.RotationX(r.X)
-				* Matrix.RotationY(r.Y)
-				* Matrix.RotationZ(r.Z)
-				* Matrix.Translation(_pos);
+			MatrixStack.SetTransform(device);
 
-			device.SetTransform(TransformState.World, m);
+			if (!SkipDraw)
+			{
+				model?.Draw(device);
+			}
 
-			model?.Draw(device);
-			child?.Draw(device, ref _pos, ref _ang, ref _scl);
+			if (!SkipChildren)
+			{
+				child?.Draw(device);
+			}
+
+			MatrixStack.Pop();
 			sibling?.Draw(device);
 		}
 

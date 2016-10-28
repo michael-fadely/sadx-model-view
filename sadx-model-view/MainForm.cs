@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
 using System.Text;
-using Ninja;
 using SharpDX.Direct3D9;
 using SharpDX;
 using SharpDX.Mathematics.Interop;
@@ -303,6 +302,9 @@ namespace sadx_model_view
 
 			SetupScene();
 			obj?.Draw(device);
+
+			if (!MatrixStack.Empty)
+				throw new Exception("Matrix stack wasn't cleared!");
 
 			device.EndScene();
 			device.Present();
