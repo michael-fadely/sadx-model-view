@@ -228,6 +228,7 @@ namespace sadx_model_view.Ninja
 						}
 						break;
 
+						// TODO: Handle reverse faces (i & 0x8000)
 					case NJD_MESHSET.NSided:
 					case NJD_MESHSET.Strip:
 						for (int i = 0; i < nbMesh; i++)
@@ -236,8 +237,8 @@ namespace sadx_model_view.Ninja
 							var n = BitConverter.ToInt16(meshesBuffer, 0);
 							meshes.Add(n);
 
-							// n is being maked because there are cases where
-							// the number has garbage data after the first byte.
+							// n is being masked because the most significant bit indicates
+							// whether or not the polygon to follow is reversed.
 							n &= 0x3FFF;
 
 							for (int j = 0; j < n; j++)
@@ -318,11 +319,10 @@ namespace sadx_model_view.Ninja
 
 			do
 			{
-				--count;
 				var n = meshes[i] & 0x3FFF;
 				PrimitiveCount += n + 2;
 				i += (n + 1);
-			} while (count > 0);
+			} while (--count > 0);
 
 			PrimitiveCount -= 2;
 		}

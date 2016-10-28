@@ -89,8 +89,9 @@ namespace sadx_model_view
 				obj.CommitVertexBuffer(device);
 				obj.CalculateRadius();
 
-				camera.Position = Vector3.Zero;
-				camera.Translate(Vector3.BackwardLH, obj.Radius * 2);
+				camera.Position = obj.pos;
+				camera.Translate(Vector3.BackwardLH, obj.Radius * 2.0f);
+				camera.LookAt(obj.pos);
 
 				if (metadata_ptr == 0)
 					return;
@@ -358,6 +359,11 @@ namespace sadx_model_view
 		{
 			switch (e.KeyCode)
 			{
+				case Keys.E:
+					if (obj != null)
+						camera.LookAt(obj.pos);
+					break;
+
 				case Keys.W:
 					camcontrols |= CamControls.Forward;
 					break;

@@ -25,6 +25,7 @@ namespace sadx_model_view
 			set
 			{
 				rotation = value;
+				updateRotationMatrix();
 				invalid = true;
 			}
 		}
@@ -46,6 +47,7 @@ namespace sadx_model_view
 				return;
 
 			Matrix = Matrix.LookAtLH(position, position + (Vector3)Vector3.Transform(Vector3.ForwardLH, rotationMatrix), Vector3.Up);
+			updateRotationMatrix();
 			invalid = false;
 		}
 
@@ -56,12 +58,11 @@ namespace sadx_model_view
 		/// <param name="amount">The amount by which to translate.</param>
 		public void Translate(Vector3 direction, float amount = 1.0f)
 		{
-			var v = new Vector3(amount, amount, amount) * direction;
-			v.Normalize();
-			v *= amount;
+			invalid = true;
+
+			var v = Vector3.Normalize(new Vector3(amount, amount, amount) * direction) * amount;
 			v = (Vector3)Vector3.Transform(v, rotationMatrix);
 			position += v;
-			invalid = true;
 		}
 
 		/// <summary>
@@ -70,13 +71,35 @@ namespace sadx_model_view
 		/// <param name="v">The amount to rotate (in radians)</param>
 		public void Rotate(Vector3 v)
 		{
-			rotation += v;
+			invalid = true;
 
+			rotation += v;
 			rotateLimit(ref rotation);
+			updateRotationMatrix();
+		}
+
+		public void LookAt(Vector3 point)
+		{
+			invalid = true;
+			Matrix = Matrix.LookAtLH(position == Vector3.Zero ? Vector3.BackwardLH : position, point, Vector3.Up);
+
+			var q = new Quaternion();
+			Vector3 dummy;
+			Matrix.Decompose(out dummy, out q, out dummy);
+
+			rotation = q.GetYawPitchRollVector();
+			rotateLimit(ref rotation);
+			updateRotationMatrix();
+		}
+
+		private void updateRotationMatrix()
+		{
+			if (!invalid)
+				return;
 
 			rotationMatrix = Matrix.RotationX(rotation.X)
-			 * Matrix.RotationY(rotation.Y)
-			 * Matrix.RotationZ(rotation.Z);
+							 * Matrix.RotationY(rotation.Y)
+							 * Matrix.RotationZ(rotation.Z);
 
 			invalid = true;
 		}
@@ -87,14 +110,14 @@ namespace sadx_model_view
 			rotateLimit(ref v.Y);
 			rotateLimit(ref v.Z);
 		}
-
 		private static void rotateLimit(ref float f)
 		{
-			if (f >= MathUtil.TwoPi)
+			while (f >= MathUtil.TwoPi)
 			{
 				f -= MathUtil.TwoPi;
 			}
-			else if (f < 0.0f)
+
+			while (f < 0.0f)
 			{
 				f += MathUtil.TwoPi;
 			}
