@@ -70,7 +70,7 @@ namespace sadx_model_view
 			{
 				var signature = new byte[6];
 				file.Read(signature, 0, 6);
-				var str = System.Text.Encoding.UTF8.GetString(signature);
+				var str = Encoding.UTF8.GetString(signature);
 
 				if (str != "SA1MDL")
 					throw new NotImplementedException();
