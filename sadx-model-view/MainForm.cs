@@ -15,6 +15,11 @@ namespace sadx_model_view
 {
 	public partial class MainForm : Form
 	{
+		// SADX's default horizontal field of view.
+		private static readonly float fov_h = MathUtil.DegreesToRadians(70);
+		// SADX's default vertical field of view (55.412927352596554 degrees)
+		private static readonly float fov_v = 2.0f * (float)Math.Atan(Math.Tan(fov_h / 2.0f) * (3.0f / 4.0f));
+
 		private Direct3D direct3d;
 		private Device device;
 		private PresentParameters present;
@@ -243,13 +248,22 @@ namespace sadx_model_view
 
 		private void RefreshDevice()
 		{
-			present.BackBufferWidth = ClientSize.Width;
+			present.BackBufferWidth  = ClientSize.Width;
 			present.BackBufferHeight = ClientSize.Height;
-			var w = (float)ClientSize.Width;
-			var h = (float)ClientSize.Height;
 
-			// TODO: adjust FOV properly based on aspect ratio
-			projection = Matrix.PerspectiveFovLH(MathUtil.DegreesToRadians(45), w / h, 0.1f, float.MaxValue);
+			var width  = (float)ClientSize.Width;
+			var height = (float)ClientSize.Height;
+			var ratio  = width / height;
+
+			var fov = fov_v;
+			var h = 2 * (float)Math.Atan(Math.Tan(fov_v / 2.0f) * ratio);
+
+			if (h < fov_h)
+			{
+				fov = 2 * (float)Math.Atan(Math.Tan(fov_h / 2.0f) * (height / width));
+			}
+
+			Matrix.PerspectiveFovLH(fov, ratio, 0.1f, 10000.0f, out projection);
 			SetViewMatrix();
 
 			device.Reset(present);
@@ -259,17 +273,16 @@ namespace sadx_model_view
 
 		private void SetupScene()
 		{
-			device.SetRenderState(RenderState.ZEnable, true);
-			device.SetRenderState(RenderState.CullMode, Cull.Counterclockwise);
+			device.SetRenderState(RenderState.ZEnable,          true);
+			device.SetRenderState(RenderState.CullMode,         Cull.Counterclockwise);
 			device.SetRenderState(RenderState.AlphaBlendEnable, true);
-			device.SetRenderState(RenderState.SourceBlend, Blend.SourceAlpha);
+			device.SetRenderState(RenderState.SourceBlend,      Blend.SourceAlpha);
 			device.SetRenderState(RenderState.DestinationBlend, Blend.InverseSourceAlpha);
-			device.SetRenderState(RenderState.AlphaFunc, Compare.Equal);
-			device.SetRenderState(RenderState.AlphaRef, 255);
+			device.SetRenderState(RenderState.AlphaFunc,        Compare.Equal);
+			device.SetRenderState(RenderState.AlphaRef,         255);
 
-			device.SetRenderState(RenderState.ZEnable, true);
 			device.SetTransform(TransformState.Projection, projection);
-			device.SetTransform(TransformState.World, Matrix.Identity);
+			device.SetTransform(TransformState.World,      Matrix.Identity);
 			SetViewMatrix();
 
 			device.SetLight(0, ref light);
