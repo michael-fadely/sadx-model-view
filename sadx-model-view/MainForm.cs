@@ -8,7 +8,6 @@ using SharpDX.Direct3D9;
 using SharpDX;
 using SharpDX.Mathematics.Interop;
 
-// TODO: real camera
 // TODO: textures (maybe using texture packs for now to be lazy)
 // TODO: landtables
 
@@ -20,8 +19,6 @@ namespace sadx_model_view
 		private Device device;
 		private PresentParameters present;
 		private Matrix projection;
-		private Matrix view;
-		private Vector3 cam_pos = new Vector3(0.0f, 10.0f, -50.0f);
 
 		private int step;
 		private NJS_OBJECT obj;
@@ -46,6 +43,8 @@ namespace sadx_model_view
 			Specular  = new RawColor4(1.0f, 1.0f, 1.0f, 1.0f),
 			Direction = new RawVector3(0.0f, -1.0f, 0.0f)
 		};
+
+		private readonly Camera camera = new Camera();
 
 		public MainForm()
 		{
@@ -88,6 +87,10 @@ namespace sadx_model_view
 				obj?.Dispose();
 				obj = new NJS_OBJECT(file);
 				obj.CommitVertexBuffer(device);
+				obj.CalculateRadius();
+
+				camera.Position = Vector3.Zero;
+				camera.Translate(Vector3.BackwardLH, obj.Radius * 2);
 
 				if (metadata_ptr == 0)
 					return;
@@ -273,39 +276,42 @@ namespace sadx_model_view
 
 		private void SetViewMatrix()
 		{
-			if (dir != Direction.None)
+			if (camcontrols != CamControls.None)
 			{
-				if (dir.HasFlag(Direction.Forward))
+				Vector3 v = new Vector3();
+
+				if (camcontrols.HasFlag(CamControls.Forward))
 				{
-					cam_pos.Z += 0.75f;
+					v.Z += 1.0f;
 				}
-				if (dir.HasFlag(Direction.Backward))
+				if (camcontrols.HasFlag(CamControls.Backward))
 				{
-					cam_pos.Z -= 0.75f;
+					v.Z -= 1.0f;
 				}
 
-				if (dir.HasFlag(Direction.Right))
+				if (camcontrols.HasFlag(CamControls.Right))
 				{
-					cam_pos.X += 0.75f;
+					v.X += 1.0f;
 				}
-				if (dir.HasFlag(Direction.Left))
+				if (camcontrols.HasFlag(CamControls.Left))
 				{
-					cam_pos.X -= 0.75f;
-				}
-
-				if (dir.HasFlag(Direction.Up))
-				{
-					cam_pos.Y += 0.75f;
-				}
-				if (dir.HasFlag(Direction.Down))
-				{
-					cam_pos.Y -= 0.75f;
+					v.X -= 1.0f;
 				}
 
+				if (camcontrols.HasFlag(CamControls.Up))
+				{
+					v.Y += 1.0f;
+				}
+				if (camcontrols.HasFlag(CamControls.Down))
+				{
+					v.Y -= 1.0f;
+				}
+
+				camera.Translate(v, 2.0f);
 			}
 
-			view = Matrix.LookAtLH(cam_pos, obj?.pos ?? Vector3.Zero, Vector3.Up);
-			device.SetTransform(TransformState.View, view);
+			camera.UpdateMatrix();
+			device.SetTransform(TransformState.View, camera.Matrix);
 		}
 
 		public void MainLoop()
@@ -334,7 +340,7 @@ namespace sadx_model_view
 		}
 
 		[Flags]
-		private enum Direction
+		private enum CamControls
 		{
 			None,
 			Forward  = 1 << 0,
@@ -342,41 +348,42 @@ namespace sadx_model_view
 			Left     = 1 << 2,
 			Right    = 1 << 3,
 			Up       = 1 << 4,
-			Down     = 1 << 5
+			Down     = 1 << 5,
+			Look     = 1 << 6
 		}
 
-		private Direction dir = Direction.None;
+		private CamControls camcontrols = CamControls.None;
 
 		private void MainForm_KeyDown(object sender, KeyEventArgs e)
-		{ 
+		{
 			switch (e.KeyCode)
 			{
-				case Keys.Up:
 				case Keys.W:
-					dir |= Direction.Forward;
+					camcontrols |= CamControls.Forward;
+					break;
+
+				case Keys.S:
+					camcontrols |= CamControls.Backward;
+					break;
+
+				case Keys.A:
+					camcontrols |= CamControls.Left;
+					break;
+
+				case Keys.D:
+					camcontrols |= CamControls.Right;
+					break;
+
+				case Keys.Up:
+					camcontrols |= CamControls.Up;
 					break;
 
 				case Keys.Down:
-				case Keys.S:
-					dir |= Direction.Backward;
-					break;
-
-				case Keys.Left:
-				case Keys.A:
-					dir |= Direction.Left;
-					break;
-
-				case Keys.Right:
-				case Keys.D:
-					dir |= Direction.Right;
+					camcontrols |= CamControls.Down;
 					break;
 
 				case Keys.Space:
-					dir |= Direction.Up;
-					break;
-
-				case Keys.ShiftKey:
-					dir |= Direction.Down;
+					camcontrols |= CamControls.Look;
 					break;
 			}
 		}
@@ -385,34 +392,52 @@ namespace sadx_model_view
 		{
 			switch (e.KeyCode)
 			{
-				case Keys.Up:
 				case Keys.W:
-					dir &= ~Direction.Forward;
+					camcontrols &= ~CamControls.Forward;
+					break;
+
+				case Keys.S:
+					camcontrols &= ~CamControls.Backward;
+					break;
+
+				case Keys.A:
+					camcontrols &= ~CamControls.Left;
+					break;
+
+				case Keys.D:
+					camcontrols &= ~CamControls.Right;
+					break;
+
+				case Keys.Up:
+					camcontrols &= ~CamControls.Up;
 					break;
 
 				case Keys.Down:
-				case Keys.S:
-					dir &= ~Direction.Backward;
-					break;
-
-				case Keys.Left:
-				case Keys.A:
-					dir &= ~Direction.Left;
-					break;
-
-				case Keys.Right:
-				case Keys.D:
-					dir &= ~Direction.Right;
+					camcontrols &= ~CamControls.Down;
 					break;
 
 				case Keys.Space:
-					dir &= ~Direction.Up;
-					break;
-
-				case Keys.ShiftKey:
-					dir &= ~Direction.Down;
+					camcontrols &= ~CamControls.Look;
 					break;
 			}
+		}
+
+		private System.Drawing.Point last_mouse = System.Drawing.Point.Empty;
+		private void MainForm_MouseMove(object sender, MouseEventArgs e)
+		{
+			var delta = new System.Drawing.Point(e.Location.X - last_mouse.X, e.Location.Y - last_mouse.Y);
+			last_mouse = e.Location;
+
+			if (!camcontrols.HasFlag(CamControls.Look))
+			{
+				return;
+			}
+
+			Vector3 rotation;
+			rotation.Y = (float)(Math.PI * (delta.X / (float)ClientRectangle.Width));
+			rotation.X = (float)(Math.PI * (delta.Y / (float)ClientRectangle.Height));
+			rotation.Z = 0.0f;
+			camera.Rotate(rotation);
 		}
 	}
 }

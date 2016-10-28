@@ -120,6 +120,8 @@ namespace sadx_model_view.Ninja
 		public NJS_OBJECT child;     /* child object                 */
 		public NJS_OBJECT sibling;   /* sibling object               */
 
+		public float Radius { get; private set; }
+
 		public bool IgnoreTranslation
 		{
 			get { return ((NJD_EVAL)evalflags).HasFlag(NJD_EVAL.UNIT_POS); }
@@ -252,6 +254,23 @@ namespace sadx_model_view.Ninja
 
 			MatrixStack.Pop();
 			sibling?.Draw(device);
+		}
+
+		public void CalculateRadius()
+		{
+			Radius = model?.r ?? 0.0f;
+
+			if (child != null)
+			{
+				child.CalculateRadius();
+				Radius = Math.Max(Radius, child.Radius);
+			}
+
+			if (sibling != null)
+			{
+				sibling.CalculateRadius();
+				Radius = Math.Max(Radius, sibling.Radius);
+			}
 		}
 
 		public void Dispose()
