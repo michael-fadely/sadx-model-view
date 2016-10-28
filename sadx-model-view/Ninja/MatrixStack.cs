@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using SharpDX;
 using SharpDX.Direct3D9;
 using SharpDX.Mathematics.Interop;
-using static sadx_model_view.Ninja;
 
-namespace sadx_model_view
+namespace sadx_model_view.Ninja
 {
 	public static class MatrixStack
 	{
@@ -100,7 +99,7 @@ namespace sadx_model_view
 			if (r.X == 0 && r.Y == 0 && r.Z == 0)
 				return;
 
-			var v = AngleToRadian(ref r);
+			var v = Util.AngleToRadian(ref r);
 			var m = Pop();
 
 			if (useZXY)

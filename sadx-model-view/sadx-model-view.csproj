@@ -68,8 +68,14 @@
     <Compile Include="MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="MatrixStack.cs" />
-    <Compile Include="Ninja.cs" />
+    <Compile Include="Ninja\Color.cs" />
+    <Compile Include="Ninja\Material.cs" />
+    <Compile Include="Ninja\MatrixStack.cs" />
+    <Compile Include="Ninja\Meshset.cs" />
+    <Compile Include="Ninja\Model.cs" />
+    <Compile Include="Ninja\Object.cs" />
+    <Compile Include="Ninja\Rotation3.cs" />
+    <Compile Include="Ninja\Util.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="MainForm.resx">

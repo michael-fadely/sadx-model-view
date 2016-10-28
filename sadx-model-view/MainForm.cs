@@ -3,9 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
 using System.Text;
+using sadx_model_view.Ninja;
 using SharpDX.Direct3D9;
 using SharpDX;
 using SharpDX.Mathematics.Interop;
+
+// TODO: real camera
+// TODO: textures (maybe using texture packs for now to be lazy)
+// TODO: landtables
 
 namespace sadx_model_view
 {
@@ -310,9 +315,6 @@ namespace sadx_model_view
 
 			SetupScene();
 			obj?.Draw(device);
-
-			if (!MatrixStack.Empty)
-				throw new Exception("Matrix stack wasn't cleared!");
 
 			device.EndScene();
 			device.Present();
