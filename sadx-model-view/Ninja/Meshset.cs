@@ -100,28 +100,8 @@ namespace sadx_model_view.Ninja
 			{
 				type_matId &= (ushort)~NJD_MESHSET.Strip;
 				type_matId |= (ushort)value;
-
-				switch (Type)
-				{
-					case NJD_MESHSET.Tri:
-					case NJD_MESHSET.Quad:
-						PrimitiveType = PrimitiveType.TriangleList;
-						break;
-
-					case NJD_MESHSET.NSided:
-						PrimitiveType = PrimitiveType.TriangleFan;
-						break;
-
-					case NJD_MESHSET.Strip:
-						PrimitiveType = PrimitiveType.TriangleStrip;
-						break;
-					default:
-						throw new ArgumentOutOfRangeException();
-				}
 			}
 		}
-
-		public PrimitiveType PrimitiveType { get; private set; }
 
 		public int PrimitiveCount { get; private set; }
 
@@ -153,20 +133,21 @@ namespace sadx_model_view.Ninja
 		/// </summary>
 		public int VertexCount { get; }
 
-		/// <summary>
-		/// The vertex buffer used to render this meshset.
-		/// </summary>
-		public VertexBuffer VertexBuffer;
+		public IndexBuffer IndexBuffer;
+		public int IndexCount;
+		public int IndexPrimitiveCount;
 
 		public ushort type_matId;          /* meshset type and attr index
 											14-15 : meshset type bits
 											0-13 : material id(0-4095)     */
 		public ushort nbMesh;              /* mesh count                   */
-		public List<short> meshes;         /* mesh array                   */
-		public List<uint> attrs;           /* attribure                    */
-		public List<Vector3> normals;      /* mesh normal list             */
-		public List<NJS_COLOR> vertcolor;  /* polygon vertex color list    */
-		public List<NJS_TEX> vertuv;       /* polygon vertex uv list       */
+		public readonly List<short> meshes;         /* mesh array                   */
+		// TODO: unused (and unimplemented)
+		// ReSharper disable once CollectionNeverQueried.Global
+		public readonly List<uint> attrs;           /* attribure                    */
+		public readonly List<Vector3> normals;      /* mesh normal list             */
+		public readonly List<NJS_COLOR> vertcolor;  /* polygon vertex color list    */
+		public readonly List<NJS_TEX> vertuv;       /* polygon vertex uv list       */
 
 		public NJS_MESHSET(Stream file)
 		{
@@ -175,22 +156,22 @@ namespace sadx_model_view.Ninja
 			var buffer = new byte[SizeInBytes];
 			file.Read(buffer, 0, buffer.Length);
 
-			VertexBuffer = null;
+			IndexBuffer = null;
 
 			type_matId = BitConverter.ToUInt16(buffer, 0x00);
-			nbMesh = BitConverter.ToUInt16(buffer, 0x02);
+			nbMesh     = BitConverter.ToUInt16(buffer, 0x02);
 
-			var meshes_ptr = BitConverter.ToUInt32(buffer, 0x04);
-			var attrs_ptr = BitConverter.ToUInt32(buffer, 0x08);
-			var normals_ptr = BitConverter.ToUInt32(buffer, 0x0C);
+			var meshes_ptr    = BitConverter.ToUInt32(buffer, 0x04);
+			var attrs_ptr     = BitConverter.ToUInt32(buffer, 0x08);
+			var normals_ptr   = BitConverter.ToUInt32(buffer, 0x0C);
 			var vertcolor_ptr = BitConverter.ToUInt32(buffer, 0x10);
-			var vertuv_ptr = BitConverter.ToUInt32(buffer, 0x14);
+			var vertuv_ptr    = BitConverter.ToUInt32(buffer, 0x14);
 
-			meshes = new List<short>();
-			attrs = new List<uint>();
-			normals = new List<Vector3>();
+			meshes    = new List<short>();
+			attrs     = new List<uint>();
+			normals   = new List<Vector3>();
 			vertcolor = new List<NJS_COLOR>();
-			vertuv = new List<NJS_TEX>();
+			vertuv    = new List<NJS_TEX>();
 
 			var position = file.Position;
 
@@ -328,8 +309,8 @@ namespace sadx_model_view.Ninja
 
 		public void Dispose()
 		{
-			VertexBuffer.Dispose();
-			VertexBuffer = null;
+			IndexBuffer.Dispose();
+			IndexBuffer = null;
 		}
 	}
 }

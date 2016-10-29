@@ -16,6 +16,8 @@ namespace sadx_model_view
 {
 	public partial class MainForm : Form
 	{
+		public static Cull CullMode = Cull.Counterclockwise;
+
 		// SADX's default horizontal field of view.
 		private static readonly float fov_h = MathUtil.DegreesToRadians(70);
 		// SADX's default vertical field of view (55.412927352596554 degrees)
@@ -275,7 +277,7 @@ namespace sadx_model_view
 		private void SetupScene()
 		{
 			device.SetRenderState(RenderState.ZEnable,          true);
-			device.SetRenderState(RenderState.CullMode,         Cull.Counterclockwise);
+			device.SetRenderState(RenderState.CullMode,         CullMode);
 			device.SetRenderState(RenderState.AlphaBlendEnable, true);
 			device.SetRenderState(RenderState.SourceBlend,      Blend.SourceAlpha);
 			device.SetRenderState(RenderState.DestinationBlend, Blend.InverseSourceAlpha);
@@ -374,9 +376,14 @@ namespace sadx_model_view
 		{
 			switch (e.KeyCode)
 			{
-				case Keys.E:
+				case Keys.F:
 					if (obj != null)
 						camera.LookAt(obj.pos);
+					break;
+
+				case Keys.C:
+					CullMode = (CullMode == Cull.Counterclockwise) ? Cull.None : Cull.Counterclockwise;
+					device.SetRenderState(RenderState.CullMode, CullMode);
 					break;
 
 				case Keys.W:

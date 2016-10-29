@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using SharpDX;
 using SharpDX.Direct3D9;
-using SharpDX.Mathematics.Interop;
+
+// TODO: Use a shader instead of the fixed function pipeline.
 
 namespace sadx_model_view.Ninja
 {
@@ -50,7 +52,7 @@ namespace sadx_model_view.Ninja
 
 					for (var i = 0; i < nbPoint; i++)
 					{
-						Vector3 v = Util.VectorFromStream(file);
+						var v = Util.VectorFromStream(file);
 						points.Add(v);
 					}
 				}
@@ -63,7 +65,7 @@ namespace sadx_model_view.Ninja
 
 					for (var i = 0; i < nbPoint; i++)
 					{
-						Vector3 v = Util.VectorFromStream(file);
+						var v = Util.VectorFromStream(file);
 						normals.Add(v);
 					}
 				}
@@ -98,193 +100,230 @@ namespace sadx_model_view.Ninja
 		public Vector3 center;             /* model center                 */
 		public float r;                    /* radius                       */
 
+		public VertexBuffer VertexBuffer;
+		public int VertexBufferLength;
+
 		public void CommitVertexBuffer(Device device)
 		{
+			if (normals.Count != 0 && points.Count != normals.Count)
+				throw new Exception("Vertex count deviates from normal count.");
+
+			List<Vertex> vertices = points.Select((point, i) => new Vertex
+			{
+				position = point,
+				normal = normals.Count > 0 ? normals[i] : Vector3.Up,
+				diffuse = new ColorBGRA(0, 0, 0, 0),
+				uv = Vector2.Zero
+			}).ToList();
+
 			foreach (NJS_MESHSET set in meshsets)
 			{
-				// TODO: use vertex declaration and render with a shader
-				List<Vertex> vertices = new List<Vertex>();
-
-				int size;
+				var indices = new List<short>();
 
 				switch (set.Type)
 				{
 					case NJD_MESHSET.Tri:
-						size = Vertex.SizeInBytes * set.PrimitiveCount;
-
-						for (var i = 0; i < set.VertexCount; i++)
+						for (int i = 0; i < set.VertexCount; i++)
 						{
-							var point_i = set.meshes[i];
-
-							RawColorBGRA color;
-
-							if (set.vertcolor.Count != 0)
-							{
-								NJS_BGRA vcolor = set.vertcolor[i].argb;
-								color = new RawColorBGRA(vcolor.b, vcolor.g, vcolor.r, vcolor.a);
-							}
-							else
-							{
-								color = Color.White;
-							}
-
-							Vector2 uv = set.vertuv.Count != 0
-								? new Vector2(set.vertuv[i].u / 255.0f, set.vertuv[i].v / 255.0f)
-								: new Vector2(0.0f, 0.0f);
-
-							Vertex vertex = new Vertex
-							{
-								position = points[point_i],
-								normal   = normals.Count != 0 ? normals[point_i] : Vector3.Up,
-								diffuse  = color,
-								uv       = uv
-							};
-
-							vertices.Add(vertex);
+							var n = set.meshes[i];
+							UpdateVertex(set, vertices, i, n);
+							indices.Add(n);
 						}
 						break;
 
 					case NJD_MESHSET.Quad:
-						size = Vertex.SizeInBytes * (set.PrimitiveCount * 3);
-
-						var indeces = new List<KeyValuePair<int, short>>();
-
-						for (var i = 0; i < set.VertexCount; i += 4)
+						for (int i = 0; i < set.VertexCount; i += 4)
 						{
-							indeces.Add(new KeyValuePair<int, short>(i + 0, set.meshes[i + 0]));
-							indeces.Add(new KeyValuePair<int, short>(i + 1, set.meshes[i + 1]));
-							indeces.Add(new KeyValuePair<int, short>(i + 2, set.meshes[i + 2]));
-							indeces.Add(new KeyValuePair<int, short>(i + 2, set.meshes[i + 2]));
-							indeces.Add(new KeyValuePair<int, short>(i + 1, set.meshes[i + 1]));
-							indeces.Add(new KeyValuePair<int, short>(i + 3, set.meshes[i + 3]));
-						}
+							var v0 = UpdateVertex(set, vertices, i, set.meshes[i + 0]);
+							var v1 = UpdateVertex(set, vertices, i, set.meshes[i + 1]);
+							var v2 = UpdateVertex(set, vertices, i, set.meshes[i + 2]);
+							var v3 = UpdateVertex(set, vertices, i, set.meshes[i + 3]);
 
-						foreach (var pair in indeces)
-						{
-							RawColorBGRA color;
-
-							if (set.vertcolor.Count != 0)
-							{
-								NJS_BGRA vcolor = set.vertcolor[pair.Key].argb;
-								color = new RawColorBGRA(vcolor.b, vcolor.g, vcolor.r, vcolor.a);
-							}
-							else
-							{
-								color = Color.White;
-							}
-
-							Vector2 uv = set.vertuv.Count != 0
-								? new Vector2(set.vertuv[pair.Key].u / 255.0f, set.vertuv[pair.Key].v / 255.0f)
-								: new Vector2(0.0f, 0.0f);
-
-							Vertex vertex = new Vertex
-							{
-								position = points[pair.Value],
-								normal   = normals.Count != 0 ? normals[pair.Value] : Vector3.Up,
-								diffuse  = color,
-								uv       = uv
-							};
-
-							vertices.Add(vertex);
+							indices.Add(v0);
+							indices.Add(v1);
+							indices.Add(v2);
+							indices.Add(v2);
+							indices.Add(v1);
+							indices.Add(v3);
 						}
 
 						break;
 
 					case NJD_MESHSET.Strip:
 					case NJD_MESHSET.NSided:
-						size = Vertex.SizeInBytes * (set.PrimitiveCount + 2);
-						int n = 0;
-						int vcount = 0;
-
-						for (var i = 0; i < set.nbMesh; i++)
 						{
-							var count = set.meshes[n] & 0x3FFF;
-
-							for (int j = 0; j < count; j++)
+							int index = 0;
+							int v = 0;
+							for (int i = 0; i < set.nbMesh; i++)
 							{
-								var point_i = set.meshes[++n];
+								var n = set.meshes[index++];
+								var flip = (n & 0x8000) == 0;
+								n &= 0x3FFF;
 
-								RawColorBGRA color;
+								var _indices = new List<short>();
 
-								if (set.vertcolor.Count != 0)
+								for (int j = 0; j < n; j++)
 								{
-									NJS_BGRA vcolor = set.vertcolor[vcount].argb;
-									color = new RawColorBGRA(vcolor.b, vcolor.g, vcolor.r, vcolor.a);
-								}
-								else
-								{
-									color = Color.White;
+									_indices.Add(UpdateVertex(set, vertices, v++, set.meshes[index + j]));
 								}
 
-								Vector2 uv = set.vertuv.Count != 0
-									? new Vector2(set.vertuv[vcount].u / 255.0f, set.vertuv[vcount].v / 255.0f)
-									: new Vector2(0.0f, 0.0f);
-
-								if (point_i < 0)
-									throw new ArgumentOutOfRangeException();
-
-								Vertex vertex = new Vertex
+								for (int k = 0; k < _indices.Count - 2; k++)
 								{
-									position = points[point_i],
-									normal   = normals.Count != 0 ? normals[point_i] : Vector3.Up,
-									diffuse  = color,
-									uv       = uv
-								};
+									var v0 = _indices[k + 0];
+									var v1 = _indices[k + 1];
+									var v2 = _indices[k + 2];
 
-								vertices.Add(vertex);
-
-								// add it twice
-								// why you ask? reasons
-								if (j == 0 || j == count - 1)
-								{
-									vertices.Add(vertex);
+									flip = !flip;
+									if (!flip)
+									{
+										indices.Add(v0);
+										indices.Add(v1);
+										indices.Add(v2);
+									}
+									else
+									{
+										indices.Add(v1);
+										indices.Add(v0);
+										indices.Add(v2);
+									}
 								}
 
-								++vcount;
+								index += n;
 							}
 
-							++n;
+							break;
 						}
-
-						break;
 
 					default:
 						throw new ArgumentOutOfRangeException();
 				}
 
-				if (vertices.Count == 0)
-				{
-					return;
-				}
+				set.IndexPrimitiveCount = indices.Count / 3;
+				set.IndexCount = indices.Count;
+				var indexSize = set.IndexCount * sizeof(short);
 
-				set.VertexBuffer = new VertexBuffer(device, size, Usage.None, Vertex.Format, Pool.Managed);
-				using (var stream = set.VertexBuffer.Lock(0, size, LockFlags.None))
+				set.IndexBuffer = new IndexBuffer(device, indexSize, Usage.None, Pool.Managed, true);
+
+				using (var stream = set.IndexBuffer.Lock(0, set.IndexBuffer.Description.Size, LockFlags.None))
 				{
-					foreach (var v in vertices)
+					foreach (var i in indices)
 					{
-						stream.Write(v.position.X);
-						stream.Write(v.position.Y);
-						stream.Write(v.position.Z);
-
-						stream.Write(v.normal.X);
-						stream.Write(v.normal.Y);
-						stream.Write(v.normal.Z);
-
-						stream.Write(v.diffuse.B);
-						stream.Write(v.diffuse.G);
-						stream.Write(v.diffuse.R);
-						stream.Write(v.diffuse.A);
-
-						stream.Write(v.uv.X);
-						stream.Write(v.uv.Y);
+						stream.Write(i);
 					}
 
 					if (stream.RemainingLength != 0)
-						throw new Exception("Failed to fill vertex buffer.");
+					{
+						throw new Exception("Failed to fill index buffer.");
+					}
 				}
 
-				set.VertexBuffer.Unlock();
+				set.IndexBuffer.Unlock();
 			}
+
+			CreateVertexBuffer(device, vertices);
+		}
+
+		private void CreateVertexBuffer(Device device, IReadOnlyCollection<Vertex> vertices)
+		{
+			VertexBufferLength = vertices.Count;
+			var vertexSize = vertices.Count * Vertex.SizeInBytes;
+			VertexBuffer = new VertexBuffer(device, vertexSize, Usage.None, Vertex.Format, Pool.Managed);
+
+			using (var stream = VertexBuffer.Lock(0, vertexSize, LockFlags.None))
+			{
+				foreach (var v in vertices)
+				{
+					stream.Write(v.position.X);
+					stream.Write(v.position.Y);
+					stream.Write(v.position.Z);
+
+					stream.Write(v.normal.X);
+					stream.Write(v.normal.Y);
+					stream.Write(v.normal.Z);
+
+					stream.Write(v.diffuse.B);
+					stream.Write(v.diffuse.G);
+					stream.Write(v.diffuse.R);
+					stream.Write(v.diffuse.A);
+
+					stream.Write(v.uv.X);
+					stream.Write(v.uv.Y);
+				}
+
+				if (stream.RemainingLength != 0)
+				{
+					throw new Exception("Failed to fill vertex buffer.");
+				}
+			}
+
+			VertexBuffer.Unlock();
+		}
+
+		private static short UpdateVertex(NJS_MESHSET set, IList<Vertex> vertices, int localIndex, int globalIndex)
+		{
+			bool modified = false;
+			bool added    = false;
+			var result    = globalIndex;
+
+			ColorBGRA color;
+			if (set.vertcolor.Count != 0)
+			{
+				var vcolor = set.vertcolor[localIndex].argb;
+				color = new ColorBGRA(vcolor.b, vcolor.g, vcolor.r, vcolor.a);
+			}
+			else
+			{
+				color = Color.White;
+			}
+
+			var vertex = vertices[globalIndex];
+
+			if (vertex.diffuse != new ColorBGRA(0, 0, 0, 0) && vertex.diffuse != color)
+			{
+				result = (short)vertices.Count;
+				vertices.Add(vertex);
+
+				added = true;
+			}
+
+			if (vertex.diffuse != color)
+			{
+				vertex.diffuse = color;
+				modified = true;
+			}
+
+			if (set.vertuv.Count != 0)
+			{
+				if (added)
+				{
+					vertex.uv = Vector2.Zero;
+				}
+
+				var uv = new Vector2(set.vertuv[localIndex].u / 255.0f, set.vertuv[localIndex].v / 255.0f);
+
+				if (vertex.uv != Vector2.Zero && vertex.uv != uv)
+				{
+					if (!added)
+					{
+						result = (short)vertices.Count;
+						vertices.Add(vertex);
+					}
+				}
+
+				if (modified || vertex.uv != uv)
+				{
+					vertex.uv = uv;
+					modified = true;
+				}
+			}
+
+			if (!modified)
+			{
+				return (short)globalIndex;
+			}
+
+			vertices[result] = vertex;
+			return (short)result;
 		}
 
 		private void SetSADXMaterial(Device device, NJS_MATERIAL material)
@@ -338,7 +377,7 @@ namespace sadx_model_view.Ninja
 			}
 
 			device.SetRenderState(RenderState.SpecularEnable, !flags.HasFlag(NJD_FLAG.IgnoreSpecular));
-			device.SetRenderState(RenderState.CullMode, flags.HasFlag(NJD_FLAG.DoubleSide) ? Cull.None : Cull.Counterclockwise);
+			device.SetRenderState(RenderState.CullMode, flags.HasFlag(NJD_FLAG.DoubleSide) ? Cull.None : MainForm.CullMode);
 
 			if (flags.HasFlag(NJD_FLAG.UseFlat))
 			{
@@ -347,11 +386,11 @@ namespace sadx_model_view.Ninja
 
 			device.EnableLight(0, !flags.HasFlag(NJD_FLAG.IgnoreLight));
 
-			Material m = new Material
+			var m = new Material
 			{
 				Specular = new Color4(material.specular.color),
-				Diffuse  = new Color4(material.diffuse.color),
-				Power    = material.exponent
+				Diffuse = new Color4(material.diffuse.color),
+				Power = material.exponent
 			};
 
 			// default SADX behavior is to use diffuse for both ambient and diffuse.
@@ -380,10 +419,12 @@ namespace sadx_model_view.Ninja
 					SetSADXMaterial(device, material);
 
 					// Set the stream source to the current meshset's vertex buffer.
-					device.SetStreamSource(0, set.VertexBuffer, 0, Vertex.SizeInBytes);
+					device.SetStreamSource(0, VertexBuffer, 0, Vertex.SizeInBytes);
+					device.Indices = set.IndexBuffer;
 
 					// Draw the model.
-					device.DrawPrimitives(set.PrimitiveType, 0, set.PrimitiveCount);
+					device.DrawIndexedPrimitive(PrimitiveType.TriangleList,
+						0, 0, VertexBufferLength, 0, set.IndexPrimitiveCount);
 
 					// Restore the previous render state.
 					block.Apply();

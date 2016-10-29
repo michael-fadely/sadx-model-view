@@ -83,7 +83,7 @@ namespace sadx_model_view
 			invalid = true;
 			Matrix = Matrix.LookAtLH(position == Vector3.Zero ? Vector3.BackwardLH : position, point, Vector3.Up);
 
-			var q = new Quaternion();
+			Quaternion q;
 			Vector3 dummy;
 			Matrix.Decompose(out dummy, out q, out dummy);
 
