@@ -8,7 +8,6 @@ using SharpDX.Direct3D9;
 using SharpDX;
 using SharpDX.Mathematics.Interop;
 
-// TODO: textures (maybe using texture packs for now to be lazy)
 // TODO: landtables
 // TODO: delta time camera movement
 
@@ -17,6 +16,8 @@ namespace sadx_model_view
 	public partial class MainForm : Form
 	{
 		public static Cull CullMode = Cull.Counterclockwise;
+		// TODO: not this
+		public static readonly List<Texture> TexturePool = new List<Texture>();
 
 		// SADX's default horizontal field of view.
 		private static readonly float fov_h = MathUtil.DegreesToRadians(70);
@@ -48,7 +49,7 @@ namespace sadx_model_view
 			Type      = LightType.Directional,
 			Ambient   = new RawColor4(1.0f, 1.0f, 1.0f, 1.0f),
 			Diffuse   = new RawColor4(1.0f, 1.0f, 1.0f, 1.0f),
-			Specular  = new RawColor4(1.0f, 1.0f, 1.0f, 1.0f),
+			Specular  = new RawColor4(1.0f, 1.0f, 1.0f, 0.0f),
 			Direction = new RawVector3(0.0f, -1.0f, 0.0f)
 		};
 
@@ -63,7 +64,16 @@ namespace sadx_model_view
 		{
 			var dialog = new OpenFileDialog();
 			if (dialog.ShowDialog(this) != DialogResult.OK)
+			{
 				return;
+			}
+
+			foreach (var texture in TexturePool)
+			{
+				texture.Dispose();
+			}
+
+			TexturePool.Clear();
 
 			var whatever = dialog.FileName;
 			if (string.Compare(Path.GetExtension(whatever), ".sa1mdl", StringComparison.InvariantCultureIgnoreCase) != 0)
@@ -213,6 +223,27 @@ namespace sadx_model_view
 				MessageBox.Show(this, $"Labels:\n{thing}");
 #endif
 			}
+
+			dialog.Title = "Open texture pack index (optional)";
+
+			if (dialog.ShowDialog(this) != DialogResult.OK)
+			{
+				return;
+			}
+
+			var directory = Path.GetDirectoryName(dialog.FileName);
+			string[] index = File.ReadAllLines(dialog.FileName);
+
+			foreach (var line in index)
+			{
+				var i = line.LastIndexOf(",");
+				var filename = Path.Combine(directory, line.Substring(++i));
+
+				if (!File.Exists(filename))
+					continue;
+
+				TexturePool.Add(Texture.FromFile(device, filename, Usage.None, Pool.Managed));
+			}
 		}
 
 		/// <summary>
@@ -278,11 +309,21 @@ namespace sadx_model_view
 		{
 			device.SetRenderState(RenderState.ZEnable,          true);
 			device.SetRenderState(RenderState.CullMode,         CullMode);
-			device.SetRenderState(RenderState.AlphaBlendEnable, true);
+			device.SetRenderState(RenderState.AlphaBlendEnable, false);
 			device.SetRenderState(RenderState.SourceBlend,      Blend.SourceAlpha);
 			device.SetRenderState(RenderState.DestinationBlend, Blend.InverseSourceAlpha);
 			device.SetRenderState(RenderState.AlphaFunc,        Compare.Equal);
 			device.SetRenderState(RenderState.AlphaRef,         255);
+
+			unchecked { device.SetRenderState(RenderState.Ambient, (int)0xFFFFFFFF); }
+
+			device.SetRenderState(RenderState.ColorVertex, true);
+			device.SetRenderState(RenderState.AmbientMaterialSource, ColorSource.Color1);
+			device.SetRenderState(RenderState.DiffuseMaterialSource, ColorSource.Color1);
+			device.SetRenderState(RenderState.SpecularMaterialSource, ColorSource.Material);
+
+			device.SetSamplerState(0, SamplerState.MagFilter, TextureFilter.Anisotropic);
+			device.SetSamplerState(0, SamplerState.MinFilter, TextureFilter.Anisotropic);
 
 			device.SetTransform(TransformState.Projection, projection);
 			device.SetTransform(TransformState.World,      Matrix.Identity);
@@ -334,6 +375,10 @@ namespace sadx_model_view
 
 		public void MainLoop()
 		{
+			if (WindowState == FormWindowState.Minimized)
+				return;
+
+			// TODO: conditional render (only render when the scene has been invalidated)
 			device.Clear(ClearFlags.Target | ClearFlags.ZBuffer, new ColorBGRA(0, 191, 191, 255), 1.0f, 0);
 			device.BeginScene();
 
@@ -348,6 +393,8 @@ namespace sadx_model_view
 
 		private void OnSizeChanged(object sender, EventArgs e)
 		{
+			if (WindowState == FormWindowState.Minimized)
+				return;
 			RefreshDevice();
 		}
 

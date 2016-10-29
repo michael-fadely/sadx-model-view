@@ -333,8 +333,18 @@ namespace sadx_model_view.Ninja
 
 			var flags = material.attrflags;
 
-			if (flags.HasFlag(NJD_FLAG.UseTexture))
+			if (!flags.HasFlag(NJD_FLAG.UseTexture))
 			{
+				device.SetTexture(0, null);
+			}
+			else
+			{
+				var n = (int)material.attr_texId;
+				if (n < MainForm.TexturePool.Count)
+				{
+					device.SetTexture(0, MainForm.TexturePool[n]);
+				}
+
 				if (flags.HasFlag(NJD_FLAG.Pick))
 				{
 					// TODO: not even implemented in SADX
@@ -370,13 +380,17 @@ namespace sadx_model_view.Ninja
 					// TODO
 				}
 
-				if (flags.HasFlag(NJD_FLAG.UseAlpha))
+				if (!flags.HasFlag(NJD_FLAG.UseAlpha))
 				{
-					// TODO
+					device.SetRenderState(RenderState.AlphaBlendEnable, true);
 				}
 			}
 
-			device.SetRenderState(RenderState.SpecularEnable, !flags.HasFlag(NJD_FLAG.IgnoreSpecular));
+			if (flags.HasFlag(NJD_FLAG.IgnoreSpecular))
+			{
+				device.SetRenderState(RenderState.SpecularEnable, false);
+			}
+
 			device.SetRenderState(RenderState.CullMode, flags.HasFlag(NJD_FLAG.DoubleSide) ? Cull.None : MainForm.CullMode);
 
 			if (flags.HasFlag(NJD_FLAG.UseFlat))
@@ -401,34 +415,25 @@ namespace sadx_model_view.Ninja
 
 		public void Draw(Device device)
 		{
-			using (var block = new StateBlock(device, StateBlockType.All))
+			// Set the correct vertex format for model rendering.
+			device.VertexFormat = Vertex.Format;
+
+			// TODO: Use state blocks or just switch to a shader.
+			foreach (var set in meshsets)
 			{
-				// Set the correct vertex format for model rendering.
-				device.VertexFormat = Vertex.Format;
+				var i = set.MaterialId;
+				var material = mats[i];
 
-				foreach (var set in meshsets)
-				{
-					// Begin a state block so changes made by the material
-					// can be reverted.
-					block.Capture();
+				// Set up rendering parameters based on this material.
+				SetSADXMaterial(device, material);
 
-					var i = set.MaterialId;
-					var material = mats[i];
+				// Set the stream source to the current meshset's vertex buffer.
+				device.SetStreamSource(0, VertexBuffer, 0, Vertex.SizeInBytes);
+				device.Indices = set.IndexBuffer;
 
-					// Set up rendering parameters based on this material.
-					SetSADXMaterial(device, material);
-
-					// Set the stream source to the current meshset's vertex buffer.
-					device.SetStreamSource(0, VertexBuffer, 0, Vertex.SizeInBytes);
-					device.Indices = set.IndexBuffer;
-
-					// Draw the model.
-					device.DrawIndexedPrimitive(PrimitiveType.TriangleList,
-						0, 0, VertexBufferLength, 0, set.IndexPrimitiveCount);
-
-					// Restore the previous render state.
-					block.Apply();
-				}
+				// Draw the model.
+				device.DrawIndexedPrimitive(PrimitiveType.TriangleList,
+					0, 0, VertexBufferLength, 0, set.IndexPrimitiveCount);
 			}
 		}
 
