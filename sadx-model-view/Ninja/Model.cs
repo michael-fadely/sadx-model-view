@@ -111,9 +111,9 @@ namespace sadx_model_view.Ninja
 			List<Vertex> vertices = points.Select((point, i) => new Vertex
 			{
 				position = point,
-				normal = normals.Count > 0 ? normals[i] : Vector3.Up,
-				diffuse = new ColorBGRA(0, 0, 0, 0),
-				uv = Vector2.Zero
+				normal   = normals.Count > 0 ? normals[i] : Vector3.Up,
+				diffuse  = new ColorBGRA(0, 0, 0, 0),
+				uv       = Vector2.Zero
 			}).ToList();
 
 			foreach (NJS_MESHSET set in meshsets)
