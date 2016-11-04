@@ -127,9 +127,9 @@ namespace sadx_model_view.Ninja
 		{
 			evalflags       = obj.evalflags;
 			Model           = new NJS_MODEL(obj.Model);
-			Position             = obj.Position;
-			Angle             = obj.Angle;
-			Scale             = obj.Scale;
+			Position        = obj.Position;
+			Angle           = obj.Angle;
+			Scale           = obj.Scale;
 			Parent          = obj.Parent;
 			Child           = obj.Child;
 			PreviousSibling = obj.PreviousSibling;
@@ -137,10 +137,10 @@ namespace sadx_model_view.Ninja
 		}
 
 		public uint evalflags;     /* evalation flags              */
-		public NJS_MODEL Model;      /* model data pointer           */
-		public Vector3 Position;       /* translation                  */
-		public Rotation3 Angle;        /* rotation                     */
-		public Vector3 Scale;       /* scaling                      */
+		public NJS_MODEL Model;    /* model data pointer           */
+		public Vector3 Position;   /* translation                  */
+		public Rotation3 Angle;    /* rotation                     */
+		public Vector3 Scale;      /* scaling                      */
 
 		/// <summary>
 		/// (Extension) Parent of this child object.
