@@ -126,7 +126,7 @@ namespace sadx_model_view.Ninja
 		public NJS_OBJECT(NJS_OBJECT obj)
 		{
 			evalflags       = obj.evalflags;
-			Model           = new NJS_MODEL(obj.Model);
+			Model           = obj.Model != null ? new NJS_MODEL(obj.Model) : null;
 			Position        = obj.Position;
 			Angle           = obj.Angle;
 			Scale           = obj.Scale;
