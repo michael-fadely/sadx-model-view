@@ -155,7 +155,7 @@ namespace sadx_model_view
 								var pos = file.Position;
 								file.Position = offset + name_addr;
 
-								var i = ReadString(file, ref buffer);
+								var i = file.ReadString(ref buffer);
 
 								file.Position = pos;
 								var name = Encoding.UTF8.GetString(buffer, 0, i);
@@ -168,7 +168,7 @@ namespace sadx_model_view
 								break;
 
 							// ReSharper disable once RedundantAssignment
-							animations = Encoding.UTF8.GetString(buffer, 0, ReadString(file, ref buffer));
+							animations = Encoding.UTF8.GetString(buffer, 0, file.ReadString(ref buffer));
 							break;
 
 						case ChunkTypes.Morphs:
@@ -179,7 +179,7 @@ namespace sadx_model_view
 								break;
 
 							// ReSharper disable once RedundantAssignment
-							author = Encoding.UTF8.GetString(buffer, 0, ReadString(file, ref buffer));
+							author = Encoding.UTF8.GetString(buffer, 0, file.ReadString(ref buffer));
 							break;
 
 						case ChunkTypes.Tool:
@@ -187,7 +187,7 @@ namespace sadx_model_view
 								break;
 
 							// ReSharper disable once RedundantAssignment
-							tool = Encoding.UTF8.GetString(buffer, 0, ReadString(file, ref buffer));
+							tool = Encoding.UTF8.GetString(buffer, 0, file.ReadString(ref buffer));
 							break;
 
 						case ChunkTypes.Description:
@@ -195,7 +195,7 @@ namespace sadx_model_view
 								break;
 
 							// ReSharper disable once RedundantAssignment
-							description = Encoding.UTF8.GetString(buffer, 0, ReadString(file, ref buffer));
+							description = Encoding.UTF8.GetString(buffer, 0, file.ReadString(ref buffer));
 							break;
 
 						case ChunkTypes.Texture:
@@ -245,22 +245,6 @@ namespace sadx_model_view
 
 				TexturePool.Add(Texture.FromFile(device, filename, Usage.None, Pool.Managed));
 			}
-		}
-
-		/// <summary>
-		/// Reads a null terminated string from <paramref name="stream"/> into <paramref name="buffer"/>.
-		/// </summary>
-		/// <param name="stream">The stream to read from.</param>
-		/// <param name="buffer">The buffer to output to.</param>
-		/// <returns>The length of the string.</returns>
-		private static int ReadString(Stream stream, ref byte[] buffer)
-		{
-			int i = 0;
-			do
-			{
-				stream.Read(buffer, i, 1);
-			} while (buffer[i++] != 0);
-			return i > 0 ? i - 1 : i;
 		}
 
 		private void OnShown(object sender, EventArgs e)
@@ -357,7 +341,7 @@ namespace sadx_model_view
 		{
 			if (camcontrols != CamControls.None)
 			{
-				Vector3 v = new Vector3();
+				var v = new Vector3();
 
 				if (camcontrols.HasFlag(CamControls.Forward))
 				{
