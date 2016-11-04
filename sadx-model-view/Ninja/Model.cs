@@ -90,6 +90,36 @@ namespace sadx_model_view.Ninja
 			file.Position = position;
 		}
 
+		/// <summary>
+		/// Copy constructor.
+		/// </summary>
+		/// <param name="model">The model to copy from.</param>
+		public NJS_MODEL(NJS_MODEL model)
+		{
+			points = new List<Vector3>(model.points);
+			normals = new List<Vector3>(model.normals);
+			nbPoint = points.Count;
+
+			meshsets = new List<NJS_MESHSET>();
+			foreach (var meshset in model.meshsets)
+			{
+				meshsets.Add(new NJS_MESHSET(meshset));
+			}
+
+			nbMeshset = (ushort)meshsets.Count;
+
+			mats = new List<NJS_MATERIAL>();
+			foreach (var mat in model.mats)
+			{
+				mats.Add(new NJS_MATERIAL(mat));
+			}
+
+			nbMat = (ushort)mats.Count;
+
+			center = model.center;
+			r = model.r;
+		}
+
 		public List<Vector3> points;       /* vertex list                  */
 		public List<Vector3> normals;      /* vertex normal list           */
 		public int nbPoint;                /* vertex count                 */
@@ -326,7 +356,10 @@ namespace sadx_model_view.Ninja
 			return (short)result;
 		}
 
-		public static readonly Matrix EnvironmentMapMatrix = new Matrix(-0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f);
+		/// <summary>
+		/// This is the texture transformation matrix that SADX uses to anything with an environment map.
+		/// </summary>
+		private static readonly Matrix environmentMapTransform = new Matrix(-0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f);
 
 		private static void SetSADXMaterial(Device device, NJS_MATERIAL material)
 		{
@@ -365,7 +398,7 @@ namespace sadx_model_view.Ninja
 				if (flags.HasFlag(NJD_FLAG.UseEnv))
 				{
 					device.SetTextureStageState(0, TextureStage.TextureTransformFlags, TextureArgument.Texture);
-					device.SetTransform(TransformState.Texture0, EnvironmentMapMatrix);
+					device.SetTransform(TransformState.Texture0, environmentMapTransform);
 					device.SetTextureStageState(0, TextureStage.TexCoordIndex, (int)TextureCoordIndex.CameraSpaceNormal);
 				}
 				else

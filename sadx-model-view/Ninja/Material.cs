@@ -6,6 +6,7 @@ namespace sadx_model_view.Ninja
 	/// <summary>
 	/// Flags used for materials.
 	/// </summary>
+	[Flags]
 	public enum NJD_FLAG : uint
 	{
 		Pick           = 0x80,
@@ -49,6 +50,19 @@ namespace sadx_model_view.Ninja
 			exponent   = BitConverter.ToSingle(buffer, 0x08);
 			attr_texId = BitConverter.ToUInt32(buffer, 0x0C);
 			attrflags  = (NJD_FLAG)BitConverter.ToUInt32(buffer, 0x10);
+		}
+
+		/// <summary>
+		/// Copy constructor.
+		/// </summary>
+		/// <param name="material">Material to copy from.</param>
+		public NJS_MATERIAL(NJS_MATERIAL material)
+		{
+			diffuse    = material.diffuse;
+			specular   = material.specular;
+			exponent   = material.exponent;
+			attr_texId = material.attr_texId;
+			attrflags  = material.attrflags;
 		}
 
 		public NJS_COLOR diffuse;

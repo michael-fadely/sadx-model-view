@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using SharpDX;
 using SharpDX.Direct3D9;
 
@@ -66,24 +67,29 @@ namespace sadx_model_view.Ninja
 		/// Constructs <see cref="NJS_OBJECT"/>, its children, and all of its available members from a file.
 		/// </summary>
 		/// <param name="file">A file stream containing the data.</param>
-		public NJS_OBJECT(Stream file)
+		/// <param name="parent">A parent object.</param>
+		/// <param name="previousSibling">A previous sibling object.</param>
+		public NJS_OBJECT(Stream file, NJS_OBJECT parent = null, NJS_OBJECT previousSibling = null)
 		{
+			Parent          = parent;
+			PreviousSibling = previousSibling;
+
 			var buffer = new byte[SizeInBytes];
 			file.Read(buffer, 0, buffer.Length);
 
 			evalflags = BitConverter.ToUInt32(buffer, 0);
 
-			pos.X = BitConverter.ToSingle(buffer, 8);
-			pos.Y = BitConverter.ToSingle(buffer, 8 + 4);
-			pos.Z = BitConverter.ToSingle(buffer, 8 + 8);
+			Position.X = BitConverter.ToSingle(buffer, 8);
+			Position.Y = BitConverter.ToSingle(buffer, 8 + 4);
+			Position.Z = BitConverter.ToSingle(buffer, 8 + 8);
 
-			ang.X = BitConverter.ToInt32(buffer, 0x14);
-			ang.Y = BitConverter.ToInt32(buffer, 0x14 + 4);
-			ang.Z = BitConverter.ToInt32(buffer, 0x14 + 8);
+			Angle.X = BitConverter.ToInt32(buffer, 0x14);
+			Angle.Y = BitConverter.ToInt32(buffer, 0x14 + 4);
+			Angle.Z = BitConverter.ToInt32(buffer, 0x14 + 8);
 
-			scl.X = BitConverter.ToSingle(buffer, 0x20);
-			scl.Y = BitConverter.ToSingle(buffer, 0x20 + 4);
-			scl.Z = BitConverter.ToSingle(buffer, 0x20 + 8);
+			Scale.X = BitConverter.ToSingle(buffer, 0x20);
+			Scale.Y = BitConverter.ToSingle(buffer, 0x20 + 4);
+			Scale.Z = BitConverter.ToSingle(buffer, 0x20 + 8);
 
 			var model_ptr = BitConverter.ToUInt32(buffer, 0x04);
 			var child_ptr = BitConverter.ToUInt32(buffer, 0x2C);
@@ -94,31 +100,58 @@ namespace sadx_model_view.Ninja
 			if (model_ptr != 0)
 			{
 				file.Position = model_ptr;
-				model = new NJS_MODEL(file);
+				Model = new NJS_MODEL(file);
 			}
 
 			if (child_ptr != 0)
 			{
 				file.Position = child_ptr;
-				child = new NJS_OBJECT(file);
+				Child = new NJS_OBJECT(file, this, previousSibling);
 			}
 
 			if (sibling_ptr != 0)
 			{
 				file.Position = sibling_ptr;
-				sibling = new NJS_OBJECT(file);
+				Sibling = new NJS_OBJECT(file, parent, this);
 			}
 
 			file.Position = position;
 		}
 
+		/// <summary>
+		/// Copy constructor.
+		/// This is a shallow copy; it will not copy children or siblings.
+		/// </summary>
+		/// <param name="obj">Object to copy from.</param>
+		public NJS_OBJECT(NJS_OBJECT obj)
+		{
+			evalflags       = obj.evalflags;
+			Model           = new NJS_MODEL(obj.Model);
+			Position             = obj.Position;
+			Angle             = obj.Angle;
+			Scale             = obj.Scale;
+			Parent          = obj.Parent;
+			Child           = obj.Child;
+			PreviousSibling = obj.PreviousSibling;
+			Sibling         = obj.Sibling;
+		}
+
 		public uint evalflags;     /* evalation flags              */
-		public NJS_MODEL model;      /* model data pointer           */
-		public Vector3 pos;       /* translation                  */
-		public Rotation3 ang;        /* rotation                     */
-		public Vector3 scl;       /* scaling                      */
-		public NJS_OBJECT child;     /* child object                 */
-		public NJS_OBJECT sibling;   /* sibling object               */
+		public NJS_MODEL Model;      /* model data pointer           */
+		public Vector3 Position;       /* translation                  */
+		public Rotation3 Angle;        /* rotation                     */
+		public Vector3 Scale;       /* scaling                      */
+
+		/// <summary>
+		/// (Extension) Parent of this child object.
+		/// </summary>
+		public NJS_OBJECT Parent;
+		public NJS_OBJECT Child;
+		/// <summary>
+		/// (Extension) Last sibling of this sibling object.
+		/// </summary>
+		public NJS_OBJECT PreviousSibling;
+		public NJS_OBJECT Sibling;
 
 		public float Radius { get; private set; }
 
@@ -216,9 +249,9 @@ namespace sadx_model_view.Ninja
 
 		public void CommitVertexBuffer(Device device)
 		{
-			model?.CommitVertexBuffer(device);
-			child?.CommitVertexBuffer(device);
-			sibling?.CommitVertexBuffer(device);
+			Model?.CommitVertexBuffer(device);
+			Child?.CommitVertexBuffer(device);
+			Sibling?.CommitVertexBuffer(device);
 		}
 
 		public void Draw(Device device)
@@ -227,55 +260,146 @@ namespace sadx_model_view.Ninja
 
 			if (!IgnoreTranslation)
 			{
-				MatrixStack.Translate(ref pos);
+				MatrixStack.Translate(ref Position);
 			}
 
 			if (!IgnoreRotation)
 			{
-				MatrixStack.Rotate(ref ang, UseZXYRotation);
+				MatrixStack.Rotate(ref Angle, UseZXYRotation);
 			}
 
 			if (!IgnoreScale)
 			{
-				MatrixStack.Scale(ref scl);
+				MatrixStack.Scale(ref Scale);
 			}
 
 			MatrixStack.SetTransform(device);
 
 			if (!SkipDraw)
 			{
-				model?.Draw(device);
+				Model?.Draw(device);
 			}
 
 			if (!SkipChildren)
 			{
-				child?.Draw(device);
+				Child?.Draw(device);
 			}
 
 			MatrixStack.Pop();
-			sibling?.Draw(device);
+			Sibling?.Draw(device);
 		}
 
 		public void CalculateRadius()
 		{
-			Radius = model?.r ?? 0.0f;
+			Radius = Model?.r ?? 0.0f;
 
-			if (child != null)
+			if (Child != null)
 			{
-				child.CalculateRadius();
-				Radius = Math.Max(Radius, child.Radius);
+				Child.CalculateRadius();
+				Radius = Math.Max(Radius, Child.Radius);
 			}
 
-			if (sibling != null)
+			if (Sibling != null)
 			{
-				sibling.CalculateRadius();
-				Radius = Math.Max(Radius, sibling.Radius);
+				Sibling.CalculateRadius();
+				Radius = Math.Max(Radius, Sibling.Radius);
 			}
+		}
+
+		public void Sort()
+		{
+			Sort(this);
+		}
+
+		public static NJS_OBJECT Copy(NJS_OBJECT @object, bool copyChildren, bool copySiblings)
+		{
+			if (@object == null)
+				return null;
+
+			var obj = new NJS_OBJECT(@object);
+
+			if (copyChildren)
+			{
+				obj.Child = Copy(obj.Child, true, copySiblings);
+			}
+
+			if (copySiblings)
+			{
+				obj.Sibling = Copy(obj.Sibling, copyChildren, true);
+			}
+
+			return obj;
+		}
+
+		private static void Filter(NJS_OBJECT obj, bool useAlpha)
+		{
+			if (obj.Model != null)
+			{
+				NJS_MODEL model = obj.Model;
+
+				var filtered = model.meshsets.Where(x => model.mats[x.MaterialId].attrflags.HasFlag(NJD_FLAG.UseAlpha) == useAlpha).ToList();
+
+				if (filtered.Count == 0)
+				{
+					model.Dispose();
+					obj.Model = null;
+					obj.SkipDraw = true;
+				}
+				else if (filtered.Count != model.nbMeshset)
+				{
+					foreach (NJS_MESHSET m in model.meshsets
+						.Where(x => model.mats[x.MaterialId].attrflags.HasFlag(NJD_FLAG.UseAlpha) != useAlpha))
+					{
+						m.Dispose();
+					}
+
+					model.meshsets.Clear();
+					model.meshsets = filtered;
+					model.nbMeshset = (ushort)filtered.Count;
+				}
+			}
+
+			if (obj.Child != null)
+				Filter(obj.Child, useAlpha);
+
+			if (obj.Sibling != null)
+				Filter(obj.Sibling, useAlpha);
+		}
+
+		/// <summary>
+		/// Sorts an object and its siblings/children to ensure opaque objects are rendered first, and transparent last.
+		/// Particularly useful for Dreamcast models.
+		/// </summary>
+		/// <param name="obj">The object to sort.</param>
+		private static void Sort(NJS_OBJECT obj)
+		{
+			// first let's make a deep copy of this object...
+			var copy = Copy(obj, true, true);
+
+			Filter(obj, false);
+			Filter(copy, true);
+
+			NJS_OBJECT last;
+
+			if (obj.Sibling == null)
+			{
+				last = obj;
+			}
+			else
+			{
+				last = obj.Sibling;
+				while (last.Sibling != null)
+				{
+					last = last.Sibling;
+				}
+			}
+
+			last.Sibling = copy;
 		}
 
 		public void Dispose()
 		{
-			model?.Dispose();
+			Model?.Dispose();
 		}
 	}
 }

@@ -14,7 +14,7 @@ namespace sadx_model_view.Ninja
 	{
 		/// <summary>
 		/// <para>List of triangular polygons.</para>
-		///<para> Indicates that each polygon is defined by 3 vertices.
+		/// <para> Indicates that each polygon is defined by 3 vertices.
 		/// The number of polygons is defined by <seealso cref="NJS_MESHSET.nbMesh"/>,
 		/// and the number of vertices is <seealso cref="NJS_MESHSET.nbMesh"/> * 3.</para>
 		/// </summary>
@@ -90,8 +90,8 @@ namespace sadx_model_view.Ninja
 		public static int SizeInBytes => 0x18;
 
 		/// <summary>
-		/// The mesh type for this meshset.<para/>
-		/// See <seealso cref="NJD_MESHSET"/> for more information
+		/// The mesh type for this meshset defined in the bits 14-15 of <seealso cref="NJS_MESHSET.type_matId"/>.<para/>
+		/// See <seealso cref="NJD_MESHSET"/> for more information.
 		/// </summary>
 		public NJD_MESHSET Type
 		{
@@ -106,7 +106,7 @@ namespace sadx_model_view.Ninja
 		public int PrimitiveCount { get; private set; }
 
 		/// <summary>
-		/// The material ID for this meshset.
+		/// The material ID for this meshset defined in bits 0-13 of <seealso cref="NJS_MESHSET.type_matId"/>.
 		/// </summary>
 		public ushort MaterialId
 		{
@@ -149,6 +149,10 @@ namespace sadx_model_view.Ninja
 		public readonly List<NJS_COLOR> vertcolor;  /* polygon vertex color list    */
 		public readonly List<NJS_TEX> vertuv;       /* polygon vertex uv list       */
 
+		/// <summary>
+		/// Constructs a <see cref="NJS_MESHSET"/> from a file.
+		/// </summary>
+		/// <param name="file">A file stream containing the data.</param>
 		public NJS_MESHSET(Stream file)
 		{
 			// TODO: Use indexed everything
@@ -291,6 +295,21 @@ namespace sadx_model_view.Ninja
 			file.Position = position;
 		}
 
+		/// <summary>
+		/// Copy constructor.
+		/// </summary>
+		/// <param name="meshset">Meshset to copy from.</param>
+		public NJS_MESHSET(NJS_MESHSET meshset)
+		{
+			type_matId = meshset.type_matId;
+			nbMesh     = meshset.nbMesh;
+			meshes     = new List<short>(meshset.meshes);
+			attrs      = new List<uint>(meshset.attrs);
+			normals    = new List<Vector3>(meshset.normals);
+			vertcolor  = new List<NJS_COLOR>(meshset.vertcolor);
+			vertuv     = new List<NJS_TEX>(meshset.vertuv);
+		}
+
 		private void CalculateStripPrimitiveCount()
 		{
 			PrimitiveCount = 0;
@@ -309,7 +328,7 @@ namespace sadx_model_view.Ninja
 
 		public void Dispose()
 		{
-			IndexBuffer.Dispose();
+			IndexBuffer?.Dispose();
 			IndexBuffer = null;
 		}
 	}

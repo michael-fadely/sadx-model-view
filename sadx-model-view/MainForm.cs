@@ -104,12 +104,13 @@ namespace sadx_model_view
 
 				obj?.Dispose();
 				obj = new NJS_OBJECT(file);
+				obj.Sort();
 				obj.CommitVertexBuffer(device);
 				obj.CalculateRadius();
 
-				camera.Position = obj.pos;
+				camera.Position = obj.Position;
 				camera.Translate(Vector3.BackwardLH, obj.Radius * 2.0f);
-				camera.LookAt(obj.pos);
+				camera.LookAt(obj.Position);
 
 				if (metadata_ptr == 0)
 					return;
@@ -437,7 +438,7 @@ namespace sadx_model_view
 
 				case Keys.F:
 					if (obj != null)
-						camera.LookAt(obj.pos);
+						camera.LookAt(obj.Position);
 					break;
 
 				case Keys.C:
