@@ -231,12 +231,13 @@ namespace sadx_model_view
 				return;
 			}
 
-			var directory = Path.GetDirectoryName(dialog.FileName);
+			var directory = Path.GetDirectoryName(dialog.FileName) ?? string.Empty;
 			string[] index = File.ReadAllLines(dialog.FileName);
 
 			foreach (var line in index)
 			{
-				var i = line.LastIndexOf(",");
+				var i = line.LastIndexOf(",", StringComparison.Ordinal);
+
 				var filename = Path.Combine(directory, line.Substring(++i));
 
 				if (!File.Exists(filename))
@@ -275,19 +276,35 @@ namespace sadx_model_view
 			};
 
 			direct3d = new Direct3D();
+			UpdatePresentParameters();
 			device = new Device(direct3d, 0, DeviceType.Hardware, Handle, CreateFlags.HardwareVertexProcessing, present);
 
 			RefreshDevice();
 		}
 
+		private bool first_time = true;
 		private void RefreshDevice()
 		{
-			present.BackBufferWidth  = ClientSize.Width;
+			UpdatePresentParameters();
+
+			if (!first_time)
+			{
+				device.Reset(present);
+			}
+
+			first_time = false;
+			SetViewMatrix();
+			SetupScene();
+		}
+
+		private void UpdatePresentParameters()
+		{
+			present.BackBufferWidth = ClientSize.Width;
 			present.BackBufferHeight = ClientSize.Height;
 
-			var width  = (float)ClientSize.Width;
+			var width = (float)ClientSize.Width;
 			var height = (float)ClientSize.Height;
-			var ratio  = width / height;
+			var ratio = width / height;
 
 			var fov = fov_v;
 			var h = 2 * (float)Math.Atan(Math.Tan(fov_v / 2.0f) * ratio);
@@ -298,11 +315,6 @@ namespace sadx_model_view
 			}
 
 			Matrix.PerspectiveFovLH(fov, ratio, 0.1f, 10000.0f, out projection);
-			SetViewMatrix();
-
-			device.Reset(present);
-
-			SetupScene();
 		}
 
 		private void SetupScene()
@@ -333,6 +345,7 @@ namespace sadx_model_view
 			device.EnableLight(0, true);
 		}
 
+		private float speed = 2.0f;
 		private void SetViewMatrix()
 		{
 			if (camcontrols != CamControls.None)
@@ -366,7 +379,7 @@ namespace sadx_model_view
 					v.Y -= 1.0f;
 				}
 
-				camera.Translate(v, 2.0f);
+				camera.Translate(v, speed);
 			}
 
 			camera.UpdateMatrix();
@@ -423,6 +436,14 @@ namespace sadx_model_view
 		{
 			switch (e.KeyCode)
 			{
+				case Keys.Subtract:
+					speed -= 0.125f;
+					break;
+
+				case Keys.Add:
+					speed += 0.125f;
+					break;
+
 				case Keys.F:
 					if (obj != null)
 						camera.LookAt(obj.pos);
