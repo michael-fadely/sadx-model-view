@@ -326,7 +326,9 @@ namespace sadx_model_view.Ninja
 			return (short)result;
 		}
 
-		private void SetSADXMaterial(Device device, NJS_MATERIAL material)
+		public static readonly Matrix EnvironmentMapMatrix = new Matrix(-0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f);
+
+		private static void SetSADXMaterial(Device device, NJS_MATERIAL material)
 		{
 			if (material == null)
 				return;
@@ -355,42 +357,41 @@ namespace sadx_model_view.Ninja
 					// TODO: not even implemented in SADX
 				}
 
-				if (flags.HasFlag(NJD_FLAG.ClampV))
-				{
-					device.SetSamplerState(0, SamplerState.AddressV, TextureAddress.Clamp);
-				}
-
-				if (flags.HasFlag(NJD_FLAG.ClampU))
-				{
-					device.SetSamplerState(0, SamplerState.AddressU, TextureAddress.Clamp);
-				}
-
-				if (flags.HasFlag(NJD_FLAG.FlipV))
-				{
-					device.SetSamplerState(0, SamplerState.AddressV, TextureAddress.Mirror);
-				}
-
-				if (flags.HasFlag(NJD_FLAG.FlipU))
-				{
-					device.SetSamplerState(0, SamplerState.AddressU, TextureAddress.Mirror);
-				}
+				device.SetSamplerState(0, SamplerState.AddressV, flags.HasFlag(NJD_FLAG.ClampV) ? TextureAddress.Clamp : TextureAddress.Wrap);
+				device.SetSamplerState(0, SamplerState.AddressU, flags.HasFlag(NJD_FLAG.ClampU) ? TextureAddress.Clamp : TextureAddress.Wrap);
+				device.SetSamplerState(0, SamplerState.AddressV, flags.HasFlag(NJD_FLAG.FlipV) ? TextureAddress.Mirror : TextureAddress.Wrap);
+				device.SetSamplerState(0, SamplerState.AddressU, flags.HasFlag(NJD_FLAG.FlipU) ? TextureAddress.Mirror : TextureAddress.Wrap);
 
 				if (flags.HasFlag(NJD_FLAG.UseEnv))
 				{
-					// TODO
+					device.SetTextureStageState(0, TextureStage.TextureTransformFlags, TextureArgument.Texture);
+					device.SetTransform(TransformState.Texture0, EnvironmentMapMatrix);
+					device.SetTextureStageState(0, TextureStage.TexCoordIndex, (int)TextureCoordIndex.CameraSpaceNormal);
+				}
+				else
+				{
+					device.SetTextureStageState(0, TextureStage.TextureTransformFlags, TextureArgument.Diffuse);
+					device.SetTransform(TransformState.Texture0, Matrix.Identity);
+					device.SetTextureStageState(0, TextureStage.TexCoordIndex, 0);
 				}
 
-				if (!flags.HasFlag(NJD_FLAG.UseAlpha))
+				if (flags.HasFlag(NJD_FLAG.UseAlpha))
 				{
 					device.SetRenderState(RenderState.AlphaBlendEnable, true);
+					device.SetTextureStageState(0, TextureStage.AlphaOperation, TextureOperation.Modulate);
+					device.SetRenderState(RenderState.AlphaRef, 16);
+					device.SetRenderState(RenderState.DiffuseMaterialSource, ColorSource.Material);
+				}
+				else
+				{
+					device.SetRenderState(RenderState.AlphaBlendEnable, false);
+					device.SetTextureStageState(0, TextureStage.AlphaOperation, TextureOperation.SelectArg2);
+					device.SetRenderState(RenderState.AlphaRef, 0);
+					device.SetRenderState(RenderState.DiffuseMaterialSource, ColorSource.Color1);
 				}
 			}
 
-			if (flags.HasFlag(NJD_FLAG.IgnoreSpecular))
-			{
-				device.SetRenderState(RenderState.SpecularEnable, false);
-			}
-
+			device.SetRenderState(RenderState.SpecularEnable, !flags.HasFlag(NJD_FLAG.IgnoreSpecular));
 			device.SetRenderState(RenderState.CullMode, flags.HasFlag(NJD_FLAG.DoubleSide) ? Cull.None : MainForm.CullMode);
 
 			if (flags.HasFlag(NJD_FLAG.UseFlat))
@@ -409,6 +410,7 @@ namespace sadx_model_view.Ninja
 
 			// default SADX behavior is to use diffuse for both ambient and diffuse.
 			m.Ambient = m.Diffuse;
+			m.Specular.A = 0.0f;
 
 			device.Material = m;
 		}

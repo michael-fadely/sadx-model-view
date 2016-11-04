@@ -337,6 +337,13 @@ namespace sadx_model_view
 			device.SetSamplerState(0, SamplerState.MagFilter, TextureFilter.Anisotropic);
 			device.SetSamplerState(0, SamplerState.MinFilter, TextureFilter.Anisotropic);
 
+			device.SetTextureStageState(0, TextureStage.ColorOperation, TextureOperation.Modulate);
+			device.SetTextureStageState(0, TextureStage.ColorArg1, TextureOperation.SelectArg1);
+			device.SetTextureStageState(0, TextureStage.ColorArg2, TextureOperation.Disable);
+			device.SetTextureStageState(0, TextureStage.AlphaOperation, TextureOperation.Modulate);
+			device.SetTextureStageState(0, TextureStage.AlphaArg1, TextureOperation.SelectArg1);
+			device.SetTextureStageState(0, TextureStage.AlphaArg2, TextureOperation.Disable);
+
 			device.SetTransform(TransformState.Projection, projection);
 			device.SetTransform(TransformState.World,      Matrix.Identity);
 			SetViewMatrix();
