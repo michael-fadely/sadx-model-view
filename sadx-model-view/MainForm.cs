@@ -9,7 +9,6 @@ using SharpDX;
 using SharpDX.Mathematics.Interop;
 
 // TODO: landtables
-// TODO: delta time camera movement
 
 namespace sadx_model_view
 {
@@ -371,7 +370,7 @@ namespace sadx_model_view
 					v.Y -= 1.0f;
 				}
 
-				camera.Translate(v, speed);
+				camera.Translate(v, speed * DeltaTime.Delta);
 			}
 
 			camera.UpdateMatrix();
@@ -380,6 +379,7 @@ namespace sadx_model_view
 
 		public void MainLoop()
 		{
+			DeltaTime.Update();
 			if (WindowState == FormWindowState.Minimized)
 				return;
 
