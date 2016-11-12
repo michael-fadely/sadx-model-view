@@ -104,7 +104,6 @@ namespace sadx_model_view
 
 				obj?.Dispose();
 				obj = new NJS_OBJECT(file);
-				obj.Sort();
 				obj.CommitVertexBuffer(device);
 				obj.CalculateRadius();
 
@@ -526,6 +525,16 @@ namespace sadx_model_view
 			rotation.X = (float)(Math.PI * (delta.Y / (float)ClientRectangle.Height));
 			rotation.Z = 0.0f;
 			camera.Rotate(rotation);
+		}
+
+		private void sortToolStripMenuItem_Click(object sender, EventArgs e)
+		{
+			if (obj == null)
+				return;
+
+			obj.Sort();
+			obj.CommitVertexBuffer(device);
+			obj.CalculateRadius();
 		}
 	}
 }
