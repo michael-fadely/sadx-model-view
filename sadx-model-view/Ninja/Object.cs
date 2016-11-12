@@ -333,6 +333,7 @@ namespace sadx_model_view.Ninja
 
 		private static void Filter(NJS_OBJECT obj, bool useAlpha)
 		{
+			// TODO: sort transparent mesh by radius/intersections
 			if (obj.Model != null)
 			{
 				NJS_MODEL model = obj.Model;
