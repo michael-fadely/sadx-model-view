@@ -360,10 +360,14 @@ namespace sadx_model_view.Ninja
 			}
 
 			if (obj.Child != null)
+			{
 				Filter(obj.Child, useAlpha);
+			}
 
 			if (obj.Sibling != null)
+			{
 				Filter(obj.Sibling, useAlpha);
+			}
 		}
 
 		/// <summary>

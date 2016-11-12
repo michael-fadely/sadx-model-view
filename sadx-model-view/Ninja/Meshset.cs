@@ -155,8 +155,6 @@ namespace sadx_model_view.Ninja
 		/// <param name="file">A file stream containing the data.</param>
 		public NJS_MESHSET(Stream file)
 		{
-			// TODO: Use indexed everything
-
 			var buffer = new byte[SizeInBytes];
 			file.Read(buffer, 0, buffer.Length);
 

@@ -5,8 +5,6 @@ using System.Linq;
 using SharpDX;
 using SharpDX.Direct3D9;
 
-// TODO: Use a shader instead of the fixed function pipeline.
-
 namespace sadx_model_view.Ninja
 {
 	public class NJS_MODEL : IDisposable
@@ -411,16 +409,19 @@ namespace sadx_model_view.Ninja
 				if (flags.HasFlag(NJD_FLAG.UseAlpha))
 				{
 					device.SetRenderState(RenderState.AlphaBlendEnable, true);
-					device.SetTextureStageState(0, TextureStage.AlphaOperation, TextureOperation.Modulate);
+					device.SetRenderState(RenderState.AlphaTestEnable, true);
 					device.SetRenderState(RenderState.AlphaRef, 16);
 					device.SetRenderState(RenderState.DiffuseMaterialSource, ColorSource.Material);
+
+					device.SetTextureStageState(0, TextureStage.AlphaOperation, TextureOperation.Modulate);
 				}
 				else
 				{
 					device.SetRenderState(RenderState.AlphaBlendEnable, false);
-					device.SetTextureStageState(0, TextureStage.AlphaOperation, TextureOperation.SelectArg2);
 					device.SetRenderState(RenderState.AlphaRef, 0);
 					device.SetRenderState(RenderState.DiffuseMaterialSource, ColorSource.Color1);
+
+					device.SetTextureStageState(0, TextureStage.AlphaOperation, TextureOperation.SelectArg2);
 				}
 			}
 
@@ -437,8 +438,8 @@ namespace sadx_model_view.Ninja
 			var m = new Material
 			{
 				Specular = new Color4(material.specular.color),
-				Diffuse = new Color4(material.diffuse.color),
-				Power = material.exponent
+				Diffuse  = new Color4(material.diffuse.color),
+				Power    = material.exponent
 			};
 
 			// default SADX behavior is to use diffuse for both ambient and diffuse.
@@ -453,7 +454,6 @@ namespace sadx_model_view.Ninja
 			// Set the correct vertex format for model rendering.
 			device.VertexFormat = Vertex.Format;
 
-			// TODO: Use state blocks or just switch to a shader.
 			foreach (var set in meshsets)
 			{
 				var i = set.MaterialId;

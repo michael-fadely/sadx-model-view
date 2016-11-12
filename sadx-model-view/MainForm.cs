@@ -15,6 +15,7 @@ namespace sadx_model_view
 {
 	public partial class MainForm : Form
 	{
+		// TODO: not this
 		public static Cull CullMode = Cull.Counterclockwise;
 		// TODO: not this
 		public static readonly List<Texture> TexturePool = new List<Texture>();
@@ -309,8 +310,7 @@ namespace sadx_model_view
 			device.SetRenderState(RenderState.AlphaBlendEnable, false);
 			device.SetRenderState(RenderState.SourceBlend,      Blend.SourceAlpha);
 			device.SetRenderState(RenderState.DestinationBlend, Blend.InverseSourceAlpha);
-			device.SetRenderState(RenderState.AlphaFunc,        Compare.Equal);
-			device.SetRenderState(RenderState.AlphaRef,         255);
+			device.SetRenderState(RenderState.AlphaFunc,        Compare.GreaterEqual);
 
 			unchecked { device.SetRenderState(RenderState.Ambient, (int)0xFFFFFFFF); }
 
@@ -337,7 +337,7 @@ namespace sadx_model_view
 			device.EnableLight(0, true);
 		}
 
-		private float speed = 2.0f;
+		private float speed = 0.5f;
 		private void SetViewMatrix()
 		{
 			if (camcontrols != CamControls.None)
