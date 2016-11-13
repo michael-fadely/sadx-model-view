@@ -9,8 +9,6 @@ using SharpDX.Direct3D9;
 using SharpDX;
 using SharpDX.Mathematics.Interop;
 
-// TODO: landtables
-
 namespace sadx_model_view
 {
 	public partial class MainForm : Form
