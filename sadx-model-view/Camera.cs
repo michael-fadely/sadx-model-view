@@ -4,33 +4,38 @@ namespace sadx_model_view
 {
 	public class Camera
 	{
-		private bool invalid = true;
+		private static float PitchThreshold = MathUtil.PiOverTwo - 0.0017453292519943296f;
+
+		public bool Invalid { get; private set; } = true;
 		private Vector3 position;
 		private Vector3 rotation;
 		private Matrix rotationMatrix = Matrix.Identity;
 
 		public Vector3 Position
 		{
+			// ReSharper disable once UnusedMember.Global
 			get { return position; }
 			set
 			{
 				position = value;
-				invalid = true;
+				Invalid = true;
 			}
 		}
 
+		// ReSharper disable once UnusedMember.Global
 		public Vector3 Rotation
 		{
 			get { return rotation; }
 			set
 			{
 				rotation = value;
-				updateRotationMatrix();
-				invalid = true;
+				UpdateRotationMatrix();
+				Invalid = true;
 			}
 		}
 
 		public Matrix Matrix { get; private set; }
+
 
 		public Camera()
 		{
@@ -43,12 +48,12 @@ namespace sadx_model_view
 
 		public void UpdateMatrix()
 		{
-			if (!invalid)
+			if (!Invalid)
 				return;
 
 			Matrix = Matrix.LookAtRH(position, position + (Vector3)Vector3.Transform(Vector3.ForwardRH, rotationMatrix), Vector3.Up);
-			updateRotationMatrix();
-			invalid = false;
+			UpdateRotationMatrix();
+			Invalid = false;
 		}
 
 		/// <summary>
@@ -58,7 +63,7 @@ namespace sadx_model_view
 		/// <param name="amount">The amount by which to translate.</param>
 		public void Translate(Vector3 direction, float amount = 1.0f)
 		{
-			invalid = true;
+			Invalid = true;
 
 			var v = Vector3.Normalize(amount * direction) * amount;
 			v = (Vector3)Vector3.Transform(v, rotationMatrix);
@@ -71,16 +76,16 @@ namespace sadx_model_view
 		/// <param name="v">The amount to rotate (in radians)</param>
 		public void Rotate(Vector3 v)
 		{
-			invalid = true;
+			Invalid = true;
 
 			rotation -= v;
-			rotateLimit(ref rotation);
-			updateRotationMatrix();
+			RotateLimit(ref rotation);
+			UpdateRotationMatrix();
 		}
 
 		public void LookAt(Vector3 point)
 		{
-			invalid = true;
+			Invalid = true;
 			Matrix = Matrix.LookAtRH(position == Vector3.Zero ? Vector3.BackwardRH : position, point, Vector3.Up);
 
 			Quaternion q;
@@ -88,39 +93,27 @@ namespace sadx_model_view
 			Matrix.Decompose(out dummy, out q, out dummy);
 
 			rotation = q.GetYawPitchRollVector();
-			rotateLimit(ref rotation);
-			updateRotationMatrix();
+			RotateLimit(ref rotation);
+			UpdateRotationMatrix();
 		}
 
-		private void updateRotationMatrix()
+		private void UpdateRotationMatrix()
 		{
-			if (!invalid)
+			if (!Invalid)
 				return;
 
 			rotationMatrix = Matrix.RotationX(rotation.X)
 							 * Matrix.RotationY(rotation.Y)
 							 * Matrix.RotationZ(rotation.Z);
 
-			invalid = true;
+			Invalid = true;
 		}
 
-		private static void rotateLimit(ref Vector3 v)
+		private static void RotateLimit(ref Vector3 v)
 		{
-			rotateLimit(ref v.X);
-			rotateLimit(ref v.Y);
-			rotateLimit(ref v.Z);
-		}
-		private static void rotateLimit(ref float f)
-		{
-			while (f >= MathUtil.TwoPi)
-			{
-				f -= MathUtil.TwoPi;
-			}
-
-			while (f < 0.0f)
-			{
-				f += MathUtil.TwoPi;
-			}
+			v.X = MathUtil.Clamp(v.X, -PitchThreshold, PitchThreshold);
+			v.Y = MathUtil.Wrap(v.Y, 0, MathUtil.TwoPi);
+			v.Z = MathUtil.Wrap(v.Z, 0, MathUtil.TwoPi);
 		}
 	}
 }
