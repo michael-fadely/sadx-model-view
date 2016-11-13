@@ -275,7 +275,8 @@ namespace sadx_model_view
 				BackBufferFormat       = Format.X8R8G8B8,
 				EnableAutoDepthStencil = true,
 				AutoDepthStencilFormat = Format.D24X8,
-				PresentationInterval   = PresentInterval.Immediate
+				PresentationInterval   = PresentInterval.Immediate,
+				Windowed               = true
 			};
 
 			direct3d = new Direct3D();
@@ -329,22 +330,23 @@ namespace sadx_model_view
 			device.SetRenderState(RenderState.DestinationBlend, Blend.InverseSourceAlpha);
 			device.SetRenderState(RenderState.AlphaFunc,        Compare.GreaterEqual);
 
-			unchecked { device.SetRenderState(RenderState.Ambient, (int)0xFFFFFFFF); }
+			device.SetRenderState(RenderState.Ambient, 0);
 
 			device.SetRenderState(RenderState.ColorVertex, true);
-			device.SetRenderState(RenderState.AmbientMaterialSource, ColorSource.Color1);
-			device.SetRenderState(RenderState.DiffuseMaterialSource, ColorSource.Color1);
+			device.SetRenderState(RenderState.AmbientMaterialSource,  ColorSource.Color1);
+			device.SetRenderState(RenderState.DiffuseMaterialSource,  ColorSource.Color1);
 			device.SetRenderState(RenderState.SpecularMaterialSource, ColorSource.Material);
 
-			device.SetSamplerState(0, SamplerState.MagFilter, TextureFilter.Anisotropic);
-			device.SetSamplerState(0, SamplerState.MinFilter, TextureFilter.Anisotropic);
+			device.SetSamplerState(0, SamplerState.MagFilter, TextureFilter.Linear);
+			device.SetSamplerState(0, SamplerState.MinFilter, TextureFilter.Linear);
+			device.SetSamplerState(0, SamplerState.MipFilter, TextureFilter.Linear);
 
 			device.SetTextureStageState(0, TextureStage.ColorOperation, TextureOperation.Modulate);
-			device.SetTextureStageState(0, TextureStage.ColorArg1, TextureOperation.SelectArg1);
-			device.SetTextureStageState(0, TextureStage.ColorArg2, TextureOperation.Disable);
+			device.SetTextureStageState(0, TextureStage.ColorArg1,      TextureOperation.SelectArg1);
+			device.SetTextureStageState(0, TextureStage.ColorArg2,      TextureOperation.Disable);
 			device.SetTextureStageState(0, TextureStage.AlphaOperation, TextureOperation.Modulate);
-			device.SetTextureStageState(0, TextureStage.AlphaArg1, TextureOperation.SelectArg1);
-			device.SetTextureStageState(0, TextureStage.AlphaArg2, TextureOperation.Disable);
+			device.SetTextureStageState(0, TextureStage.AlphaArg1,      TextureOperation.SelectArg1);
+			device.SetTextureStageState(0, TextureStage.AlphaArg2,      TextureOperation.Disable);
 
 			device.SetTransform(TransformState.Projection, projection);
 			device.SetTransform(TransformState.World,      Matrix.Identity);
@@ -549,12 +551,18 @@ namespace sadx_model_view
 
 		private void sortToolStripMenuItem_Click(object sender, EventArgs e)
 		{
-			if (obj == null)
-				return;
+			if (obj != null)
+			{
+				obj.Sort();
+				obj.CommitVertexBuffer(device);
+				obj.CalculateRadius();
+			}
 
-			obj.Sort();
-			obj.CommitVertexBuffer(device);
-			obj.CalculateRadius();
+			if (landTable != null)
+			{
+				landTable.Sort();
+				landTable.CommitVertexBuffer(device);
+			}
 		}
 	}
 }

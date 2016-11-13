@@ -8,11 +8,20 @@ namespace sadx_model_view.Ninja
 {
 	class NJS_TEXPALETTE
 	{
-		int palette; // TODO: void*
-		ushort mode;
-		short bank;
-		short offset;
-		short count;
+		public int palette; // TODO: void*
+		public ushort mode;
+		public short bank;
+		public short offset;
+		public short count;
+
+		public NJS_TEXPALETTE()
+		{
+			palette = 0;
+			mode    = 0;
+			bank    = 0;
+			offset  = 0;
+			count   = 0;
+		}
 	}
 
 	class NJS_TEXSURFACE : IDisposable
@@ -28,6 +37,25 @@ namespace sadx_model_view.Ninja
 		public int pVirtual; // TODO: Uint32*
 		public int pPhysical; // TODO: Uint32*
 
+		public NJS_TEXSURFACE()
+		{
+			Type          = 0;
+			BitDepth      = 0;
+			PixelFormat   = 0;
+			nWidth        = 0;
+			nHeight       = 0;
+			TextureSize   = 0;
+			fSurfaceFlags = 0;
+			pSurface      = null;
+			pVirtual      = 0;
+			pPhysical     = 0;
+		}
+
+		~NJS_TEXSURFACE()
+		{
+			Dispose();
+		}
+
 		public void Dispose()
 		{
 			pSurface?.Dispose();
@@ -39,6 +67,17 @@ namespace sadx_model_view.Ninja
 	{
 		public int texaddr; // TODO: void*
 		public NJS_TEXSURFACE texsurface;
+
+		public NJS_TEXINFO()
+		{
+			texaddr = 0;
+			texsurface = new NJS_TEXSURFACE();
+		}
+
+		~NJS_TEXINFO()
+		{
+			Dispose();
+		}
 
 		public void Dispose()
 		{
@@ -57,6 +96,23 @@ namespace sadx_model_view.Ninja
 		public NJS_TEXINFO texinfo;
 		public ushort count;
 		public ushort dummy;
+
+		public NJS_TEXMEMLIST()
+		{
+			globalIndex    = 0;
+			bank           = null;
+			tspparambuffer = 0;
+			texparambuffer = 0;
+			texaddr        = 0;
+			texinfo        = null;
+			count          = 0;
+			dummy          = 0;
+		}
+
+		~NJS_TEXMEMLIST()
+		{
+			Dispose();
+		}
 
 		public void Dispose()
 		{
@@ -128,7 +184,7 @@ namespace sadx_model_view.Ninja
 	{
 		public static int SizeInBytes => 0x8;
 
-		public List<NJS_TEXNAME> textures = new List<NJS_TEXNAME>();
+		public readonly List<NJS_TEXNAME> textures = new List<NJS_TEXNAME>();
 		public uint nbTexture => (uint)textures.Count;
 
 		public NJS_TEXLIST(Stream stream)

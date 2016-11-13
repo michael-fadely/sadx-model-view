@@ -18,12 +18,13 @@ namespace sadx_model_view.SA1
 	class LandTable : IDisposable
 	{
 		public static int SizeInBytes => 0x24;
+
 		public short COLCount => (short)COL.Count;
 		public short AnimCount => (short)AnimData.Count;
 		public LandTableFlags Flags;
 		public float Unknown_1;
-		public List<Col> COL = new List<Col>();
-		public List<GeoAnimData> AnimData = new List<GeoAnimData>();
+		public readonly List<Col> COL;
+		public readonly List<GeoAnimData> AnimData;
 		public string TexName;
 		public NJS_TEXLIST TexList;
 		public int Unknown_2;
@@ -33,6 +34,10 @@ namespace sadx_model_view.SA1
 
 		public LandTable(Stream stream)
 		{
+			COL = new List<Col>();
+			AnimData = new List<GeoAnimData>();
+			TexList = null;
+
 			var buffer = new byte[SizeInBytes];
 			stream.Read(buffer, 0, buffer.Length);
 
@@ -80,6 +85,33 @@ namespace sadx_model_view.SA1
 			stream.Position = position;
 		}
 
+		public LandTable()
+		{
+			Flags     = 0;
+			Unknown_1 = 0.0f;
+			COL       = new List<Col>();
+			AnimData  = new List<GeoAnimData>();
+			TexName   = string.Empty;
+			TexList   = null;
+			Unknown_2 = 0;
+			Unknown_3 = 0;
+		}
+
+		~LandTable()
+		{
+			Dispose();
+		}
+
+		public void Dispose()
+		{
+			foreach (var c in COL)
+			{
+				c.Dispose();
+			}
+
+			COL.Clear();
+		}
+
 		public void CommitVertexBuffer(Device device)
 		{
 			foreach (var c in COL)
@@ -96,14 +128,12 @@ namespace sadx_model_view.SA1
 			}
 		}
 
-		public void Dispose()
+		public void Sort()
 		{
 			foreach (var c in COL)
 			{
-				c.Dispose();
+				c.Sort();
 			}
-
-			COL.Clear();
 		}
 	}
 }

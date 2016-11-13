@@ -136,6 +136,16 @@ namespace sadx_model_view.Ninja
 			Sibling         = obj.Sibling;
 		}
 
+		~NJS_OBJECT()
+		{
+			Dispose();
+		}
+
+		public void Dispose()
+		{
+			Model?.Dispose();
+		}
+
 		public uint evalflags;     /* evalation flags              */
 		public NJS_MODEL Model;    /* model data pointer           */
 		public Vector3 Position;   /* translation                  */
@@ -400,11 +410,6 @@ namespace sadx_model_view.Ninja
 			}
 
 			last.Sibling = copy;
-		}
-
-		public void Dispose()
-		{
-			Model?.Dispose();
 		}
 	}
 }

@@ -308,6 +308,31 @@ namespace sadx_model_view.Ninja
 			vertuv     = new List<NJS_TEX>(meshset.vertuv);
 		}
 
+		public NJS_MESHSET()
+		{
+			IndexBuffer         = null;
+			IndexCount          = 0;
+			IndexPrimitiveCount = 0;
+			type_matId          = 0;
+			nbMesh              = 0;
+			meshes              = new List<short>();
+			attrs               = new List<uint>();
+			normals             = new List<Vector3>();
+			vertcolor           = new List<NJS_COLOR>();
+			vertuv              = new List<NJS_TEX>();
+		}
+
+		~NJS_MESHSET()
+		{
+			Dispose();
+		}
+
+		public void Dispose()
+		{
+			IndexBuffer?.Dispose();
+			IndexBuffer = null;
+		}
+
 		private void CalculateStripPrimitiveCount()
 		{
 			PrimitiveCount = 0;
@@ -322,12 +347,6 @@ namespace sadx_model_view.Ninja
 			} while (--count > 0);
 
 			PrimitiveCount -= 2;
-		}
-
-		public void Dispose()
-		{
-			IndexBuffer?.Dispose();
-			IndexBuffer = null;
 		}
 	}
 }

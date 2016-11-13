@@ -43,6 +43,9 @@ namespace sadx_model_view.SA1
 		Visible    = 0x80000000,
 	}
 
+	/// <summary>
+	/// A class defining a model in a <see cref="LandTable"/>.
+	/// </summary>
 	class Col : IDisposable
 	{
 		public static int SizeInBytes => 0x24;
@@ -54,9 +57,13 @@ namespace sadx_model_view.SA1
 		private int pad_b;
 
 		public NJS_OBJECT Object;
-		public int anonymous_6;
+		private int anonymous_6;
 		public ColFlags Flags;
 
+		/// <summary>
+		/// Constructs a Col object from a stream.
+		/// </summary>
+		/// <param name="stream">The stream containing the Col data.</param>
 		public Col(Stream stream)
 		{
 			var buffer = new byte[SizeInBytes];
@@ -82,6 +89,28 @@ namespace sadx_model_view.SA1
 			stream.Position = position;
 		}
 
+		public Col()
+		{
+			Center      = Vector3.Zero;
+			Radius      = 0.0f;
+			pad_a       = 0;
+			pad_b       = 0;
+			Object      = null;
+			anonymous_6 = 0;
+			Flags       = 0;
+		}
+
+		~Col()
+		{
+			Dispose();
+		}
+
+		public void Dispose()
+		{
+			Object?.Dispose();
+			Object = null;
+		}
+
 		public void CommitVertexBuffer(Device device)
 		{
 			Object?.CommitVertexBuffer(device);
@@ -95,10 +124,9 @@ namespace sadx_model_view.SA1
 			Object?.Draw(device);
 		}
 
-		public void Dispose()
+		public void Sort()
 		{
-			Object?.Dispose();
-			Object = null;
+			Object?.Sort();
 		}
 	}
 }

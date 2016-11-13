@@ -4,13 +4,16 @@ using sadx_model_view.Ninja;
 
 namespace sadx_model_view.SA1
 {
+	/// <summary>
+	/// Animation definition for a <see cref="LandTable"/>.
+	/// </summary>
 	class GeoAnimData : IDisposable
 	{
 		public static int SizeInBytes => 0x18;
 
-		public float anonymous_0;
-		public float anonymous_1;
-		public float anonymous_2;
+		private float anonymous_0;
+		private float anonymous_1;
+		private float anonymous_2;
 		public NJS_OBJECT Model;
 		public NJS_ACTION Animation;
 		public NJS_TEXLIST TexList;
@@ -48,6 +51,21 @@ namespace sadx_model_view.SA1
 			}
 
 			stream.Position = position;
+		}
+
+		public GeoAnimData()
+		{
+			anonymous_0 = 0.0f;
+			anonymous_1 = 0.0f;
+			anonymous_2 = 0.0f;
+			Model       = null;
+			Animation   = null;
+			TexList     = null;
+		}
+
+		~GeoAnimData()
+		{
+			Dispose();
 		}
 
 		public void Dispose()

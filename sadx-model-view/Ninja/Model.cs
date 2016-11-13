@@ -118,18 +118,48 @@ namespace sadx_model_view.Ninja
 			r = model.r;
 		}
 
-		public List<Vector3> points;       /* vertex list                  */
-		public List<Vector3> normals;      /* vertex normal list           */
-		public int nbPoint;                /* vertex count                 */
-		public List<NJS_MESHSET> meshsets; /* meshset list                 */
-		public List<NJS_MATERIAL> mats;    /* material list                */
-		public ushort nbMeshset;           /* meshset count                */
-		public ushort nbMat;               /* material count               */
-		public Vector3 center;             /* model center                 */
-		public float r;                    /* radius                       */
+		public NJS_MODEL()
+		{
+			points             = new List<Vector3>();
+			normals            = new List<Vector3>();
+			nbPoint            = 0;
+			meshsets           = new List<NJS_MESHSET>();
+			mats               = new List<NJS_MATERIAL>();
+			nbMeshset          = 0;
+			nbMat              = 0;
+			center             = Vector3.Zero;
+			r                  = 0.0f;
+			vertexBuffer       = null;
+			vertexBufferLength = 0;
+		}
 
-		public VertexBuffer VertexBuffer;
-		public int VertexBufferLength;
+		~NJS_MODEL()
+		{
+			Dispose();
+		}
+
+		public void Dispose()
+		{
+			foreach (var set in meshsets)
+			{
+				set.Dispose();
+			}
+
+			meshsets.Clear();
+		}
+
+		public readonly List<Vector3> points;       // vertex list
+		public readonly List<Vector3> normals;      // vertex normal list
+		public readonly int nbPoint;                // vertex count
+		public List<NJS_MESHSET> meshsets;          // meshset list
+		public readonly List<NJS_MATERIAL> mats;    // material list
+		public ushort nbMeshset;                    // meshset count
+		public readonly ushort nbMat;               // material count
+		public Vector3 center;                      // model center
+		public float r;                             // radius
+
+		private VertexBuffer vertexBuffer;
+		private int vertexBufferLength;
 
 		public void CommitVertexBuffer(Device device)
 		{
@@ -253,11 +283,11 @@ namespace sadx_model_view.Ninja
 
 		private void CreateVertexBuffer(Device device, IReadOnlyCollection<Vertex> vertices)
 		{
-			VertexBufferLength = vertices.Count;
+			vertexBufferLength = vertices.Count;
 			var vertexSize = vertices.Count * Vertex.SizeInBytes;
-			VertexBuffer = new VertexBuffer(device, vertexSize, Usage.None, Vertex.Format, Pool.Managed);
+			vertexBuffer = new VertexBuffer(device, vertexSize, Usage.None, Vertex.Format, Pool.Managed);
 
-			using (var stream = VertexBuffer.Lock(0, vertexSize, LockFlags.None))
+			using (var stream = vertexBuffer.Lock(0, vertexSize, LockFlags.None))
 			{
 				foreach (var v in vertices)
 				{
@@ -269,9 +299,9 @@ namespace sadx_model_view.Ninja
 					stream.Write(v.normal.Y);
 					stream.Write(v.normal.Z);
 
-					stream.Write(v.diffuse.B);
-					stream.Write(v.diffuse.G);
 					stream.Write(v.diffuse.R);
+					stream.Write(v.diffuse.G);
+					stream.Write(v.diffuse.B);
 					stream.Write(v.diffuse.A);
 
 					stream.Write(v.uv.X);
@@ -284,7 +314,7 @@ namespace sadx_model_view.Ninja
 				}
 			}
 
-			VertexBuffer.Unlock();
+			vertexBuffer.Unlock();
 		}
 
 		private static short UpdateVertex(NJS_MESHSET set, IList<Vertex> vertices, int localIndex, int globalIndex)
@@ -470,23 +500,13 @@ namespace sadx_model_view.Ninja
 				}
 
 				// Set the stream source to the current meshset's vertex buffer.
-				device.SetStreamSource(0, VertexBuffer, 0, Vertex.SizeInBytes);
+				device.SetStreamSource(0, vertexBuffer, 0, Vertex.SizeInBytes);
 				device.Indices = set.IndexBuffer;
 
 				// Draw the model.
 				device.DrawIndexedPrimitive(PrimitiveType.TriangleList,
-					0, 0, VertexBufferLength, 0, set.IndexPrimitiveCount);
+					0, 0, vertexBufferLength, 0, set.IndexPrimitiveCount);
 			}
-		}
-
-		public void Dispose()
-		{
-			foreach (var set in meshsets)
-			{
-				set.Dispose();
-			}
-
-			meshsets.Clear();
 		}
 	}
 }
