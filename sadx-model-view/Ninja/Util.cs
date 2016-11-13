@@ -34,7 +34,7 @@ namespace sadx_model_view.Ninja
 		/// <param name="buffer">Buffer containing data.</param>
 		/// <param name="offset">Offset in buffer to read from.</param>
 		/// <returns>The new vector.</returns>
-		public static Vector3 VectorFromStream(ref byte[] buffer, int offset = 0)
+		public static Vector3 VectorFromStream(ref byte[] buffer, int offset)
 		{
 			return new Vector3(BitConverter.ToSingle(buffer, offset + 0), BitConverter.ToSingle(buffer, offset + 4), BitConverter.ToSingle(buffer, offset + 8));
 		}
