@@ -96,15 +96,15 @@ namespace sadx_model_view
 				file.Position = object_ptr;
 
 				obj?.Dispose();
-				landTable?.Dispose();
-
 				obj = null;
+
+				landTable?.Dispose();
 				landTable = null;
 
 				switch (signatureStr)
 				{
 					case "SA1MDL":
-						obj = new NJS_OBJECT(file);
+						obj = ObjectCache.FromStream(file, object_ptr);
 						obj.CommitVertexBuffer(device);
 						obj.CalculateRadius();
 
@@ -121,6 +121,8 @@ namespace sadx_model_view
 					default:
 						throw new NotImplementedException(signatureStr);
 				}
+
+				ObjectCache.Clear();
 
 				if (metadata_ptr == 0)
 					return;

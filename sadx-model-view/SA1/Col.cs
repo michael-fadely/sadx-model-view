@@ -79,8 +79,7 @@ namespace sadx_model_view.SA1
 
 			if (object_ptr > 0)
 			{
-				stream.Position = object_ptr;
-				Object = new NJS_OBJECT(stream);
+				Object = ObjectCache.FromStream(stream, object_ptr);
 			}
 
 			anonymous_6 = BitConverter.ToInt32(buffer, 0x1C);

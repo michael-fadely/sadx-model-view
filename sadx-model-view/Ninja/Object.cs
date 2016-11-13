@@ -105,14 +105,12 @@ namespace sadx_model_view.Ninja
 
 			if (child_ptr != 0)
 			{
-				stream.Position = child_ptr;
-				Child = new NJS_OBJECT(stream, this, previousSibling);
+				Child = ObjectCache.FromStream(stream, child_ptr, this, previousSibling);
 			}
 
 			if (sibling_ptr != 0)
 			{
-				stream.Position = sibling_ptr;
-				Sibling = new NJS_OBJECT(stream, parent, this);
+				Sibling = ObjectCache.FromStream(stream, sibling_ptr, parent, this);
 			}
 
 			stream.Position = position;
