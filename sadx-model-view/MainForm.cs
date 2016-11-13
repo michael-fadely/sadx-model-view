@@ -62,7 +62,7 @@ namespace sadx_model_view
 
 		private void openToolStripMenuItem_Click(object sender, EventArgs e)
 		{
-			var dialog = new OpenFileDialog();
+			var dialog = openModelDialog;
 			if (dialog.ShowDialog(this) != DialogResult.OK)
 			{
 				return;
@@ -224,8 +224,7 @@ namespace sadx_model_view
 #endif
 			}
 
-			dialog.Title = "Open texture pack index (optional)";
-
+			dialog = openTexpackDialog;
 			if (dialog.ShowDialog(this) != DialogResult.OK)
 			{
 				return;

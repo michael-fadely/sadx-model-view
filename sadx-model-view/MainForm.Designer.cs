@@ -33,6 +33,8 @@
 			this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.editToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.sortToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.openModelDialog = new System.Windows.Forms.OpenFileDialog();
+			this.openTexpackDialog = new System.Windows.Forms.OpenFileDialog();
 			this.menuStrip1.SuspendLayout();
 			this.SuspendLayout();
 			// 
@@ -59,7 +61,7 @@
 			// 
 			this.openToolStripMenuItem.Name = "openToolStripMenuItem";
 			this.openToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.O)));
-			this.openToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+			this.openToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
 			this.openToolStripMenuItem.Text = "&Open";
 			this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
 			// 
@@ -74,9 +76,22 @@
 			// sortToolStripMenuItem
 			// 
 			this.sortToolStripMenuItem.Name = "sortToolStripMenuItem";
-			this.sortToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+			this.sortToolStripMenuItem.Size = new System.Drawing.Size(137, 22);
 			this.sortToolStripMenuItem.Text = "&Sort Models";
 			this.sortToolStripMenuItem.Click += new System.EventHandler(this.sortToolStripMenuItem_Click);
+			// 
+			// openModelDialog
+			// 
+			this.openModelDialog.DefaultExt = "sa1mdl";
+			this.openModelDialog.Filter = "Sonic Adventure Model|*.sa1mdl|Sonic Adventure LandTable|*.sa1lvl|All files|*.*";
+			this.openModelDialog.Title = "Open Model";
+			// 
+			// openTexpackDialog
+			// 
+			this.openTexpackDialog.DefaultExt = "txt";
+			this.openTexpackDialog.FileName = "index.txt";
+			this.openTexpackDialog.Filter = "Index files|index.txt|All files|*.*";
+			this.openTexpackDialog.Title = "Open Texture Pack (optional)";
 			// 
 			// MainForm
 			// 
@@ -108,6 +123,8 @@
 		private System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem editToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem sortToolStripMenuItem;
+		private System.Windows.Forms.OpenFileDialog openModelDialog;
+		private System.Windows.Forms.OpenFileDialog openTexpackDialog;
 	}
 }
 
