@@ -142,6 +142,23 @@ namespace sadx_model_view.Ninja
 		public void Dispose()
 		{
 			Model?.Dispose();
+			Model = null;
+
+			Child?.Dispose();
+			Child = null;
+
+			Sibling?.Dispose();
+			Sibling = null;
+
+			if (Parent != null)
+			{
+				Parent.Child = null;
+			}
+
+			if (PreviousSibling != null)
+			{
+				PreviousSibling.Sibling = null;
+			}
 		}
 
 		public uint evalflags;     /* evalation flags              */
