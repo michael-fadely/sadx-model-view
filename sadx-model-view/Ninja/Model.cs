@@ -81,7 +81,7 @@ namespace sadx_model_view.Ninja
 			if (nbMat > 0 && mats_ptr > 0)
 			{
 				stream.Position = mats_ptr;
-				for (var i = 0; i < nbMeshset; i++)
+				for (var i = 0; i < nbMat; i++)
 					mats.Add(new NJS_MATERIAL(stream));
 			}
 
