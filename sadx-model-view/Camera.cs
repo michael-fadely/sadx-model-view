@@ -46,7 +46,7 @@ namespace sadx_model_view
 			if (!invalid)
 				return;
 
-			Matrix = Matrix.LookAtLH(position, position + (Vector3)Vector3.Transform(Vector3.ForwardLH, rotationMatrix), Vector3.Up);
+			Matrix = Matrix.LookAtRH(position, position + (Vector3)Vector3.Transform(Vector3.ForwardRH, rotationMatrix), Vector3.Up);
 			updateRotationMatrix();
 			invalid = false;
 		}
@@ -60,7 +60,7 @@ namespace sadx_model_view
 		{
 			invalid = true;
 
-			var v = Vector3.Normalize(new Vector3(amount, amount, amount) * direction) * amount;
+			var v = Vector3.Normalize(amount * direction) * amount;
 			v = (Vector3)Vector3.Transform(v, rotationMatrix);
 			position += v;
 		}
@@ -73,7 +73,7 @@ namespace sadx_model_view
 		{
 			invalid = true;
 
-			rotation += v;
+			rotation -= v;
 			rotateLimit(ref rotation);
 			updateRotationMatrix();
 		}
@@ -81,7 +81,7 @@ namespace sadx_model_view
 		public void LookAt(Vector3 point)
 		{
 			invalid = true;
-			Matrix = Matrix.LookAtLH(position == Vector3.Zero ? Vector3.BackwardLH : position, point, Vector3.Up);
+			Matrix = Matrix.LookAtRH(position == Vector3.Zero ? Vector3.BackwardRH : position, point, Vector3.Up);
 
 			Quaternion q;
 			Vector3 dummy;

@@ -181,7 +181,7 @@ namespace sadx_model_view.Ninja
 				switch (set.Type)
 				{
 					case NJD_MESHSET.Tri:
-						for (int i = 0; i < set.VertexCount; i++)
+						for (int i = set.VertexCount - 1; i > 0; i--)
 						{
 							var n = set.meshes[i];
 							UpdateVertex(set, vertices, i, n);
@@ -197,12 +197,12 @@ namespace sadx_model_view.Ninja
 							var v2 = UpdateVertex(set, vertices, i, set.meshes[i + 2]);
 							var v3 = UpdateVertex(set, vertices, i, set.meshes[i + 3]);
 
-							indices.Add(v0);
-							indices.Add(v1);
-							indices.Add(v2);
-							indices.Add(v2);
-							indices.Add(v1);
 							indices.Add(v3);
+							indices.Add(v1);
+							indices.Add(v2);
+							indices.Add(v2);
+							indices.Add(v1);
+							indices.Add(v0);
 						}
 
 						break;
@@ -234,15 +234,15 @@ namespace sadx_model_view.Ninja
 									flip = !flip;
 									if (!flip)
 									{
-										indices.Add(v0);
-										indices.Add(v1);
 										indices.Add(v2);
+										indices.Add(v1);
+										indices.Add(v0);
 									}
 									else
 									{
-										indices.Add(v1);
-										indices.Add(v0);
 										indices.Add(v2);
+										indices.Add(v0);
+										indices.Add(v1);
 									}
 								}
 

@@ -109,7 +109,7 @@ namespace sadx_model_view
 						obj.CalculateRadius();
 
 						camera.Position = obj.Position;
-						camera.Translate(Vector3.BackwardLH, obj.Radius * 2.0f);
+						camera.Translate(Vector3.BackwardRH, obj.Radius * 2.0f);
 						camera.LookAt(obj.Position);
 						break;
 
@@ -318,7 +318,7 @@ namespace sadx_model_view
 				fov = 2 * (float)Math.Atan(Math.Tan(fov_h / 2.0f) * (height / width));
 			}
 
-			Matrix.PerspectiveFovLH(fov, ratio, 0.1f, 10000.0f, out projection);
+			Matrix.PerspectiveFovRH(fov, ratio, 0.1f, 10000.0f, out projection);
 		}
 
 		private void SetupScene()
@@ -365,11 +365,11 @@ namespace sadx_model_view
 
 				if (camcontrols.HasFlag(CamControls.Forward))
 				{
-					v.Z += 1.0f;
+					v.Z -= 1.0f;
 				}
 				if (camcontrols.HasFlag(CamControls.Backward))
 				{
-					v.Z -= 1.0f;
+					v.Z += 1.0f;
 				}
 
 				if (camcontrols.HasFlag(CamControls.Right))
