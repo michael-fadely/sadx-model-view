@@ -83,7 +83,8 @@
 			// openModelDialog
 			// 
 			this.openModelDialog.DefaultExt = "sa1mdl";
-			this.openModelDialog.Filter = "Sonic Adventure Model|*.sa1mdl|Sonic Adventure LandTable|*.sa1lvl|All files|*.*";
+			this.openModelDialog.Filter = "Sonic Adventure files|*.sa1mdl;*.sa1lvl|Sonic Adventure Model|*.sa1mdl|Sonic Adve" +
+    "nture LandTable|*.sa1lvl|All files|*.*";
 			this.openModelDialog.Title = "Open Model";
 			// 
 			// openTexpackDialog

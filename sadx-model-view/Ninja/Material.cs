@@ -39,11 +39,11 @@ namespace sadx_model_view.Ninja
 		/// See also:
 		/// <seealso cref="NJS_COLOR"/>
 		/// </summary>
-		/// <param name="file">A file stream containing the data.</param>
-		public NJS_MATERIAL(Stream file)
+		/// <param name="stream">A stream containing the data.</param>
+		public NJS_MATERIAL(Stream stream)
 		{
 			var buffer = new byte[SizeInBytes];
-			file.Read(buffer, 0, buffer.Length);
+			stream.Read(buffer, 0, buffer.Length);
 
 			diffuse    = new NJS_COLOR(BitConverter.ToInt32(buffer, 0x00));
 			specular   = new NJS_COLOR(BitConverter.ToInt32(buffer, 0x04));

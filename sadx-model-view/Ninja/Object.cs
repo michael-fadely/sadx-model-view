@@ -66,16 +66,16 @@ namespace sadx_model_view.Ninja
 		/// <summary>
 		/// Constructs <see cref="NJS_OBJECT"/>, its children, and all of its available members from a file.
 		/// </summary>
-		/// <param name="file">A file stream containing the data.</param>
+		/// <param name="stream">A stream containing the data.</param>
 		/// <param name="parent">A parent object.</param>
 		/// <param name="previousSibling">A previous sibling object.</param>
-		public NJS_OBJECT(Stream file, NJS_OBJECT parent = null, NJS_OBJECT previousSibling = null)
+		public NJS_OBJECT(Stream stream, NJS_OBJECT parent = null, NJS_OBJECT previousSibling = null)
 		{
 			Parent          = parent;
 			PreviousSibling = previousSibling;
 
 			var buffer = new byte[SizeInBytes];
-			file.Read(buffer, 0, buffer.Length);
+			stream.Read(buffer, 0, buffer.Length);
 
 			evalflags = BitConverter.ToUInt32(buffer, 0);
 
@@ -95,27 +95,27 @@ namespace sadx_model_view.Ninja
 			var child_ptr = BitConverter.ToUInt32(buffer, 0x2C);
 			var sibling_ptr = BitConverter.ToUInt32(buffer, 0x30);
 
-			var position = file.Position;
+			var position = stream.Position;
 
 			if (model_ptr != 0)
 			{
-				file.Position = model_ptr;
-				Model = new NJS_MODEL(file);
+				stream.Position = model_ptr;
+				Model = new NJS_MODEL(stream);
 			}
 
 			if (child_ptr != 0)
 			{
-				file.Position = child_ptr;
-				Child = new NJS_OBJECT(file, this, previousSibling);
+				stream.Position = child_ptr;
+				Child = new NJS_OBJECT(stream, this, previousSibling);
 			}
 
 			if (sibling_ptr != 0)
 			{
-				file.Position = sibling_ptr;
-				Sibling = new NJS_OBJECT(file, parent, this);
+				stream.Position = sibling_ptr;
+				Sibling = new NJS_OBJECT(stream, parent, this);
 			}
 
-			file.Position = position;
+			stream.Position = position;
 		}
 
 		/// <summary>

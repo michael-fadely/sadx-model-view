@@ -65,12 +65,16 @@
     <Compile Include="Camera.cs" />
     <Compile Include="DeltaTime.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="SA1\Col.cs" />
+    <Compile Include="SA1\GeoAnimData.cs" />
+    <Compile Include="SA1\LandTable.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Ninja\Action.cs" />
     <Compile Include="Ninja\Color.cs" />
     <Compile Include="Ninja\Material.cs" />
     <Compile Include="Ninja\MatrixStack.cs" />
@@ -78,6 +82,7 @@
     <Compile Include="Ninja\Model.cs" />
     <Compile Include="Ninja\Object.cs" />
     <Compile Include="Ninja\Rotation3.cs" />
+    <Compile Include="Ninja\Texlist.cs" />
     <Compile Include="Ninja\Util.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

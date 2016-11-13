@@ -20,11 +20,11 @@ namespace sadx_model_view.Ninja
 		/// <seealso cref="NJS_MESHSET"/>
 		/// <seealso cref="NJS_MATERIAL"/>
 		/// </summary>
-		/// <param name="file">A file stream containing the data.</param>
-		public NJS_MODEL(Stream file)
+		/// <param name="stream">A stream containing the data.</param>
+		public NJS_MODEL(Stream stream)
 		{
 			var buffer = new byte[SizeInBytes];
-			file.Read(buffer, 0, buffer.Length);
+			stream.Read(buffer, 0, buffer.Length);
 
 			nbPoint   = BitConverter.ToInt32(buffer, 0x08);
 			nbMeshset = BitConverter.ToUInt16(buffer, 0x14);
@@ -38,7 +38,7 @@ namespace sadx_model_view.Ninja
 			meshsets  = new List<NJS_MESHSET>();
 			mats      = new List<NJS_MATERIAL>();
 
-			var position = file.Position;
+			var position = stream.Position;
 
 			if (nbPoint > 0)
 			{
@@ -46,11 +46,11 @@ namespace sadx_model_view.Ninja
 
 				if (points_ptr > 0)
 				{
-					file.Position = points_ptr;
+					stream.Position = points_ptr;
 
 					for (var i = 0; i < nbPoint; i++)
 					{
-						var v = Util.VectorFromStream(file);
+						var v = Util.VectorFromStream(stream);
 						points.Add(v);
 					}
 				}
@@ -59,11 +59,11 @@ namespace sadx_model_view.Ninja
 
 				if (normals_ptr > 0)
 				{
-					file.Position = normals_ptr;
+					stream.Position = normals_ptr;
 
 					for (var i = 0; i < nbPoint; i++)
 					{
-						var v = Util.VectorFromStream(file);
+						var v = Util.VectorFromStream(stream);
 						normals.Add(v);
 					}
 				}
@@ -72,20 +72,20 @@ namespace sadx_model_view.Ninja
 			var meshsets_ptr = BitConverter.ToUInt32(buffer, 0x0C);
 			if (nbMeshset > 0 && meshsets_ptr > 0)
 			{
-				file.Position = meshsets_ptr;
+				stream.Position = meshsets_ptr;
 				for (var i = 0; i < nbMeshset; i++)
-					meshsets.Add(new NJS_MESHSET(file));
+					meshsets.Add(new NJS_MESHSET(stream));
 			}
 
 			var mats_ptr = BitConverter.ToUInt32(buffer, 0x10);
 			if (nbMat > 0 && mats_ptr > 0)
 			{
-				file.Position = mats_ptr;
+				stream.Position = mats_ptr;
 				for (var i = 0; i < nbMeshset; i++)
-					mats.Add(new NJS_MATERIAL(file));
+					mats.Add(new NJS_MATERIAL(stream));
 			}
 
-			file.Position = position;
+			stream.Position = position;
 		}
 
 		/// <summary>
@@ -456,11 +456,18 @@ namespace sadx_model_view.Ninja
 
 			foreach (var set in meshsets)
 			{
-				var i = set.MaterialId;
-				var material = mats[i];
+				if (mats.Count > 0)
+				{
+					var i = set.MaterialId;
 
-				// Set up rendering parameters based on this material.
-				SetSADXMaterial(device, material);
+					if (i < mats.Count)
+					{
+						var material = mats[i];
+
+						// Set up rendering parameters based on this material.
+						SetSADXMaterial(device, material);
+					}
+				}
 
 				// Set the stream source to the current meshset's vertex buffer.
 				device.SetStreamSource(0, VertexBuffer, 0, Vertex.SizeInBytes);

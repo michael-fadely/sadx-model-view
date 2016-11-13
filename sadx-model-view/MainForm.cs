@@ -4,6 +4,7 @@ using System.IO;
 using System.Windows.Forms;
 using System.Text;
 using sadx_model_view.Ninja;
+using sadx_model_view.SA1;
 using SharpDX.Direct3D9;
 using SharpDX;
 using SharpDX.Mathematics.Interop;
@@ -31,6 +32,7 @@ namespace sadx_model_view
 
 		private int step;
 		private NJS_OBJECT obj;
+		private LandTable landTable;
 
 		private enum ChunkTypes : uint
 		{
@@ -68,24 +70,15 @@ namespace sadx_model_view
 				return;
 			}
 
-			foreach (var texture in TexturePool)
-			{
-				texture.Dispose();
-			}
+			ClearTexturePool();
 
-			TexturePool.Clear();
-
-			var whatever = dialog.FileName;
-			if (string.Compare(Path.GetExtension(whatever), ".sa1mdl", StringComparison.InvariantCultureIgnoreCase) != 0)
-				throw new NotImplementedException();
-
-			using (var file = new FileStream(whatever, FileMode.Open))
+			using (var file = new FileStream(dialog.FileName, FileMode.Open))
 			{
 				var signature = new byte[6];
 				file.Read(signature, 0, 6);
-				var str = Encoding.UTF8.GetString(signature);
+				var signatureStr = Encoding.UTF8.GetString(signature);
 
-				if (str != "SA1MDL")
+				if (signatureStr != "SA1MDL" && signatureStr != "SA1LVL")
 					throw new NotImplementedException();
 
 				var buffer = new byte[4096];
@@ -103,13 +96,31 @@ namespace sadx_model_view
 				file.Position = object_ptr;
 
 				obj?.Dispose();
-				obj = new NJS_OBJECT(file);
-				obj.CommitVertexBuffer(device);
-				obj.CalculateRadius();
+				landTable?.Dispose();
 
-				camera.Position = obj.Position;
-				camera.Translate(Vector3.BackwardLH, obj.Radius * 2.0f);
-				camera.LookAt(obj.Position);
+				obj = null;
+				landTable = null;
+
+				switch (signatureStr)
+				{
+					case "SA1MDL":
+						obj = new NJS_OBJECT(file);
+						obj.CommitVertexBuffer(device);
+						obj.CalculateRadius();
+
+						camera.Position = obj.Position;
+						camera.Translate(Vector3.BackwardLH, obj.Radius * 2.0f);
+						camera.LookAt(obj.Position);
+						break;
+
+					case "SA1LVL":
+						landTable = new LandTable(file);
+						landTable.CommitVertexBuffer(device);
+						break;
+
+					default:
+						throw new NotImplementedException(signatureStr);
+				}
 
 				if (metadata_ptr == 0)
 					return;
@@ -119,7 +130,6 @@ namespace sadx_model_view
 
 				// ReSharper disable once CollectionNeverQueried.Local
 				var labels = new List<KeyValuePair<uint, string>>();
-
 				// ReSharper disable once NotAccessedVariable
 				var description = string.Empty;
 				// ReSharper disable once NotAccessedVariable
@@ -246,6 +256,16 @@ namespace sadx_model_view
 			}
 		}
 
+		private static void ClearTexturePool()
+		{
+			foreach (var texture in TexturePool)
+			{
+				texture.Dispose();
+			}
+
+			TexturePool.Clear();
+		}
+
 		private void OnShown(object sender, EventArgs e)
 		{
 			present = new PresentParameters(ClientSize.Width, ClientSize.Height)
@@ -255,7 +275,7 @@ namespace sadx_model_view
 				BackBufferFormat       = Format.X8R8G8B8,
 				EnableAutoDepthStencil = true,
 				AutoDepthStencilFormat = Format.D24X8,
-				PresentationInterval   = PresentInterval.One
+				PresentationInterval   = PresentInterval.Immediate
 			};
 
 			direct3d = new Direct3D();
@@ -387,6 +407,7 @@ namespace sadx_model_view
 
 			SetupScene();
 			obj?.Draw(device);
+			landTable?.Draw(device);
 
 			device.EndScene();
 			device.Present();

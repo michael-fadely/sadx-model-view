@@ -152,11 +152,11 @@ namespace sadx_model_view.Ninja
 		/// <summary>
 		/// Constructs a <see cref="NJS_MESHSET"/> from a file.
 		/// </summary>
-		/// <param name="file">A file stream containing the data.</param>
-		public NJS_MESHSET(Stream file)
+		/// <param name="stream">A stream containing the data.</param>
+		public NJS_MESHSET(Stream stream)
 		{
 			var buffer = new byte[SizeInBytes];
-			file.Read(buffer, 0, buffer.Length);
+			stream.Read(buffer, 0, buffer.Length);
 
 			IndexBuffer = null;
 
@@ -175,14 +175,14 @@ namespace sadx_model_view.Ninja
 			vertcolor = new List<NJS_COLOR>();
 			vertuv    = new List<NJS_TEX>();
 
-			var position = file.Position;
+			var position = stream.Position;
 
 			VertexCount = 0;
 			PrimitiveCount = 0;
 
 			if (meshes_ptr != 0)
 			{
-				file.Position = meshes_ptr;
+				stream.Position = meshes_ptr;
 				var meshesBuffer = new byte[2];
 
 				Type = Type;
@@ -195,7 +195,7 @@ namespace sadx_model_view.Ninja
 
 						for (int i = 0; i < VertexCount; i++)
 						{
-							file.Read(meshesBuffer, 0, sizeof(short));
+							stream.Read(meshesBuffer, 0, sizeof(short));
 							meshes.Add(BitConverter.ToInt16(meshesBuffer, 0));
 						}
 						break;
@@ -206,7 +206,7 @@ namespace sadx_model_view.Ninja
 
 						for (int i = 0; i < VertexCount; i++)
 						{
-							file.Read(meshesBuffer, 0, sizeof(short));
+							stream.Read(meshesBuffer, 0, sizeof(short));
 							meshes.Add(BitConverter.ToInt16(meshesBuffer, 0));
 						}
 						break;
@@ -215,7 +215,7 @@ namespace sadx_model_view.Ninja
 					case NJD_MESHSET.Strip:
 						for (int i = 0; i < nbMesh; i++)
 						{
-							file.Read(meshesBuffer, 0, sizeof(short));
+							stream.Read(meshesBuffer, 0, sizeof(short));
 							var n = BitConverter.ToInt16(meshesBuffer, 0);
 							meshes.Add(n);
 
@@ -225,7 +225,7 @@ namespace sadx_model_view.Ninja
 
 							for (int j = 0; j < n; j++)
 							{
-								file.Read(meshesBuffer, 0, sizeof(short));
+								stream.Read(meshesBuffer, 0, sizeof(short));
 								meshes.Add(BitConverter.ToInt16(meshesBuffer, 0));
 							}
 
@@ -247,9 +247,9 @@ namespace sadx_model_view.Ninja
 
 			if (attrs_ptr != 0)
 			{
-				file.Position = attrs_ptr;
+				stream.Position = attrs_ptr;
 				var attrsBuffer = new byte[sizeof(uint) * VertexCount];
-				file.Read(attrsBuffer, 0, attrsBuffer.Length);
+				stream.Read(attrsBuffer, 0, attrsBuffer.Length);
 
 				for (var i = 0; i < VertexCount; i++)
 					attrs.Add(BitConverter.ToUInt32(attrsBuffer, sizeof(uint) * i));
@@ -257,9 +257,9 @@ namespace sadx_model_view.Ninja
 
 			if (normals_ptr != 0)
 			{
-				file.Position = normals_ptr;
+				stream.Position = normals_ptr;
 				var normalsBuffer = new byte[Vector3.SizeInBytes * VertexCount];
-				file.Read(normalsBuffer, 0, normalsBuffer.Length);
+				stream.Read(normalsBuffer, 0, normalsBuffer.Length);
 
 				for (var i = 0; i < VertexCount; i++)
 				{
@@ -270,9 +270,9 @@ namespace sadx_model_view.Ninja
 
 			if (vertcolor_ptr != 0)
 			{
-				file.Position = vertcolor_ptr;
+				stream.Position = vertcolor_ptr;
 				var vertcolorBuffer = new byte[sizeof(int) * VertexCount];
-				file.Read(vertcolorBuffer, 0, vertcolorBuffer.Length);
+				stream.Read(vertcolorBuffer, 0, vertcolorBuffer.Length);
 
 				for (var i = 0; i < VertexCount; i++)
 				{
@@ -282,15 +282,15 @@ namespace sadx_model_view.Ninja
 
 			if (vertuv_ptr != 0)
 			{
-				file.Position = vertuv_ptr;
+				stream.Position = vertuv_ptr;
 				var vertuvBuffer = new byte[NJS_TEX.SizeInBytes * VertexCount];
-				file.Read(vertuvBuffer, 0, vertuvBuffer.Length);
+				stream.Read(vertuvBuffer, 0, vertuvBuffer.Length);
 
 				for (var i = 0; i < VertexCount; i++)
 					vertuv.Add(new NJS_TEX(ref vertuvBuffer, NJS_TEX.SizeInBytes * i));
 			}
 
-			file.Position = position;
+			stream.Position = position;
 		}
 
 		/// <summary>
