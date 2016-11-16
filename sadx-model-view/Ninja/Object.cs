@@ -99,8 +99,7 @@ namespace sadx_model_view.Ninja
 
 			if (model_ptr != 0)
 			{
-				stream.Position = model_ptr;
-				Model = new NJS_MODEL(stream);
+				Model = ModelCache.FromStream(stream, model_ptr);
 			}
 
 			if (child_ptr != 0)

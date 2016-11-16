@@ -24,12 +24,32 @@ namespace sadx_model_view.Ninja
 
 	class NJS_ACTION : IDisposable
 	{
+		public static int SizeInBytes => 0x8;
+
 		public NJS_OBJECT _object;
 		public NJS_MOTION motion;
 
 		public NJS_ACTION(Stream stream)
 		{
-			throw new NotImplementedException();
+			var buffer = new byte[SizeInBytes];
+			stream.Read(buffer, 0, buffer.Length);
+			var position = stream.Position;
+
+			var object_ptr = BitConverter.ToUInt32(buffer, 0);
+			var motion_ptr = BitConverter.ToUInt32(buffer, 4);
+
+			if (object_ptr > 0)
+			{
+				_object = ObjectCache.FromStream(stream, object_ptr);
+			}
+
+			if (motion_ptr > 0)
+			{
+				// TODO: actually implement
+				motion = new NJS_MOTION();
+			}
+
+			stream.Position = position;
 		}
 
 		public NJS_ACTION()

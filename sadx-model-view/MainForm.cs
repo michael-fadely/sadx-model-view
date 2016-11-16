@@ -121,6 +121,7 @@ namespace sadx_model_view
 				}
 
 				ObjectCache.Clear();
+				ModelCache.Clear();
 
 				if (metadata_ptr == 0)
 					return;
