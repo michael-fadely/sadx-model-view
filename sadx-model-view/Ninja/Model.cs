@@ -192,10 +192,10 @@ namespace sadx_model_view.Ninja
 					case NJD_MESHSET.Quad:
 						for (int i = 0; i < set.VertexCount; i += 4)
 						{
-							var v0 = UpdateVertex(set, vertices, i, set.meshes[i + 0]);
-							var v1 = UpdateVertex(set, vertices, i, set.meshes[i + 1]);
-							var v2 = UpdateVertex(set, vertices, i, set.meshes[i + 2]);
-							var v3 = UpdateVertex(set, vertices, i, set.meshes[i + 3]);
+							var v0 = UpdateVertex(set, vertices, i + 0, set.meshes[i + 0]);
+							var v1 = UpdateVertex(set, vertices, i + 1, set.meshes[i + 1]);
+							var v2 = UpdateVertex(set, vertices, i + 2, set.meshes[i + 2]);
+							var v3 = UpdateVertex(set, vertices, i + 3, set.meshes[i + 3]);
 
 							indices.Add(v3);
 							indices.Add(v1);
@@ -340,11 +340,10 @@ namespace sadx_model_view.Ninja
 			{
 				result = (short)vertices.Count;
 				vertices.Add(vertex);
-
 				added = true;
 			}
 
-			if (vertex.diffuse != color)
+			if (added || vertex.diffuse != color)
 			{
 				vertex.diffuse = color;
 				modified = true;
@@ -352,23 +351,16 @@ namespace sadx_model_view.Ninja
 
 			if (set.vertuv.Count != 0)
 			{
-				if (added)
-				{
-					vertex.uv = Vector2.Zero;
-				}
-
 				var uv = new Vector2(set.vertuv[localIndex].u / 255.0f, set.vertuv[localIndex].v / 255.0f);
 
-				if (vertex.uv != Vector2.Zero && vertex.uv != uv)
+				if (!added && vertex.uv != Vector2.Zero && vertex.uv != uv)
 				{
-					if (!added)
-					{
-						result = (short)vertices.Count;
-						vertices.Add(vertex);
-					}
+					result = (short)vertices.Count;
+					vertices.Add(vertex);
+					added = true;
 				}
 
-				if (modified || vertex.uv != uv)
+				if (added || vertex.uv != uv)
 				{
 					vertex.uv = uv;
 					modified = true;

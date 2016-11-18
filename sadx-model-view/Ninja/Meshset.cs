@@ -202,6 +202,8 @@ namespace sadx_model_view.Ninja
 
 					case NJD_MESHSET.Quad:
 						VertexCount = nbMesh * 4;
+						// This formula is used because these quads will later
+						// be converted to tris.
 						PrimitiveCount = nbMesh * 6 / 3;
 
 						for (int i = 0; i < VertexCount; i++)
