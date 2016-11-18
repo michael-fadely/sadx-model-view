@@ -179,7 +179,7 @@ namespace sadx_model_view.Ninja
 			{
 				var indices = new List<short>();
 
-				 switch (set.Type)
+				switch (set.Type)
 				{
 					case NJD_MESHSET.NSided:
 						throw new NotImplementedException("N-Sided strips are not supported.");
