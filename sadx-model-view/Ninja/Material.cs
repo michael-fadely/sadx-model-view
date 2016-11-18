@@ -65,10 +65,25 @@ namespace sadx_model_view.Ninja
 			attrflags  = material.attrflags;
 		}
 
+		/// <summary>
+		/// Default constructor.
+		/// Initializes a material with white diffuse color, no specular color
+		/// and the <see cref="NJD_FLAG.IgnoreLight"/>
+		/// and <see cref="NJD_FLAG.IgnoreSpecular"/> flags.
+		/// </summary>
+		public NJS_MATERIAL()
+		{
+			diffuse    = new NJS_COLOR(255, 255, 255, 255);
+			specular   = new NJS_COLOR(0);
+			exponent   = 1.0f;
+			attr_texId = 0;
+			attrflags  = NJD_FLAG.IgnoreLight | NJD_FLAG.IgnoreSpecular;
+		}
+
 		public NJS_COLOR diffuse;
 		public NJS_COLOR specular;
 		public float exponent;
-		public uint attr_texId;  /* attribute and texture ID in texlist        */
+		public uint attr_texId;      /* attribute and texture ID in texlist        */
 		public NJD_FLAG attrflags;   /* attribute flags                            */
 	}
 }

@@ -369,7 +369,14 @@ namespace sadx_model_view.Ninja
 		/// <summary>
 		/// This is the texture transformation matrix that SADX uses to anything with an environment map.
 		/// </summary>
-		private static readonly Matrix environmentMapTransform = new Matrix(-0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f);
+		private static readonly Matrix environmentMapTransform = new Matrix(
+			-0.5f, 0.0f, 0.0f, 0.0f,
+			 0.0f, 0.5f, 0.0f, 0.0f,
+			 0.0f, 0.0f, 1.0f, 0.0f,
+			 0.5f, 0.5f, 0.0f, 1.0f
+		);
+
+		private static readonly NJS_MATERIAL nullMaterial = new NJS_MATERIAL();
 
 		private static void SetSADXMaterial(Device device, NJS_MATERIAL material)
 		{
@@ -471,14 +478,11 @@ namespace sadx_model_view.Ninja
 				if (mats.Count > 0)
 				{
 					var i = set.MaterialId;
-
-					if (i < mats.Count)
-					{
-						var material = mats[i];
-
-						// Set up rendering parameters based on this material.
-						SetSADXMaterial(device, material);
-					}
+					SetSADXMaterial(device, i < mats.Count ? mats[i] : nullMaterial);
+				}
+				else
+				{
+					SetSADXMaterial(device, nullMaterial);
 				}
 
 				// Set the stream source to the current meshset's vertex buffer.
