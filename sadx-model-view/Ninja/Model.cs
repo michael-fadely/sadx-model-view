@@ -181,9 +181,8 @@ namespace sadx_model_view.Ninja
 
 				switch (set.Type)
 				{
-					// TODO: fix (see: jam model)
 					case NJD_MESHSET.Tri:
-						for (int i = set.VertexCount - 1; i > 0; i--)
+						for (int i = set.VertexCount - 1; i >= 0; i--)
 						{
 							var n = set.meshes[i];
 							UpdateVertex(set, vertices, i, n);
