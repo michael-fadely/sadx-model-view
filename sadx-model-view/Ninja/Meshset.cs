@@ -51,8 +51,8 @@ namespace sadx_model_view.Ninja
 		public static int SizeInBytes => 36;
 		public RawVector3 position;
 		public RawVector3 normal;
-		public RawColorBGRA diffuse;
-		public RawVector2 uv;
+		public RawColorBGRA? diffuse;
+		public RawVector2? uv;
 	}
 
 	/// <summary>

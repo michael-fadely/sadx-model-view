@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using SharpDX;
 using SharpDX.Direct3D9;
+using SharpDX.Mathematics.Interop;
 
 namespace sadx_model_view.Ninja
 {
@@ -170,8 +171,8 @@ namespace sadx_model_view.Ninja
 			{
 				position = point,
 				normal   = normals.Count > 0 ? normals[i] : Vector3.Up,
-				diffuse  = new ColorBGRA(0, 0, 0, 0),
-				uv       = Vector2.Zero
+				diffuse  = null,
+				uv       = null
 			}).ToList();
 
 			foreach (NJS_MESHSET set in meshsets)
@@ -180,6 +181,7 @@ namespace sadx_model_view.Ninja
 
 				switch (set.Type)
 				{
+					// TODO: fix (see: jam model)
 					case NJD_MESHSET.Tri:
 						for (int i = set.VertexCount - 1; i > 0; i--)
 						{
@@ -211,7 +213,6 @@ namespace sadx_model_view.Ninja
 					case NJD_MESHSET.NSided:
 						{
 							int index = 0;
-							int v = 0;
 							for (int i = 0; i < set.nbMesh; i++)
 							{
 								var n = set.meshes[index++];
@@ -222,7 +223,8 @@ namespace sadx_model_view.Ninja
 
 								for (int j = 0; j < n; j++)
 								{
-									_indices.Add(UpdateVertex(set, vertices, v++, set.meshes[index + j]));
+									// i - (k + 1), where i = index and k = mesh number
+									_indices.Add(UpdateVertex(set, vertices, index - (i + 1), set.meshes[index++]));
 								}
 
 								for (int k = 0; k < _indices.Count - 2; k++)
@@ -245,8 +247,6 @@ namespace sadx_model_view.Ninja
 										indices.Add(v1);
 									}
 								}
-
-								index += n;
 							}
 
 							break;
@@ -299,13 +299,17 @@ namespace sadx_model_view.Ninja
 					stream.Write(v.normal.Y);
 					stream.Write(v.normal.Z);
 
-					stream.Write(v.diffuse.R);
-					stream.Write(v.diffuse.G);
-					stream.Write(v.diffuse.B);
-					stream.Write(v.diffuse.A);
+					RawColorBGRA color = v.diffuse == null ? Color.White : v.diffuse.Value;
 
-					stream.Write(v.uv.X);
-					stream.Write(v.uv.Y);
+					stream.Write(color.R);
+					stream.Write(color.G);
+					stream.Write(color.B);
+					stream.Write(color.A);
+
+					var uv = v.uv == null ? (RawVector2)Vector2.Zero : v.uv.Value;
+
+					stream.Write(uv.X);
+					stream.Write(uv.Y);
 				}
 
 				if (stream.RemainingLength != 0)
@@ -317,59 +321,46 @@ namespace sadx_model_view.Ninja
 			vertexBuffer.Unlock();
 		}
 
-		private static short UpdateVertex(NJS_MESHSET set, IList<Vertex> vertices, int localIndex, int globalIndex)
+		/// <summary>
+		/// Updates the specified vertex with UV cooridnates and/or colors.
+		/// Creates a new vertex if a vertex is used more than once with different colors or UVs.
+		/// </summary>
+		/// <param name="set">Meshset containing metadata.</param>
+		/// <param name="vertices">List of vertices to update.</param>
+		/// <param name="localIndex">Index of the current UV cooridnates and/or color to use.</param>
+		/// <param name="vertexIndex">Index of the vertex in <paramref name="vertices"/>.</param>
+		/// <returns><paramref name="localIndex"/> if the vertex was updated, or a new index if a new vertex was added.</returns>
+		private static short UpdateVertex(NJS_MESHSET set, IList<Vertex> vertices, int localIndex, int vertexIndex)
 		{
-			bool modified = false;
-			bool added    = false;
-			var result    = globalIndex;
+			bool added = false;
+			var result = vertexIndex;
 
-			ColorBGRA color;
+			var vertex = vertices[vertexIndex];
+
 			if (set.vertcolor.Count != 0)
 			{
-				var vcolor = set.vertcolor[localIndex].argb;
-				color = new ColorBGRA(vcolor.b, vcolor.g, vcolor.r, vcolor.a);
-			}
-			else
-			{
-				color = Color.White;
-			}
-
-			var vertex = vertices[globalIndex];
-
-			if (vertex.diffuse != new ColorBGRA(0, 0, 0, 0) && vertex.diffuse != color)
-			{
-				result = (short)vertices.Count;
-				vertices.Add(vertex);
-				added = true;
-			}
-
-			if (added || vertex.diffuse != color)
-			{
-				vertex.diffuse = color;
-				modified = true;
-			}
-
-			if (set.vertuv.Count != 0)
-			{
-				var uv = new Vector2(set.vertuv[localIndex].u / 255.0f, set.vertuv[localIndex].v / 255.0f);
-
-				if (!added && vertex.uv != Vector2.Zero && vertex.uv != uv)
+				if (vertex.diffuse.HasValue)
 				{
 					result = (short)vertices.Count;
 					vertices.Add(vertex);
 					added = true;
 				}
 
-				if (added || vertex.uv != uv)
-				{
-					vertex.uv = uv;
-					modified = true;
-				}
+				var vcolor = set.vertcolor[localIndex].argb;
+				vertex.diffuse = new ColorBGRA(vcolor.b, vcolor.g, vcolor.r, vcolor.a);
 			}
 
-			if (!modified)
+			if (set.vertuv.Count != 0)
 			{
-				return (short)globalIndex;
+				var uv = new Vector2(set.vertuv[localIndex].u / 255.0f, set.vertuv[localIndex].v / 255.0f);
+
+				if (!added && vertex.uv.HasValue)
+				{
+					result = (short)vertices.Count;
+					vertices.Add(vertex);
+				}
+
+				vertex.uv = uv;
 			}
 
 			vertices[result] = vertex;
