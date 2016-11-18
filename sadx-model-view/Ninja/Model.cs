@@ -179,8 +179,11 @@ namespace sadx_model_view.Ninja
 			{
 				var indices = new List<short>();
 
-				switch (set.Type)
+				 switch (set.Type)
 				{
+					case NJD_MESHSET.NSided:
+						throw new NotImplementedException("N-Sided strips are not supported.");
+
 					case NJD_MESHSET.Tri:
 						for (int i = set.VertexCount - 1; i >= 0; i--)
 						{
@@ -209,7 +212,6 @@ namespace sadx_model_view.Ninja
 						break;
 
 					case NJD_MESHSET.Strip:
-					case NJD_MESHSET.NSided:
 						{
 							int index = 0;
 							for (int i = 0; i < set.nbMesh; i++)
