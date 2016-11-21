@@ -120,11 +120,11 @@ namespace sadx_model_view.SA1
 			}
 		}
 
-		public void Draw(Device device)
+		public void Draw(Device device, ref Camera camera)
 		{
 			foreach (var c in COL)
 			{
-				c.Draw(device);
+				c.Draw(device, ref camera);
 			}
 		}
 

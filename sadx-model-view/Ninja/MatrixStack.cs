@@ -86,25 +86,25 @@ namespace sadx_model_view.Ninja
 		{
 			var m = Pop();
 
-			m[M30] = v.Z * m[M20] + v.Y * m[M10] + v.X * m[M00] + m[M30];
-			m[M31] = v.Z * m[M21] + v.Y * m[M11] + v.X * m[M01] + m[M31];
-			m[M32] = v.Z * m[M22] + v.Y * m[M12] + v.X * m[M02] + m[M32];
-			m[M33] = v.Z * m[M23] + v.Y * m[M13] + v.X * m[M03] + m[M33];
+			var x = v.X;
+			var y = v.Y;
+			var z = v.Z;
+
+			m[M30] = z * m[M20] + y * m[M10] + x * m[M00] + m[M30];
+			m[M31] = z * m[M21] + y * m[M11] + x * m[M01] + m[M31];
+			m[M32] = z * m[M22] + y * m[M12] + x * m[M02] + m[M32];
+			m[M33] = z * m[M23] + y * m[M13] + x * m[M03] + m[M33];
 
 			Push(ref m);
 		}
 
-		public static void Rotate(ref Rotation3 r, bool useZXY = false)
+		public static void Rotate(ref Vector3 v, bool useZXY = false)
 		{
-			if (r.X == 0 && r.Y == 0 && r.Z == 0)
-				return;
-
-			var v = Util.AngleToRadian(ref r);
 			var m = Pop();
 
 			if (useZXY)
 			{
-				if (r.Y != 0)
+				if (v.Y != 0)
 				{
 					var sin = (float)Math.Sin(v.Y);
 					var cos = (float)Math.Cos(v.Y);
@@ -123,7 +123,7 @@ namespace sadx_model_view.Ninja
 					m[M23] = cos * m[M23] + m03 * sin;
 				}
 
-				if (r.X != 0)
+				if (v.X != 0)
 				{
 					var sin = (float)Math.Sin(v.X);
 					var cos = (float)Math.Cos(v.X);
@@ -142,7 +142,7 @@ namespace sadx_model_view.Ninja
 					m[M23] = cos * m[M23] - m13 * sin;
 				}
 
-				if (r.Z != 0)
+				if (v.Z != 0)
 				{
 					var sin = (float)Math.Sin(v.Z);
 					var cos = (float)Math.Cos(v.Z);
@@ -163,7 +163,7 @@ namespace sadx_model_view.Ninja
 			}
 			else
 			{
-				if (r.Z != 0)
+				if (v.Z != 0)
 				{
 					var sin = (float)Math.Sin(v.Z);
 					var cos = (float)Math.Cos(v.Z);
@@ -182,7 +182,7 @@ namespace sadx_model_view.Ninja
 					m[M13] = cos * m[M13] - m03 * sin;
 				}
 
-				if (r.Y != 0)
+				if (v.Y != 0)
 				{
 					var sin = (float)Math.Sin(v.Y);
 					var cos = (float)Math.Cos(v.Y);
@@ -201,7 +201,7 @@ namespace sadx_model_view.Ninja
 					m[M23] = cos * m[M23] + m03 * sin;
 				}
 
-				if (r.X != 0)
+				if (v.X != 0)
 				{
 					var sin = (float)Math.Sin(v.X);
 					var cos = (float)Math.Cos(v.X);
@@ -222,6 +222,15 @@ namespace sadx_model_view.Ninja
 			}
 
 			Push(ref m);
+		}
+
+		public static void Rotate(ref Rotation3 r, bool useZXY = false)
+		{
+			if (r.X == 0 && r.Y == 0 && r.Z == 0)
+				return;
+
+			var v = Util.AngleToRadian(ref r);
+			Rotate(ref v, useZXY);
 		}
 
 		public static void Scale(ref Vector3 v)
@@ -248,6 +257,36 @@ namespace sadx_model_view.Ninja
 		{
 			RawMatrix m = Peek();
 			device.SetTransform(state, ref m);
+		}
+
+		public static void CalcPoint(ref Vector3 vs, out Vector3 vd)
+		{
+			var m = Peek();
+			var x = vs.X;
+			var y = vs.Y;
+			var z = vs.Z;
+
+			vd.X = z * m[M20] + y * m[M10] + x * m[M00] + m[M30];
+			vd.Y = z * m[M21] + y * m[M11] + x * m[M01] + m[M31];
+			vd.Z = z * m[M22] + y * m[M12] + x * m[M02] + m[M32];
+		}
+
+		public static void CalcVector(ref Vector3 vs, out Vector3 vd)
+		{
+			var m = Peek();
+			var x = vs.X;
+			var y = vs.Y;
+			var z = vs.Z;
+
+			vd.X = z * m[M20] + y * m[M10] + x * m[M00];
+			vd.Y = z * m[M21] + y * m[M11] + x * m[M01];
+			vd.Z = z * m[M22] + y * m[M12] + x * m[M02];
+		}
+
+		public static void Multiply(ref Matrix m)
+		{
+			Matrix top = Pop() * m;
+			Push(ref top);
 		}
 	}
 }

@@ -67,6 +67,7 @@
     <Compile Include="Extensions.cs" />
     <Compile Include="Ninja\ModelCache.cs" />
     <Compile Include="Ninja\ObjectCache.cs" />
+    <Compile Include="Ninja\Screen.cs" />
     <Compile Include="SA1\Col.cs" />
     <Compile Include="SA1\GeoAnimData.cs" />
     <Compile Include="SA1\LandTable.cs" />

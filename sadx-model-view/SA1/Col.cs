@@ -53,10 +53,13 @@ namespace sadx_model_view.SA1
 		public Vector3 Center;
 		public float Radius;
 
+		// ReSharper disable once NotAccessedField.Local
 		private int pad_a;
+		// ReSharper disable once NotAccessedField.Local
 		private int pad_b;
 
 		public NJS_OBJECT Object;
+		// ReSharper disable once NotAccessedField.Local
 		private int anonymous_6;
 		public ColFlags Flags;
 
@@ -115,12 +118,12 @@ namespace sadx_model_view.SA1
 			Object?.CommitVertexBuffer(device);
 		}
 
-		public void Draw(Device device)
+		public void Draw(Device device, ref Camera camera)
 		{
 			if (!Flags.HasFlag(ColFlags.Visible))
 				return;
 
-			Object?.Draw(device);
+			Object?.Draw(device, ref camera);
 		}
 
 		public void Sort()

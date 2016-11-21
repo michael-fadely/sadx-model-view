@@ -17,6 +17,8 @@ namespace sadx_model_view
 		public static Cull CullMode = Cull.Counterclockwise;
 		// TODO: not this
 		public static readonly List<Texture> TexturePool = new List<Texture>();
+		// TODO: not this
+		public static NJS_SCREEN Screen;
 
 		// SADX's default horizontal field of view.
 		private static readonly float fov_h = MathUtil.DegreesToRadians(70);
@@ -26,9 +28,7 @@ namespace sadx_model_view
 		private Direct3D direct3d;
 		private Device device;
 		private PresentParameters present;
-		private Matrix projection;
 
-		private int step;
 		private NJS_OBJECT obj;
 		private LandTable landTable;
 
@@ -53,7 +53,7 @@ namespace sadx_model_view
 			Direction = new RawVector3(0.0f, -1.0f, 0.0f)
 		};
 
-		private readonly Camera camera = new Camera();
+		private Camera camera = new Camera();
 
 		public MainForm()
 		{
@@ -319,7 +319,25 @@ namespace sadx_model_view
 				fov = 2 * (float)Math.Atan(Math.Tan(fov_h / 2.0f) * (height / width));
 			}
 
-			Matrix.PerspectiveFovRH(fov, ratio, 0.1f, 10000.0f, out projection);
+			const float defaultRatio = 4.0f / 3.0f;
+
+			if (height * defaultRatio == width || height * defaultRatio > width)
+			{
+				var tan = 2.0f * (float)Math.Tan(h / 2.0f);
+				Screen.dist = width / tan;
+			}
+			else
+			{
+				var tan = 2.0f * (float)Math.Tan(fov / 2.0f);
+				Screen.dist = height / tan;
+			}
+
+			Screen.w = width;
+			Screen.h = height;
+			Screen.cx = width / 2.0f;
+			Screen.cy = height / 2.0f;
+
+			camera.SetProjection(fov, ratio, -1.0f, -2300.0f);
 		}
 
 		private void SetupScene()
@@ -349,8 +367,7 @@ namespace sadx_model_view
 			device.SetTextureStageState(0, TextureStage.AlphaArg1,      TextureOperation.SelectArg1);
 			device.SetTextureStageState(0, TextureStage.AlphaArg2,      TextureOperation.Disable);
 
-			device.SetTransform(TransformState.Projection, projection);
-			device.SetTransform(TransformState.World,      Matrix.Identity);
+			device.SetTransform(TransformState.World, Matrix.Identity);
 			SetViewMatrix();
 
 			device.SetLight(0, ref light);
@@ -358,6 +375,7 @@ namespace sadx_model_view
 		}
 
 		private float speed = 0.5f;
+
 		private void SetViewMatrix()
 		{
 			if (camcontrols != CamControls.None)
@@ -394,28 +412,32 @@ namespace sadx_model_view
 				camera.Translate(v, speed * DeltaTime.Delta);
 			}
 
-			camera.UpdateMatrix();
-			device.SetTransform(TransformState.View, camera.Matrix);
+			if (!camera.Invalid)
+			{
+				return;
+			}
+
+			camera.Update();
+			device.SetTransform(TransformState.View, camera.View);
+			device.SetTransform(TransformState.Projection, camera.Projection);
 		}
 
+		// TODO: conditional render (only render when the scene has been invalidated)
 		public void MainLoop()
 		{
 			DeltaTime.Update();
 			if (WindowState == FormWindowState.Minimized)
 				return;
 
-			// TODO: conditional render (only render when the scene has been invalidated)
 			device.Clear(ClearFlags.Target | ClearFlags.ZBuffer, new ColorBGRA(0, 191, 191, 255), 1.0f, 0);
 			device.BeginScene();
 
 			SetupScene();
-			obj?.Draw(device);
-			landTable?.Draw(device);
+			obj?.Draw(device, ref camera);
+			landTable?.Draw(device, ref camera);
 
 			device.EndScene();
 			device.Present();
-
-			step = step + 1 % 256;
 		}
 
 		private void OnSizeChanged(object sender, EventArgs e)

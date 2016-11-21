@@ -380,6 +380,44 @@ namespace sadx_model_view.Ninja
 
 		private static readonly NJS_MATERIAL nullMaterial = new NJS_MATERIAL();
 
+		public bool IsVisible(ref Camera camera)
+		{
+			var screen = MainForm.Screen;
+			var radius = r * 1.2f;
+
+			MatrixStack.Push();
+
+			var inverse = camera.InverseView;
+			MatrixStack.Multiply(ref inverse);
+
+			Vector3 v;
+			MatrixStack.CalcPoint(ref center, out v);
+
+			MatrixStack.Pop();
+
+			if (radius - v.Z < camera.MaxDrawDistance)
+			{
+				return false;
+			}
+
+			var v2 = -v.Z - radius;
+			if (v2 > camera.MinDrawDistance)
+			{
+				return false;
+			}
+
+			var v6 = -1.0f / v2;
+			var v3 = screen.dist;
+			if ((v.X + radius) * v3 * v6 + screen.cx < 0.0 || screen.w < (v.X - radius) * v3 * v6 + screen.cx)
+			{
+				return false;
+			}
+
+			var v4 = -(0.85000002f * screen.dist);
+			return (v.Y - radius) * v4 * v6 + screen.cy >= 0.0
+			       && screen.h >= (v.Y + radius) * v4 * v6 + screen.cy;
+		}
+
 		private static void SetSADXMaterial(Device device, NJS_MATERIAL material)
 		{
 			if (material == null)
@@ -399,15 +437,10 @@ namespace sadx_model_view.Ninja
 					device.SetTexture(0, MainForm.TexturePool[n]);
 				}
 
-				if (flags.HasFlag(NJD_FLAG.Pick))
-				{
-					// TODO: not even implemented in SADX
-				}
-
-				if (flags.HasFlag(NJD_FLAG.UseAnisotropic))
-				{
-					// TODO: not even implemented in SADX
-				}
+				// Not implemented in SADX:
+				// - NJD_FLAG.Pick
+				// - NJD_FLAG.UseAnisotropic
+				// - NJD_FLAG.UseFlat
 
 				device.SetSamplerState(0, SamplerState.AddressV, flags.HasFlag(NJD_FLAG.ClampV) ? TextureAddress.Clamp : TextureAddress.Wrap);
 				device.SetSamplerState(0, SamplerState.AddressU, flags.HasFlag(NJD_FLAG.ClampU) ? TextureAddress.Clamp : TextureAddress.Wrap);
@@ -448,11 +481,6 @@ namespace sadx_model_view.Ninja
 
 			device.SetRenderState(RenderState.SpecularEnable, !flags.HasFlag(NJD_FLAG.IgnoreSpecular));
 			device.SetRenderState(RenderState.CullMode, flags.HasFlag(NJD_FLAG.DoubleSide) ? Cull.None : MainForm.CullMode);
-
-			if (flags.HasFlag(NJD_FLAG.UseFlat))
-			{
-				// TODO: not even implemented in SADX
-			}
 
 			device.EnableLight(0, !flags.HasFlag(NJD_FLAG.IgnoreLight));
 

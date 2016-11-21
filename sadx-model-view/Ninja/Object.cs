@@ -278,7 +278,7 @@ namespace sadx_model_view.Ninja
 			Sibling?.CommitVertexBuffer(device);
 		}
 
-		public void Draw(Device device)
+		public void Draw(Device device, ref Camera camera)
 		{
 			MatrixStack.Push();
 
@@ -299,18 +299,18 @@ namespace sadx_model_view.Ninja
 
 			MatrixStack.SetTransform(device);
 
-			if (!SkipDraw)
+			if (!SkipDraw && Model?.IsVisible(ref camera) == true)
 			{
 				Model?.Draw(device);
 			}
 
 			if (!SkipChildren)
 			{
-				Child?.Draw(device);
+				Child?.Draw(device, ref camera);
 			}
 
 			MatrixStack.Pop();
-			Sibling?.Draw(device);
+			Sibling?.Draw(device, ref camera);
 		}
 
 		public void CalculateRadius()
