@@ -13,6 +13,8 @@ namespace sadx_model_view
 {
 	public partial class MainForm : Form
 	{
+		private bool initialized;
+
 		// TODO: not this
 		public static Cull CullMode = Cull.Counterclockwise;
 		// TODO: not this
@@ -285,20 +287,20 @@ namespace sadx_model_view
 			device = new Device(direct3d, 0, DeviceType.Hardware, Handle, CreateFlags.HardwareVertexProcessing, present);
 
 			RefreshDevice();
+			SizeChanged += OnSizeChanged;
 		}
 
-		private bool first_time = true;
 		private void RefreshDevice()
 		{
 			UpdatePresentParameters();
 
-			if (!first_time)
+			if (initialized)
 			{
 				device.Reset(present);
 			}
 
-			first_time = false;
-			SetViewMatrix();
+			initialized = true;
+			UpdateCamera();
 			SetupScene();
 		}
 
@@ -368,7 +370,7 @@ namespace sadx_model_view
 			device.SetTextureStageState(0, TextureStage.AlphaArg2,      TextureOperation.Disable);
 
 			device.SetTransform(TransformState.World, Matrix.Identity);
-			SetViewMatrix();
+			UpdateCamera();
 
 			device.SetLight(0, ref light);
 			device.EnableLight(0, true);
@@ -376,7 +378,7 @@ namespace sadx_model_view
 
 		private float speed = 0.5f;
 
-		private void SetViewMatrix()
+		private void UpdateCamera()
 		{
 			if (camcontrols != CamControls.None)
 			{

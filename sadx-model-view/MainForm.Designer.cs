@@ -103,10 +103,9 @@
 			this.MainMenuStrip = this.menuStrip1;
 			this.MinimumSize = new System.Drawing.Size(320, 200);
 			this.Name = "MainForm";
-			this.Text = "Form1";
+			this.Text = "Model Viewer";
 			this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.OnClosed);
-			this.Shown += new System.EventHandler(this.OnShown);
-			this.SizeChanged += new System.EventHandler(this.OnSizeChanged);
+			this.Load += new System.EventHandler(this.OnShown);
 			this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MainForm_KeyDown);
 			this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.MainForm_KeyUp);
 			this.MouseMove += new System.Windows.Forms.MouseEventHandler(this.MainForm_MouseMove);
