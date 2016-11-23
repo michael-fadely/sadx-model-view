@@ -459,15 +459,15 @@ namespace sadx_model_view.Ninja
 
 				if (flags.HasFlag(NJD_FLAG.UseEnv))
 				{
-					device.SetTextureStageState(0, TextureStage.TextureTransformFlags, TextureArgument.Texture);
+					device.SetTextureStageState(0, TextureStage.TextureTransformFlags, TextureTransform.Count2);
 					device.SetTransform(TransformState.Texture0, environmentMapTransform);
 					device.SetTextureStageState(0, TextureStage.TexCoordIndex, (int)TextureCoordIndex.CameraSpaceNormal);
 				}
 				else
 				{
-					device.SetTextureStageState(0, TextureStage.TextureTransformFlags, TextureArgument.Diffuse);
+					device.SetTextureStageState(0, TextureStage.TextureTransformFlags, TextureTransform.Disable);
 					device.SetTransform(TransformState.Texture0, Matrix.Identity);
-					device.SetTextureStageState(0, TextureStage.TexCoordIndex, 0);
+					device.SetTextureStageState(0, TextureStage.TexCoordIndex, (int)TextureCoordIndex.PassThru);
 				}
 
 				if (flags.HasFlag(NJD_FLAG.UseAlpha))
