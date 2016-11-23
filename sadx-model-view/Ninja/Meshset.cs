@@ -150,6 +150,15 @@ namespace sadx_model_view.Ninja
 		public readonly List<NJS_TEX> vertuv;       /* polygon vertex uv list       */
 
 		/// <summary>
+		/// (Extension) Center of this meshset.
+		/// </summary>
+		public Vector3 Center = Vector3.Zero;
+		/// <summary>
+		/// (Extension) Radius of this meshset. This is not the square root.
+		/// </summary>
+		public float Radius = 0.0f;
+
+		/// <summary>
 		/// Constructs a <see cref="NJS_MESHSET"/> from a file.
 		/// </summary>
 		/// <param name="stream">A stream containing the data.</param>
@@ -301,6 +310,7 @@ namespace sadx_model_view.Ninja
 		/// <param name="meshset">Meshset to copy from.</param>
 		public NJS_MESHSET(NJS_MESHSET meshset)
 		{
+			// TODO: copy index buffer?
 			type_matId = meshset.type_matId;
 			nbMesh     = meshset.nbMesh;
 			meshes     = new List<short>(meshset.meshes);

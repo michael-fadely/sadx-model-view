@@ -99,6 +99,8 @@ namespace sadx_model_view.Ninja
 			normals = new List<Vector3>(model.normals);
 			nbPoint = points.Count;
 
+			// TODO: copy vertex buffer?
+
 			meshsets = new List<NJS_MESHSET>();
 			foreach (var meshset in model.meshsets)
 			{
@@ -255,6 +257,14 @@ namespace sadx_model_view.Ninja
 
 					default:
 						throw new ArgumentOutOfRangeException();
+				}
+
+				// This is used for transparent sorting.
+				List<Vector3> refPoints = indices.Distinct().Select(i => vertices[i].position).Select(dummy => (Vector3)dummy).ToList();
+				if (refPoints.Count > 0)
+				{
+					set.Center = refPoints.Aggregate((a, b) => a + b) / refPoints.Count;
+					set.Radius = refPoints.Select(point => point - set.Center).Select(distance => distance.Length()).Concat(new[] { 0.0f }).Max();
 				}
 
 				set.IndexPrimitiveCount = indices.Count / 3;
@@ -523,6 +533,35 @@ namespace sadx_model_view.Ninja
 				device.DrawIndexedPrimitive(PrimitiveType.TriangleList,
 					0, 0, vertexBufferLength, 0, set.IndexPrimitiveCount);
 			}
+		}
+
+		/// <summary>
+		/// Sorts the meshsets in this model to mitigate alpha problems.
+		/// </summary>
+		public void Sort()
+		{
+			if (nbMat < 1)
+				return;
+
+			meshsets.Sort((instance, other) =>
+			{
+				var matA = mats[instance.MaterialId];
+				var matB = mats[other.MaterialId];
+
+				if (!matA.attrflags.HasFlag(NJD_FLAG.UseAlpha))
+				{
+					return matB.attrflags.HasFlag(NJD_FLAG.UseAlpha) ? 0 : -1;
+				}
+
+				var dist = (instance.Center - other.Center).Length();
+
+				if (dist - instance.Radius < other.Radius)
+				{
+					return 1;
+				}
+
+				return -1;
+			});
 		}
 	}
 }

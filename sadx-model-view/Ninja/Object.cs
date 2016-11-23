@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using SharpDX;
 using SharpDX.Direct3D9;
 
@@ -355,75 +354,20 @@ namespace sadx_model_view.Ninja
 			return obj;
 		}
 
-		private static void Filter(NJS_OBJECT obj, bool useAlpha)
+		// TODO: Sort objects, not just meshsets.
+		private static void Sort(NJS_OBJECT obj)
 		{
-			// TODO: sort transparent mesh by radius/intersections
-			if (obj.Model != null && obj.Model.nbMat > 0)
-			{
-				NJS_MODEL model = obj.Model;
-
-				var filtered = model.meshsets.Where(x => model.mats[x.MaterialId].attrflags.HasFlag(NJD_FLAG.UseAlpha) == useAlpha).ToList();
-
-				if (filtered.Count == 0)
-				{
-					model.Dispose();
-					obj.Model = null;
-					obj.SkipDraw = true;
-				}
-				else if (filtered.Count != model.nbMeshset)
-				{
-					foreach (NJS_MESHSET m in model.meshsets
-						.Where(x => model.mats[x.MaterialId].attrflags.HasFlag(NJD_FLAG.UseAlpha) != useAlpha))
-					{
-						m.Dispose();
-					}
-
-					model.meshsets.Clear();
-					model.meshsets = filtered;
-					model.nbMeshset = (ushort)filtered.Count;
-				}
-			}
+			obj.Model?.Sort();
 
 			if (obj.Child != null)
 			{
-				Filter(obj.Child, useAlpha);
+				Sort(obj.Child);
 			}
 
 			if (obj.Sibling != null)
 			{
-				Filter(obj.Sibling, useAlpha);
+				Sort(obj.Sibling);
 			}
-		}
-
-		/// <summary>
-		/// Sorts an object and its siblings/children to ensure opaque objects are rendered first, and transparent last.
-		/// Particularly useful for Dreamcast models.
-		/// </summary>
-		/// <param name="obj">The object to sort.</param>
-		private static void Sort(NJS_OBJECT obj)
-		{
-			// first let's make a deep copy of this object...
-			var copy = Copy(obj, true, true);
-
-			Filter(obj, false);
-			Filter(copy, true);
-
-			NJS_OBJECT last;
-
-			if (obj.Sibling == null)
-			{
-				last = obj;
-			}
-			else
-			{
-				last = obj.Sibling;
-				while (last.Sibling != null)
-				{
-					last = last.Sibling;
-				}
-			}
-
-			last.Sibling = copy;
 		}
 	}
 }
