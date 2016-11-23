@@ -351,7 +351,7 @@ namespace sadx_model_view
 			device.SetRenderState(RenderState.DestinationBlend, Blend.InverseSourceAlpha);
 			device.SetRenderState(RenderState.AlphaFunc,        Compare.GreaterEqual);
 
-			device.SetRenderState(RenderState.Ambient, 0);
+			device.SetRenderState(RenderState.Ambient, unchecked((int)0xFF888888));
 
 			device.SetRenderState(RenderState.ColorVertex, true);
 			device.SetRenderState(RenderState.AmbientMaterialSource,  ColorSource.Color1);
