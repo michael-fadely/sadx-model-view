@@ -34,7 +34,8 @@
 			this.editToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.sortToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.openModelDialog = new System.Windows.Forms.OpenFileDialog();
-			this.openTexpackDialog = new System.Windows.Forms.OpenFileDialog();
+			this.openTexturesDialog = new System.Windows.Forms.OpenFileDialog();
+			this.openTexturesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.menuStrip1.SuspendLayout();
 			this.SuspendLayout();
 			// 
@@ -52,7 +53,8 @@
 			// fileToolStripMenuItem
 			// 
 			this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.openToolStripMenuItem});
+            this.openToolStripMenuItem,
+            this.openTexturesToolStripMenuItem});
 			this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
 			this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
 			this.fileToolStripMenuItem.Text = "&File";
@@ -61,7 +63,7 @@
 			// 
 			this.openToolStripMenuItem.Name = "openToolStripMenuItem";
 			this.openToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.O)));
-			this.openToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
+			this.openToolStripMenuItem.Size = new System.Drawing.Size(190, 22);
 			this.openToolStripMenuItem.Text = "&Open";
 			this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
 			// 
@@ -87,12 +89,20 @@
     "nture LandTable|*.sa1lvl|All files|*.*";
 			this.openModelDialog.Title = "Open Model";
 			// 
-			// openTexpackDialog
+			// openTexturesDialog
 			// 
-			this.openTexpackDialog.DefaultExt = "txt";
-			this.openTexpackDialog.FileName = "index.txt";
-			this.openTexpackDialog.Filter = "Index files|index.txt|All files|*.*";
-			this.openTexpackDialog.Title = "Open Texture Pack (optional)";
+			this.openTexturesDialog.DefaultExt = "txt";
+			this.openTexturesDialog.Filter = "All texture files|*.txt;*.prs;*.pvm|Texture Pack Index files|*.txt|PRS files|*.pr" +
+    "s|PVM files|*.pvm";
+			this.openTexturesDialog.Title = "Open Textures";
+			// 
+			// openTexturesToolStripMenuItem
+			// 
+			this.openTexturesToolStripMenuItem.Name = "openTexturesToolStripMenuItem";
+			this.openTexturesToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.T)));
+			this.openTexturesToolStripMenuItem.Size = new System.Drawing.Size(190, 22);
+			this.openTexturesToolStripMenuItem.Text = "Open &Textures";
+			this.openTexturesToolStripMenuItem.Click += new System.EventHandler(this.openTexturesToolStripMenuItem_Click);
 			// 
 			// MainForm
 			// 
@@ -124,7 +134,8 @@
 		private System.Windows.Forms.ToolStripMenuItem editToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem sortToolStripMenuItem;
 		private System.Windows.Forms.OpenFileDialog openModelDialog;
-		private System.Windows.Forms.OpenFileDialog openTexpackDialog;
+		private System.Windows.Forms.OpenFileDialog openTexturesDialog;
+		private System.Windows.Forms.ToolStripMenuItem openTexturesToolStripMenuItem;
 	}
 }
 

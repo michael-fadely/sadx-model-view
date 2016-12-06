@@ -1,13 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using System.Text;
+using PuyoTools.Modules.Archive;
+using PuyoTools.Modules.Compression;
 using sadx_model_view.Ninja;
 using sadx_model_view.SA1;
 using SharpDX.Direct3D9;
 using SharpDX;
 using SharpDX.Mathematics.Interop;
+using VrSharp.PvrTexture;
+
+// TODO: Mipmap mode (From Texture, Always On, Always Off, Generate)
 
 namespace sadx_model_view
 {
@@ -236,26 +244,156 @@ namespace sadx_model_view
 				MessageBox.Show(this, $"Labels:\n{thing}");
 #endif
 			}
+		}
 
-			dialog = openTexpackDialog;
+		private void openTexturesToolStripMenuItem_Click(object sender, EventArgs e)
+		{
+			var dialog = openTexturesDialog;
 			if (dialog.ShowDialog(this) != DialogResult.OK)
 			{
 				return;
 			}
 
-			var directory = Path.GetDirectoryName(dialog.FileName) ?? string.Empty;
-			string[] index = File.ReadAllLines(dialog.FileName);
+			var extension = Path.GetExtension(dialog.FileName);
 
-			foreach (var line in index)
+			if (extension == null)
 			{
-				var i = line.LastIndexOf(",", StringComparison.Ordinal);
+				MessageBox.Show(this, "no extension wtf", "wtf");
+				return;
+			}
 
-				var filename = Path.Combine(directory, line.Substring(++i));
+			if (extension.Equals(".txt", StringComparison.OrdinalIgnoreCase))
+			{
+				var directory = Path.GetDirectoryName(dialog.FileName) ?? string.Empty;
+				string[] index = File.ReadAllLines(dialog.FileName);
 
-				if (!File.Exists(filename))
-					continue;
+				foreach (var line in index)
+				{
+					var i = line.LastIndexOf(",", StringComparison.Ordinal);
 
-				TexturePool.Add(Texture.FromFile(device, filename, Usage.None, Pool.Managed));
+					var filename = Path.Combine(directory, line.Substring(++i));
+
+					if (!File.Exists(filename))
+						continue;
+
+					var texture = Texture.FromFile(device, filename, Usage.AutoGenerateMipMap, Pool.Managed);
+					texture.GenerateMipSubLevels();
+
+					TexturePool.Add(texture);
+				}
+			}
+			else if (extension.Equals(".prs", StringComparison.OrdinalIgnoreCase))
+			{
+				LoadPRS(dialog.FileName);
+			}
+			else if (extension.Equals(".pvm", StringComparison.OrdinalIgnoreCase))
+			{
+				LoadPVM(dialog.FileName);
+			}
+		}
+
+		private void LoadPRS(string fileName)
+		{
+			var prs = new PrsCompression();
+
+			using (var stream = new MemoryStream())
+			{
+				using (var file = new FileStream(fileName, FileMode.Open))
+				{
+					prs.Decompress(file, stream);
+				}
+
+				stream.Position = 0;
+				LoadPVM(stream);
+			}
+		}
+
+		private void LoadPVM(string fileName)
+		{
+			using (var file = new FileStream(fileName, FileMode.Open))
+			{
+				LoadPVM(file);
+			}
+		}
+
+		void CopyToTexture(Texture texture, Bitmap bitmap, int level)
+		{
+			DataStream data;
+			texture.LockRectangle(level, LockFlags.Discard, out data);
+
+			var bmpData = bitmap.LockBits(new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+
+			var buffer = new byte[bmpData.Stride * bitmap.Height];
+			Marshal.Copy(bmpData.Scan0, buffer, 0, buffer.Length);
+
+			bitmap.UnlockBits(bmpData);
+
+			using (var stream = new MemoryStream(buffer))
+			{
+				while (stream.Position != stream.Length)
+				{
+					for (int i = 0; i < 4; i++)
+					{
+						data.WriteByte((byte)stream.ReadByte());
+					}
+				}
+			}
+
+			if (data.RemainingLength > 0)
+			{
+				throw new ArgumentOutOfRangeException();
+			}
+
+			data.Close();
+			texture.UnlockRectangle(level);
+		}
+
+		private void LoadPVM(Stream stream)
+		{
+			var pvm = new PvmArchive();
+
+			if (!pvm.Is(stream, string.Empty))
+			{
+				MessageBox.Show("nope");
+			}
+
+			foreach (ArchiveEntry entry in pvm.Open(stream).Entries)
+			{
+				PvrTexture pvr = new PvrTexture(entry.Open());
+				Bitmap[] mipmaps = null;
+				Bitmap bitmap;
+
+				int levels = 1;
+				Usage usage = Usage.None;
+
+				if (pvr.HasMipmaps)
+				{
+					mipmaps = pvr.MipmapsToBitmap();
+					usage = Usage.None;
+					levels = mipmaps.Length;
+					bitmap = mipmaps[0];
+				}
+				else
+				{
+					bitmap = pvr.ToBitmap();
+				}
+
+				var texture = new Texture(device, bitmap.Width, bitmap.Height, levels, usage, Format.A8R8G8B8, Pool.Managed);
+
+				if (mipmaps?.Length > 0)
+				{
+					for (int i = 0; i < levels; i++)
+					{
+						CopyToTexture(texture, mipmaps[i], i);
+					}
+
+				}
+				else
+				{
+					CopyToTexture(texture, bitmap, 0);
+				}
+
+				TexturePool.Add(texture);
 			}
 		}
 
