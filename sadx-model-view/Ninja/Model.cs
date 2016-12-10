@@ -442,9 +442,6 @@ namespace sadx_model_view.Ninja
 
 		private static void SetSADXMaterial(Device device, NJS_MATERIAL material)
 		{
-			if (material == null)
-				return;
-
 			var flags = FlowControl.Apply(material.attrflags);
 
 			if (!flags.HasFlag(NJD_FLAG.UseTexture))
@@ -555,7 +552,7 @@ namespace sadx_model_view.Ninja
 		/// </summary>
 		public void Sort()
 		{
-			if (nbMat < 1)
+			if (nbMat < 2 || nbMeshset < 2)
 				return;
 
 			meshsets.Sort((instance, other) =>
@@ -563,19 +560,16 @@ namespace sadx_model_view.Ninja
 				var matA = mats[instance.MaterialId];
 				var matB = mats[other.MaterialId];
 
-				if (!matA.attrflags.HasFlag(NJD_FLAG.UseAlpha))
+				bool alphaA = matA.attrflags.HasFlag(NJD_FLAG.UseAlpha);
+				bool alphaB = matB.attrflags.HasFlag(NJD_FLAG.UseAlpha);
+
+				if (alphaA && alphaB)
 				{
-					return matB.attrflags.HasFlag(NJD_FLAG.UseAlpha) ? 0 : -1;
+					var dist = (instance.Center - other.Center).Length();
+					return dist - instance.Radius < other.Radius ? -1 : 0;
 				}
 
-				var dist = (instance.Center - other.Center).Length();
-
-				if (dist - instance.Radius < other.Radius)
-				{
-					return 1;
-				}
-
-				return -1;
+				return alphaA ? 1 : -1;
 			});
 		}
 	}
