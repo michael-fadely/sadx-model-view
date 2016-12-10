@@ -70,6 +70,7 @@
     <Compile Include="Camera.cs" />
     <Compile Include="DeltaTime.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="Ninja\FlowControl.cs" />
     <Compile Include="Ninja\ModelCache.cs" />
     <Compile Include="Ninja\ObjectCache.cs" />
     <Compile Include="Ninja\Screen.cs" />

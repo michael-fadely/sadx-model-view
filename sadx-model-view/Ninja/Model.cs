@@ -433,7 +433,7 @@ namespace sadx_model_view.Ninja
 			if (material == null)
 				return;
 
-			var flags = material.attrflags;
+			var flags = FlowControl.Apply(material.attrflags);
 
 			if (!flags.HasFlag(NJD_FLAG.UseTexture))
 			{
@@ -512,13 +512,18 @@ namespace sadx_model_view.Ninja
 		{
 			// Set the correct vertex format for model rendering.
 			device.VertexFormat = Vertex.Format;
+			ushort lastId = ushort.MaxValue;
 
 			foreach (var set in meshsets)
 			{
 				if (mats.Count > 0)
 				{
 					var i = set.MaterialId;
-					SetSADXMaterial(device, i < mats.Count ? mats[i] : nullMaterial);
+					if (i != lastId)
+					{
+						SetSADXMaterial(device, i < mats.Count ? mats[i] : nullMaterial);
+						lastId = i;
+					}
 				}
 				else
 				{

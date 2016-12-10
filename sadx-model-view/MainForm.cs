@@ -574,7 +574,14 @@ namespace sadx_model_view
 
 			SetupScene();
 			obj?.Draw(device, ref camera);
-			landTable?.Draw(device, ref camera);
+
+			if (landTable != null)
+			{
+				FlowControl.UseMaterialFlags = true;
+				FlowControl.Add(0, NJD_FLAG.IgnoreSpecular);
+				landTable.Draw(device, ref camera);
+				FlowControl.Reset();
+			}
 
 			device.EndScene();
 			device.Present();
