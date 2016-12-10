@@ -487,7 +487,7 @@ namespace sadx_model_view
 			device.SetRenderState(RenderState.ZFunc,        Compare.LessEqual);
 
 			device.SetRenderState(RenderState.AlphaBlendEnable, false);
-			device.SetRenderState(RenderState.AlphaTestEnable,  true);
+			device.SetRenderState(RenderState.AlphaTestEnable,  false);
 			device.SetRenderState(RenderState.AlphaRef,         16);
 
 			device.SetRenderState(RenderState.CullMode,         CullMode);
@@ -518,6 +518,7 @@ namespace sadx_model_view
 
 			device.SetLight(0, ref light);
 			device.EnableLight(0, true);
+			device.SetRenderState(RenderState.Lighting, true);
 		}
 
 		private float speed = 0.5f;

@@ -486,12 +486,14 @@ namespace sadx_model_view.Ninja
 			if (flags.HasFlag(NJD_FLAG.UseAlpha))
 			{
 				device.SetRenderState(RenderState.AlphaBlendEnable, true);
+				device.SetRenderState(RenderState.AlphaTestEnable, true);
 				device.SetRenderState(RenderState.DiffuseMaterialSource, ColorSource.Material);
 				device.SetTextureStageState(0, TextureStage.AlphaOperation, TextureOperation.Modulate);
 			}
 			else
 			{
 				device.SetRenderState(RenderState.AlphaBlendEnable, false);
+				device.SetRenderState(RenderState.AlphaTestEnable, false);
 				device.SetRenderState(RenderState.DiffuseMaterialSource, ColorSource.Color1);
 				device.SetTextureStageState(0, TextureStage.AlphaOperation, TextureOperation.SelectArg2);
 			}
@@ -499,7 +501,7 @@ namespace sadx_model_view.Ninja
 			device.SetRenderState(RenderState.SpecularEnable, !flags.HasFlag(NJD_FLAG.IgnoreSpecular));
 			device.SetRenderState(RenderState.CullMode, flags.HasFlag(NJD_FLAG.DoubleSide) ? Cull.None : MainForm.CullMode);
 
-			device.EnableLight(0, !flags.HasFlag(NJD_FLAG.IgnoreLight));
+			device.SetRenderState(RenderState.Lighting, !flags.HasFlag(NJD_FLAG.IgnoreLight));
 
 			var m = new Material
 			{
