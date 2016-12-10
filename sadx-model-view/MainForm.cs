@@ -262,6 +262,8 @@ namespace sadx_model_view
 				return;
 			}
 
+			ClearTexturePool();
+
 			if (extension.Equals(".txt", StringComparison.OrdinalIgnoreCase))
 			{
 				var directory = Path.GetDirectoryName(dialog.FileName) ?? string.Empty;
