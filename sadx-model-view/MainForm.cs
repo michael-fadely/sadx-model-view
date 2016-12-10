@@ -276,9 +276,7 @@ namespace sadx_model_view
 					if (!File.Exists(filename))
 						continue;
 
-					var texture = Texture.FromFile(device, filename, Usage.AutoGenerateMipMap, Pool.Managed);
-					texture.GenerateMipSubLevels();
-
+					var texture = Texture.FromFile(device, filename, Usage.None, Pool.Managed);
 					TexturePool.Add(texture);
 				}
 			}
