@@ -31,11 +31,12 @@
 			this.menuStrip1 = new System.Windows.Forms.MenuStrip();
 			this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.openTexturesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.editToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.sortToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.openModelDialog = new System.Windows.Forms.OpenFileDialog();
 			this.openTexturesDialog = new System.Windows.Forms.OpenFileDialog();
-			this.openTexturesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.scene = new sadx_model_view.Scene();
 			this.menuStrip1.SuspendLayout();
 			this.SuspendLayout();
 			// 
@@ -67,6 +68,14 @@
 			this.openToolStripMenuItem.Text = "&Open";
 			this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
 			// 
+			// openTexturesToolStripMenuItem
+			// 
+			this.openTexturesToolStripMenuItem.Name = "openTexturesToolStripMenuItem";
+			this.openTexturesToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.T)));
+			this.openTexturesToolStripMenuItem.Size = new System.Drawing.Size(190, 22);
+			this.openTexturesToolStripMenuItem.Text = "Open &Textures";
+			this.openTexturesToolStripMenuItem.Click += new System.EventHandler(this.openTexturesToolStripMenuItem_Click);
+			// 
 			// editToolStripMenuItem
 			// 
 			this.editToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -96,19 +105,24 @@
     "s|PVM files|*.pvm";
 			this.openTexturesDialog.Title = "Open Textures";
 			// 
-			// openTexturesToolStripMenuItem
+			// scene
 			// 
-			this.openTexturesToolStripMenuItem.Name = "openTexturesToolStripMenuItem";
-			this.openTexturesToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.T)));
-			this.openTexturesToolStripMenuItem.Size = new System.Drawing.Size(190, 22);
-			this.openTexturesToolStripMenuItem.Text = "Open &Textures";
-			this.openTexturesToolStripMenuItem.Click += new System.EventHandler(this.openTexturesToolStripMenuItem_Click);
+			this.scene.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.scene.Location = new System.Drawing.Point(0, 24);
+			this.scene.Margin = new System.Windows.Forms.Padding(0);
+			this.scene.Name = "scene";
+			this.scene.Size = new System.Drawing.Size(944, 537);
+			this.scene.TabIndex = 1;
+			this.scene.KeyDown += new System.Windows.Forms.KeyEventHandler(this.scene_KeyDown);
+			this.scene.KeyUp += new System.Windows.Forms.KeyEventHandler(this.scene_KeyUp);
+			this.scene.MouseMove += new System.Windows.Forms.MouseEventHandler(this.scene_MouseMove);
 			// 
 			// MainForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(944, 561);
+			this.Controls.Add(this.scene);
 			this.Controls.Add(this.menuStrip1);
 			this.MainMenuStrip = this.menuStrip1;
 			this.MinimumSize = new System.Drawing.Size(320, 200);
@@ -116,9 +130,9 @@
 			this.Text = "Model Viewer";
 			this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.OnClosed);
 			this.Load += new System.EventHandler(this.OnShown);
-			this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MainForm_KeyDown);
-			this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.MainForm_KeyUp);
-			this.MouseMove += new System.Windows.Forms.MouseEventHandler(this.MainForm_MouseMove);
+			this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.scene_KeyDown);
+			this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.scene_KeyUp);
+			this.MouseMove += new System.Windows.Forms.MouseEventHandler(this.scene_MouseMove);
 			this.menuStrip1.ResumeLayout(false);
 			this.menuStrip1.PerformLayout();
 			this.ResumeLayout(false);
@@ -136,6 +150,7 @@
 		private System.Windows.Forms.OpenFileDialog openModelDialog;
 		private System.Windows.Forms.OpenFileDialog openTexturesDialog;
 		private System.Windows.Forms.ToolStripMenuItem openTexturesToolStripMenuItem;
+		private Scene scene;
 	}
 }
 

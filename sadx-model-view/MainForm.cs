@@ -409,7 +409,7 @@ namespace sadx_model_view
 
 		private void OnShown(object sender, EventArgs e)
 		{
-			present = new PresentParameters(ClientSize.Width, ClientSize.Height)
+			present = new PresentParameters(scene.ClientRectangle.Width, scene.ClientRectangle.Height)
 			{
 				SwapEffect             = SwapEffect.Discard,
 				BackBufferCount        = 1,
@@ -422,10 +422,10 @@ namespace sadx_model_view
 
 			direct3d = new Direct3D();
 			UpdatePresentParameters();
-			device = new Device(direct3d, 0, DeviceType.Hardware, Handle, CreateFlags.HardwareVertexProcessing, present);
+			device = new Device(direct3d, 0, DeviceType.Hardware, scene.Handle, CreateFlags.HardwareVertexProcessing, present);
 
 			RefreshDevice();
-			SizeChanged += OnSizeChanged;
+			scene.SizeChanged += OnSizeChanged;
 		}
 
 		private void RefreshDevice()
@@ -444,11 +444,11 @@ namespace sadx_model_view
 
 		private void UpdatePresentParameters()
 		{
-			present.BackBufferWidth = ClientSize.Width;
-			present.BackBufferHeight = ClientSize.Height;
+			present.BackBufferWidth = scene.ClientRectangle.Width;
+			present.BackBufferHeight = scene.ClientRectangle.Height;
 
-			var width = (float)ClientSize.Width;
-			var height = (float)ClientSize.Height;
+			var width = (float)scene.ClientRectangle.Width;
+			var height = (float)scene.ClientRectangle.Height;
 			var ratio = width / height;
 
 			var fov = fov_v;
@@ -608,7 +608,7 @@ namespace sadx_model_view
 
 		private CamControls camcontrols = CamControls.None;
 
-		private void MainForm_KeyDown(object sender, KeyEventArgs e)
+		private void scene_KeyDown(object sender, KeyEventArgs e)
 		{
 			switch (e.KeyCode)
 			{
@@ -660,7 +660,7 @@ namespace sadx_model_view
 			}
 		}
 
-		private void MainForm_KeyUp(object sender, KeyEventArgs e)
+		private void scene_KeyUp(object sender, KeyEventArgs e)
 		{
 			switch (e.KeyCode)
 			{
@@ -695,7 +695,7 @@ namespace sadx_model_view
 		}
 
 		private System.Drawing.Point last_mouse = System.Drawing.Point.Empty;
-		private void MainForm_MouseMove(object sender, MouseEventArgs e)
+		private void scene_MouseMove(object sender, MouseEventArgs e)
 		{
 			var delta = new System.Drawing.Point(e.Location.X - last_mouse.X, e.Location.Y - last_mouse.Y);
 			last_mouse = e.Location;
