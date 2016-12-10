@@ -482,9 +482,15 @@ namespace sadx_model_view
 
 		private void SetupScene()
 		{
-			device.SetRenderState(RenderState.ZEnable,          true);
-			device.SetRenderState(RenderState.CullMode,         CullMode);
+			device.SetRenderState(RenderState.ZEnable,      true);
+			device.SetRenderState(RenderState.ZWriteEnable, true);
+			device.SetRenderState(RenderState.ZFunc,        Compare.LessEqual);
+
 			device.SetRenderState(RenderState.AlphaBlendEnable, false);
+			device.SetRenderState(RenderState.AlphaTestEnable,  true);
+			device.SetRenderState(RenderState.AlphaRef,         16);
+
+			device.SetRenderState(RenderState.CullMode,         CullMode);
 			device.SetRenderState(RenderState.SourceBlend,      Blend.SourceAlpha);
 			device.SetRenderState(RenderState.DestinationBlend, Blend.InverseSourceAlpha);
 			device.SetRenderState(RenderState.AlphaFunc,        Compare.GreaterEqual);

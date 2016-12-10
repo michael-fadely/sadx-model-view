@@ -427,6 +427,18 @@ namespace sadx_model_view.Ninja
 			return (v.Y - radius) * v4 * v6 + screen.cy >= 0.0
 			       && screen.h >= (v.Y + radius) * v4 * v6 + screen.cy;
 		}
+		
+		private static readonly Blend[] blendModes =
+		{
+			Blend.Zero,
+			Blend.One,
+			Blend.SourceColor,
+			Blend.InverseSourceColor,
+			Blend.SourceAlpha,
+			Blend.InverseSourceAlpha,
+			Blend.DestinationAlpha,
+			Blend.InverseDestinationAlpha,
+		};
 
 		private static void SetSADXMaterial(Device device, NJS_MATERIAL material)
 		{
@@ -469,24 +481,22 @@ namespace sadx_model_view.Ninja
 					device.SetTransform(TransformState.Texture0, Matrix.Identity);
 					device.SetTextureStageState(0, TextureStage.TexCoordIndex, (int)TextureCoordIndex.PassThru);
 				}
+			}
 
-				if (flags.HasFlag(NJD_FLAG.UseAlpha))
-				{
-					device.SetRenderState(RenderState.AlphaBlendEnable, true);
-					device.SetRenderState(RenderState.AlphaTestEnable, true);
-					device.SetRenderState(RenderState.AlphaRef, 16);
-					device.SetRenderState(RenderState.DiffuseMaterialSource, ColorSource.Material);
+			device.SetRenderState(RenderState.DestinationBlend, blendModes[material.DestinationBlend]);
+			device.SetRenderState(RenderState.SourceBlend, blendModes[material.SourceBlend]);
 
-					device.SetTextureStageState(0, TextureStage.AlphaOperation, TextureOperation.Modulate);
-				}
-				else
-				{
-					device.SetRenderState(RenderState.AlphaBlendEnable, false);
-					device.SetRenderState(RenderState.AlphaRef, 0);
-					device.SetRenderState(RenderState.DiffuseMaterialSource, ColorSource.Color1);
-
-					device.SetTextureStageState(0, TextureStage.AlphaOperation, TextureOperation.SelectArg2);
-				}
+			if (flags.HasFlag(NJD_FLAG.UseAlpha))
+			{
+				device.SetRenderState(RenderState.AlphaBlendEnable, true);
+				device.SetRenderState(RenderState.DiffuseMaterialSource, ColorSource.Material);
+				device.SetTextureStageState(0, TextureStage.AlphaOperation, TextureOperation.Modulate);
+			}
+			else
+			{
+				device.SetRenderState(RenderState.AlphaBlendEnable, false);
+				device.SetRenderState(RenderState.DiffuseMaterialSource, ColorSource.Color1);
+				device.SetTextureStageState(0, TextureStage.AlphaOperation, TextureOperation.SelectArg2);
 			}
 
 			device.SetRenderState(RenderState.SpecularEnable, !flags.HasFlag(NJD_FLAG.IgnoreSpecular));

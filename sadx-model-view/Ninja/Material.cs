@@ -85,5 +85,17 @@ namespace sadx_model_view.Ninja
 		public float exponent;
 		public uint attr_texId;      /* attribute and texture ID in texlist        */
 		public NJD_FLAG attrflags;   /* attribute flags                            */
+
+		public uint DestinationBlend
+		{
+			get { return ((uint)attrflags >> 26) & 7; }
+			set { attrflags = (NJD_FLAG)(((uint)attrflags & ~0x1C000000) | (value << 26)); }
+		}
+
+		public uint SourceBlend
+		{
+			get { return ((uint)attrflags >> 29) & 7; }
+			set { attrflags = (NJD_FLAG)(((uint)attrflags & ~0xE0000000) | (value << 29)); }
+		}
 	}
 }
