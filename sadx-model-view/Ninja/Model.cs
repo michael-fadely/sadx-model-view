@@ -183,9 +183,6 @@ namespace sadx_model_view.Ninja
 
 				switch (set.Type)
 				{
-					case NJD_MESHSET.NSided:
-						throw new NotImplementedException("N-Sided strips are not supported.");
-
 					case NJD_MESHSET.Tri:
 						for (int i = set.VertexCount - 1; i >= 0; i--)
 						{
@@ -213,6 +210,7 @@ namespace sadx_model_view.Ninja
 
 						break;
 
+					case NJD_MESHSET.NSided:
 					case NJD_MESHSET.Strip:
 						{
 							int index = 0;
