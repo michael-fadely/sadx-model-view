@@ -4,9 +4,10 @@ using System.IO;
 using System.Linq;
 using SharpDX;
 using SharpDX.Direct3D11;
-using SharpDX.DXGI;
 using SharpDX.Mathematics.Interop;
+using Buffer = SharpDX.Direct3D11.Buffer;
 using Device = SharpDX.Direct3D11.Device;
+using MapFlags = SharpDX.Direct3D11.MapFlags;
 using Matrix = SharpDX.Matrix;
 
 namespace sadx_model_view.Ninja
@@ -52,41 +53,45 @@ namespace sadx_model_view.Ninja
 				{
 					stream.Position = points_ptr;
 
-					for (var i = 0; i < nbPoint; i++)
+					for (int i = 0; i < nbPoint; i++)
 					{
-						var v = Util.VectorFromStream(stream);
+						Vector3 v = Util.VectorFromStream(stream);
 						points.Add(v);
 					}
 				}
 
-				var normals_ptr = BitConverter.ToInt32(buffer, 0x04);
+				int normals_ptr = BitConverter.ToInt32(buffer, 0x04);
 
 				if (normals_ptr > 0)
 				{
 					stream.Position = normals_ptr;
 
-					for (var i = 0; i < nbPoint; i++)
+					for (int i = 0; i < nbPoint; i++)
 					{
-						var v = Util.VectorFromStream(stream);
+						Vector3 v = Util.VectorFromStream(stream);
 						normals.Add(v);
 					}
 				}
 			}
 
-			var meshsets_ptr = BitConverter.ToUInt32(buffer, 0x0C);
+			uint meshsets_ptr = BitConverter.ToUInt32(buffer, 0x0C);
 			if (nbMeshset > 0 && meshsets_ptr > 0)
 			{
 				stream.Position = meshsets_ptr;
-				for (var i = 0; i < nbMeshset; i++)
+				for (int i = 0; i < nbMeshset; i++)
+				{
 					meshsets.Add(new NJS_MESHSET(stream));
+				}
 			}
 
-			var mats_ptr = BitConverter.ToUInt32(buffer, 0x10);
+			uint mats_ptr = BitConverter.ToUInt32(buffer, 0x10);
 			if (nbMat > 0 && mats_ptr > 0)
 			{
 				stream.Position = mats_ptr;
-				for (var i = 0; i < nbMat; i++)
+				for (int i = 0; i < nbMat; i++)
+				{
 					mats.Add(new NJS_MATERIAL(stream));
+				}
 			}
 
 			stream.Position = position;
@@ -105,7 +110,7 @@ namespace sadx_model_view.Ninja
 			// TODO: copy vertex buffer?
 
 			meshsets = new List<NJS_MESHSET>();
-			foreach (var meshset in model.meshsets)
+			foreach (NJS_MESHSET meshset in model.meshsets)
 			{
 				meshsets.Add(new NJS_MESHSET(meshset));
 			}
@@ -113,7 +118,7 @@ namespace sadx_model_view.Ninja
 			nbMeshset = (ushort)meshsets.Count;
 
 			mats = new List<NJS_MATERIAL>();
-			foreach (var mat in model.mats)
+			foreach (NJS_MATERIAL mat in model.mats)
 			{
 				mats.Add(new NJS_MATERIAL(mat));
 			}
@@ -146,31 +151,36 @@ namespace sadx_model_view.Ninja
 
 		public void Dispose()
 		{
-			foreach (var set in meshsets)
+			foreach (NJS_MESHSET set in meshsets)
 			{
 				set.Dispose();
 			}
 
 			meshsets.Clear();
+			vertexBuffer.Dispose();
 		}
 
-		public readonly List<Vector3> points;       // vertex list
-		public readonly List<Vector3> normals;      // vertex normal list
-		public readonly int nbPoint;                // vertex count
-		public List<NJS_MESHSET> meshsets;          // meshset list
-		public readonly List<NJS_MATERIAL> mats;    // material list
-		public ushort nbMeshset;                    // meshset count
-		public readonly ushort nbMat;               // material count
-		public Vector3 center;                      // model center
-		public float r;                             // radius
+		private static readonly NJS_MATERIAL nullMaterial = new NJS_MATERIAL();
 
-		private VertexBuffer vertexBuffer;
+		public readonly List<Vector3> points;    // vertex list
+		public readonly List<Vector3> normals;   // vertex normal list
+		public readonly int nbPoint;             // vertex count
+		public List<NJS_MESHSET> meshsets;       // meshset list
+		public readonly List<NJS_MATERIAL> mats; // material list
+		public ushort nbMeshset;                 // meshset count
+		public readonly ushort nbMat;            // material count
+		public Vector3 center;                   // model center
+		public float r;                          // radius
+
+		private Buffer vertexBuffer;
 		private int vertexBufferLength;
 
 		public void CommitVertexBuffer(Device device)
 		{
 			if (normals.Count != 0 && points.Count != normals.Count)
+			{
 				throw new Exception("Vertex count deviates from normal count.");
+			}
 
 			List<Vertex> vertices = points.Select((point, i) => new Vertex
 			{
@@ -189,7 +199,7 @@ namespace sadx_model_view.Ninja
 					case NJD_MESHSET.Tri:
 						for (int i = set.VertexCount - 1; i >= 0; i--)
 						{
-							var n = set.meshes[i];
+							short n = set.meshes[i];
 							UpdateVertex(set, vertices, i, n);
 							indices.Add(n);
 						}
@@ -198,10 +208,10 @@ namespace sadx_model_view.Ninja
 					case NJD_MESHSET.Quad:
 						for (int i = 0; i < set.VertexCount; i += 4)
 						{
-							var v0 = UpdateVertex(set, vertices, i + 0, set.meshes[i + 0]);
-							var v1 = UpdateVertex(set, vertices, i + 1, set.meshes[i + 1]);
-							var v2 = UpdateVertex(set, vertices, i + 2, set.meshes[i + 2]);
-							var v3 = UpdateVertex(set, vertices, i + 3, set.meshes[i + 3]);
+							short v0 = UpdateVertex(set, vertices, i + 0, set.meshes[i + 0]);
+							short v1 = UpdateVertex(set, vertices, i + 1, set.meshes[i + 1]);
+							short v2 = UpdateVertex(set, vertices, i + 2, set.meshes[i + 2]);
+							short v3 = UpdateVertex(set, vertices, i + 3, set.meshes[i + 3]);
 
 							indices.Add(v3);
 							indices.Add(v1);
@@ -219,8 +229,8 @@ namespace sadx_model_view.Ninja
 							int index = 0;
 							for (int i = 0; i < set.nbMesh; i++)
 							{
-								var n = set.meshes[index++];
-								var flip = (n & 0x8000) == 0;
+								short n = set.meshes[index++];
+								bool flip = (n & 0x8000) == 0;
 								n &= 0x3FFF;
 
 								var _indices = new List<short>();
@@ -233,9 +243,9 @@ namespace sadx_model_view.Ninja
 
 								for (int k = 0; k < _indices.Count - 2; k++)
 								{
-									var v0 = _indices[k + 0];
-									var v1 = _indices[k + 1];
-									var v2 = _indices[k + 2];
+									short v0 = _indices[k + 0];
+									short v1 = _indices[k + 1];
+									short v2 = _indices[k + 2];
 
 									flip = !flip;
 									if (!flip)
@@ -270,13 +280,16 @@ namespace sadx_model_view.Ninja
 
 				set.IndexPrimitiveCount = indices.Count / 3;
 				set.IndexCount = indices.Count;
-				var indexSize = set.IndexCount * sizeof(short);
+				int indexSize = set.IndexCount * sizeof(short);
 
-				set.IndexBuffer = new IndexBuffer(device, indexSize, Usage.None, Pool.Managed, true);
+				var idesc = new BufferDescription(indexSize, BindFlags.IndexBuffer, ResourceUsage.Dynamic);
+				set.IndexBuffer = new Buffer(device, idesc);
 
-				using (var stream = set.IndexBuffer.Lock(0, set.IndexBuffer.Description.Size, LockFlags.None))
+				device.ImmediateContext.MapSubresource(set.IndexBuffer, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
+
+				using (stream)
 				{
-					foreach (var i in indices)
+					foreach (short i in indices)
 					{
 						stream.Write(i);
 					}
@@ -287,7 +300,7 @@ namespace sadx_model_view.Ninja
 					}
 				}
 
-				set.IndexBuffer.Unlock();
+				device.ImmediateContext.UnmapSubresource(set.IndexBuffer, 0);
 			}
 
 			CreateVertexBuffer(device, vertices);
@@ -296,12 +309,16 @@ namespace sadx_model_view.Ninja
 		private void CreateVertexBuffer(Device device, IReadOnlyCollection<Vertex> vertices)
 		{
 			vertexBufferLength = vertices.Count;
-			var vertexSize = vertices.Count * Vertex.SizeInBytes;
-			vertexBuffer = new VertexBuffer(device, vertexSize, Usage.None, Vertex.Format, Pool.Managed);
+			int vertexSize = vertexBufferLength * Vertex.SizeInBytes;
+			var vdesc = new BufferDescription(vertexSize, BindFlags.VertexBuffer, ResourceUsage.Dynamic);
 
-			using (var stream = vertexBuffer.Lock(0, vertexSize, LockFlags.None))
+			vertexBuffer = new Buffer(device, vdesc);
+
+			device.ImmediateContext.MapSubresource(vertexBuffer, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
+
+			using (stream)
 			{
-				foreach (var v in vertices)
+				foreach (Vertex v in vertices)
 				{
 					stream.Write(v.position.X);
 					stream.Write(v.position.Y);
@@ -318,7 +335,7 @@ namespace sadx_model_view.Ninja
 					stream.Write(color.B);
 					stream.Write(color.A);
 
-					var uv = v.uv == null ? (RawVector2)Vector2.Zero : v.uv.Value;
+					RawVector2 uv = v.uv == null ? (RawVector2)Vector2.Zero : v.uv.Value;
 
 					stream.Write(uv.X);
 					stream.Write(uv.Y);
@@ -330,7 +347,7 @@ namespace sadx_model_view.Ninja
 				}
 			}
 
-			vertexBuffer.Unlock();
+			device.ImmediateContext.UnmapSubresource(vertexBuffer, 0);
 		}
 
 		/// <summary>
@@ -345,9 +362,9 @@ namespace sadx_model_view.Ninja
 		private static short UpdateVertex(NJS_MESHSET set, IList<Vertex> vertices, int localIndex, int vertexIndex)
 		{
 			bool added = false;
-			var result = vertexIndex;
+			int result = vertexIndex;
 
-			var vertex = vertices[vertexIndex];
+			Vertex vertex = vertices[vertexIndex];
 
 			if (set.vertcolor.Count != 0)
 			{
@@ -358,7 +375,7 @@ namespace sadx_model_view.Ninja
 					added = true;
 				}
 
-				var vcolor = set.vertcolor[localIndex].argb;
+				NJS_BGRA vcolor = set.vertcolor[localIndex].argb;
 				vertex.diffuse = new ColorBGRA(vcolor.b, vcolor.g, vcolor.r, vcolor.a);
 			}
 
@@ -380,7 +397,7 @@ namespace sadx_model_view.Ninja
 		}
 
 		/// <summary>
-		/// This is the texture transformation matrix that SADX uses to anything with an environment map.
+		/// This is the texture transformation matrix that SADX uses for anything with an environment map.
 		/// </summary>
 		private static readonly Matrix environmentMapTransform = new Matrix(
 			-0.5f, 0.0f, 0.0f, 0.0f,
@@ -389,16 +406,14 @@ namespace sadx_model_view.Ninja
 			 0.5f, 0.5f, 0.0f, 1.0f
 		);
 
-		private static readonly NJS_MATERIAL nullMaterial = new NJS_MATERIAL();
-
 		public bool IsVisible(ref Camera camera)
 		{
-			var screen = MainForm.Screen;
-			var radius = r * 1.2f;
+			NJS_SCREEN screen = MainForm.Screen;
+			float radius = r * 1.2f;
 
 			MatrixStack.Push();
 
-			var inverse = camera.InverseView;
+			Matrix inverse = camera.InverseView;
 			MatrixStack.Multiply(ref inverse);
 
 			Vector3 v;
@@ -411,20 +426,20 @@ namespace sadx_model_view.Ninja
 				return false;
 			}
 
-			var v2 = -v.Z - radius;
+			float v2 = -v.Z - radius;
 			if (v2 > camera.MinDrawDistance)
 			{
 				return false;
 			}
 
-			var v6 = -1.0f / v2;
-			var v3 = screen.dist;
+			float v6 = -1.0f / v2;
+			float v3 = screen.dist;
 			if ((v.X + radius) * v3 * v6 + screen.cx < 0.0 || screen.w < (v.X - radius) * v3 * v6 + screen.cx)
 			{
 				return false;
 			}
 
-			var v4 = -(0.85000002f * screen.dist);
+			float v4 = -(0.85000002f * screen.dist);
 			return (v.Y - radius) * v4 * v6 + screen.cy >= 0.0
 			       && screen.h >= (v.Y + radius) * v4 * v6 + screen.cy;
 		}
@@ -443,7 +458,7 @@ namespace sadx_model_view.Ninja
 
 		private static void SetSADXMaterial(Device device, NJS_MATERIAL material)
 		{
-			var flags = FlowControl.Apply(material.attrflags);
+			NJD_FLAG flags = FlowControl.Apply(material.attrflags);
 
 			if (!flags.HasFlag(NJD_FLAG.UseTexture))
 			{
@@ -451,7 +466,7 @@ namespace sadx_model_view.Ninja
 			}
 			else
 			{
-				var n = (int)material.attr_texId;
+				int n = (int)material.attr_texId;
 				if (n < MainForm.TexturePool.Count)
 				{
 					device.SetTexture(0, MainForm.TexturePool[n]);
@@ -524,11 +539,11 @@ namespace sadx_model_view.Ninja
 			device.VertexFormat = Vertex.Format;
 			ushort lastId = ushort.MaxValue;
 
-			foreach (var set in meshsets)
+			foreach (NJS_MESHSET set in meshsets)
 			{
 				if (mats.Count > 0)
 				{
-					var i = set.MaterialId;
+					ushort i = set.MaterialId;
 					if (i != lastId)
 					{
 						SetSADXMaterial(device, i < mats.Count ? mats[i] : nullMaterial);
@@ -556,19 +571,21 @@ namespace sadx_model_view.Ninja
 		public void Sort()
 		{
 			if (nbMat < 2 || nbMeshset < 2)
+			{
 				return;
+			}
 
 			meshsets.Sort((instance, other) =>
 			{
-				var matA = mats[instance.MaterialId];
-				var matB = mats[other.MaterialId];
+				NJS_MATERIAL matA = mats[instance.MaterialId];
+				NJS_MATERIAL matB = mats[other.MaterialId];
 
 				bool alphaA = matA.attrflags.HasFlag(NJD_FLAG.UseAlpha);
 				bool alphaB = matB.attrflags.HasFlag(NJD_FLAG.UseAlpha);
 
 				if (alphaA && alphaB)
 				{
-					var dist = (instance.Center - other.Center).Length();
+					float dist = (instance.Center - other.Center).Length();
 					return dist - instance.Radius < other.Radius ? -1 : 0;
 				}
 

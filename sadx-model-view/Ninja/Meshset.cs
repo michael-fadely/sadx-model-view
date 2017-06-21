@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using SharpDX;
 using SharpDX.Mathematics.Interop;
+using Buffer = SharpDX.Direct3D11.Buffer;
 
 namespace sadx_model_view.Ninja
 {
@@ -94,7 +95,7 @@ namespace sadx_model_view.Ninja
 		/// </summary>
 		public NJD_MESHSET Type
 		{
-			get { return (NJD_MESHSET)(type_matId & (ushort)NJD_MESHSET.Strip); }
+			get => (NJD_MESHSET)(type_matId & (ushort)NJD_MESHSET.Strip);
 			set
 			{
 				type_matId &= (ushort)~NJD_MESHSET.Strip;
@@ -109,14 +110,13 @@ namespace sadx_model_view.Ninja
 		/// </summary>
 		public ushort MaterialId
 		{
-			get
-			{
-				return (ushort)(type_matId & (ushort)~NJD_MESHSET.Strip);
-			}
+			get => (ushort)(type_matId & (ushort)~NJD_MESHSET.Strip);
 			set
 			{
 				if (value > 16383)
+				{
 					throw new ArgumentOutOfRangeException(nameof(value), "Number must be less than 16384");
+				}
 
 				type_matId &= (ushort)NJD_MESHSET.Strip;
 				type_matId |= value;
@@ -132,7 +132,7 @@ namespace sadx_model_view.Ninja
 		/// </summary>
 		public int VertexCount { get; }
 
-		public IndexBuffer IndexBuffer;
+		public Buffer IndexBuffer;
 		public int IndexCount;
 		public int IndexPrimitiveCount;
 
@@ -183,7 +183,7 @@ namespace sadx_model_view.Ninja
 			vertcolor = new List<NJS_COLOR>();
 			vertuv    = new List<NJS_TEX>();
 
-			var position = stream.Position;
+			long position = stream.Position;
 
 			VertexCount = 0;
 			PrimitiveCount = 0;
@@ -226,7 +226,7 @@ namespace sadx_model_view.Ninja
 						for (int i = 0; i < nbMesh; i++)
 						{
 							stream.Read(meshesBuffer, 0, sizeof(short));
-							var n = BitConverter.ToInt16(meshesBuffer, 0);
+							short n = BitConverter.ToInt16(meshesBuffer, 0);
 							meshes.Add(n);
 
 							// n is being masked because the most significant bit indicates
@@ -261,8 +261,10 @@ namespace sadx_model_view.Ninja
 				var attrsBuffer = new byte[sizeof(uint) * VertexCount];
 				stream.Read(attrsBuffer, 0, attrsBuffer.Length);
 
-				for (var i = 0; i < VertexCount; i++)
+				for (int i = 0; i < VertexCount; i++)
+				{
 					attrs.Add(BitConverter.ToUInt32(attrsBuffer, sizeof(uint) * i));
+				}
 			}
 
 			if (normals_ptr != 0)
@@ -271,7 +273,7 @@ namespace sadx_model_view.Ninja
 				var normalsBuffer = new byte[Vector3.SizeInBytes * VertexCount];
 				stream.Read(normalsBuffer, 0, normalsBuffer.Length);
 
-				for (var i = 0; i < VertexCount; i++)
+				for (int i = 0; i < VertexCount; i++)
 				{
 					Vector3 vector = Util.VectorFromStream(ref normalsBuffer, i * Vector3.SizeInBytes);
 					normals.Add(vector);
@@ -284,7 +286,7 @@ namespace sadx_model_view.Ninja
 				var vertcolorBuffer = new byte[sizeof(int) * VertexCount];
 				stream.Read(vertcolorBuffer, 0, vertcolorBuffer.Length);
 
-				for (var i = 0; i < VertexCount; i++)
+				for (int i = 0; i < VertexCount; i++)
 				{
 					vertcolor.Add(new NJS_COLOR(BitConverter.ToInt32(vertcolorBuffer, sizeof(int) * i)));
 				}
@@ -296,8 +298,10 @@ namespace sadx_model_view.Ninja
 				var vertuvBuffer = new byte[NJS_TEX.SizeInBytes * VertexCount];
 				stream.Read(vertuvBuffer, 0, vertuvBuffer.Length);
 
-				for (var i = 0; i < VertexCount; i++)
+				for (int i = 0; i < VertexCount; i++)
+				{
 					vertuv.Add(new NJS_TEX(ref vertuvBuffer, NJS_TEX.SizeInBytes * i));
+				}
 			}
 
 			stream.Position = position;
@@ -347,12 +351,12 @@ namespace sadx_model_view.Ninja
 		private void CalculateStripPrimitiveCount()
 		{
 			PrimitiveCount = 0;
-			var count = nbMesh;
+			ushort count = nbMesh;
 			int i = 0;
 
 			do
 			{
-				var n = meshes[i] & 0x3FFF;
+				int n = meshes[i] & 0x3FFF;
 				PrimitiveCount += n + 2;
 				i += (n + 1);
 			} while (--count > 0);
