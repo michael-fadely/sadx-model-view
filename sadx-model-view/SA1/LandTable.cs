@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using sadx_model_view.Ninja;
 using System.Text;
-using SharpDX.Direct3D9;
+using sadx_model_view.Ninja;
+using SharpDX.Direct3D11;
 
 namespace sadx_model_view.SA1
 {

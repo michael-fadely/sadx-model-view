@@ -4,16 +4,21 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Windows.Forms;
 using System.Text;
+using System.Windows.Forms;
 using PuyoTools.Modules.Archive;
 using PuyoTools.Modules.Compression;
 using sadx_model_view.Ninja;
 using sadx_model_view.SA1;
-using SharpDX.Direct3D9;
 using SharpDX;
+using SharpDX.Direct3D;
+using SharpDX.Direct3D11;
+using SharpDX.DXGI;
 using SharpDX.Mathematics.Interop;
 using VrSharp.PvrTexture;
+using Device = SharpDX.Direct3D11.Device;
+using MapFlags = SharpDX.Direct3D11.MapFlags;
+using Resource = SharpDX.Direct3D11.Resource;
 
 // TODO: Mipmap mode (From Texture, Always On, Always Off, Generate)
 
@@ -21,12 +26,14 @@ namespace sadx_model_view
 {
 	public partial class MainForm : Form
 	{
-		private bool initialized;
+		private float speed = 0.5f;
+		private System.Drawing.Point last_mouse = System.Drawing.Point.Empty;
+		private CamControls camcontrols = CamControls.None;
 
 		// TODO: not this
-		public static Cull CullMode = Cull.Counterclockwise;
+		public static CullMode CullMode = CullMode.Back;
 		// TODO: not this
-		public static readonly List<Texture> TexturePool = new List<Texture>();
+		public static readonly List<Texture2D> TexturePool = new List<Texture2D>();
 		// TODO: not this
 		public static NJS_SCREEN Screen;
 
@@ -35,12 +42,17 @@ namespace sadx_model_view
 		// SADX's default vertical field of view (55.412927352596554 degrees)
 		private static readonly float fov_v = 2.0f * (float)Math.Atan(Math.Tan(fov_h / 2.0f) * (3.0f / 4.0f));
 
-		private Direct3D direct3d;
-		private Device device;
-		private PresentParameters present;
-
 		private NJS_OBJECT obj;
 		private LandTable landTable;
+
+		private Device device;
+		private SwapChain swapChain;
+		private RenderTargetView backBuffer;
+		private Viewport viewPort;
+		private Texture2D depthStencilBuffer;
+		private DepthStencilStateDescription depthStencilDesc;
+		private DepthStencilState depthStencilState;
+		private DepthStencilView depthStencil;
 
 		private enum ChunkTypes : uint
 		{
@@ -54,16 +66,9 @@ namespace sadx_model_view
 			End         = 0x444E45
 		}
 
-		private Light light = new Light
-		{
-			Type      = LightType.Directional,
-			Ambient   = new RawColor4(1.0f, 1.0f, 1.0f, 1.0f),
-			Diffuse   = new RawColor4(1.0f, 1.0f, 1.0f, 1.0f),
-			Specular  = new RawColor4(1.0f, 1.0f, 1.0f, 0.0f),
-			Direction = new RawVector3(0.0f, -1.0f, 0.0f)
-		};
-
 		private Camera camera = new Camera();
+		private RasterizerState renderState;
+		private RasterizerStateDescription rasterDesc;
 
 		public MainForm()
 		{
@@ -266,21 +271,26 @@ namespace sadx_model_view
 
 			if (extension.Equals(".txt", StringComparison.OrdinalIgnoreCase))
 			{
+				MessageBox.Show(this, "Not yet implemented", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				/*
 				var directory = Path.GetDirectoryName(dialog.FileName) ?? string.Empty;
 				string[] index = File.ReadAllLines(dialog.FileName);
 
 				foreach (var line in index)
 				{
-					var i = line.LastIndexOf(",", StringComparison.Ordinal);
+					int i = line.LastIndexOf(",", StringComparison.Ordinal);
 
-					var filename = Path.Combine(directory, line.Substring(++i));
+					string filename = Path.Combine(directory, line.Substring(++i));
 
 					if (!File.Exists(filename))
+					{
 						continue;
+					}
 
 					var texture = Texture.FromFile(device, filename, Usage.None, Pool.Managed);
 					TexturePool.Add(texture);
 				}
+				*/
 			}
 			else if (extension.Equals(".prs", StringComparison.OrdinalIgnoreCase))
 			{
@@ -316,12 +326,12 @@ namespace sadx_model_view
 			}
 		}
 
-		void CopyToTexture(Texture texture, Bitmap bitmap, int level)
+		void CopyToTexture(Texture2D texture, Bitmap bitmap, int level)
 		{
 			DataStream data;
-			texture.LockRectangle(level, LockFlags.Discard, out data);
+			device.ImmediateContext.MapSubresource(texture, level, MapMode.WriteDiscard, MapFlags.None, out data);
 
-			var bmpData = bitmap.LockBits(new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+			BitmapData bmpData = bitmap.LockBits(new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
 
 			var buffer = new byte[bmpData.Stride * bitmap.Height];
 			Marshal.Copy(bmpData.Scan0, buffer, 0, buffer.Length);
@@ -345,7 +355,7 @@ namespace sadx_model_view
 			}
 
 			data.Close();
-			texture.UnlockRectangle(level);
+			device.ImmediateContext.UnmapSubresource(texture, level);
 		}
 
 		private void LoadPVM(Stream stream)
@@ -359,17 +369,15 @@ namespace sadx_model_view
 
 			foreach (ArchiveEntry entry in pvm.Open(stream).Entries)
 			{
-				PvrTexture pvr = new PvrTexture(entry.Open());
+				var pvr = new PvrTexture(entry.Open());
 				Bitmap[] mipmaps = null;
 				Bitmap bitmap;
 
 				int levels = 1;
-				Usage usage = Usage.None;
 
 				if (pvr.HasMipmaps)
 				{
 					mipmaps = pvr.MipmapsToBitmap();
-					usage = Usage.None;
 					levels = mipmaps.Length;
 					bitmap = mipmaps[0];
 				}
@@ -378,7 +386,20 @@ namespace sadx_model_view
 					bitmap = pvr.ToBitmap();
 				}
 
-				var texture = new Texture(device, bitmap.Width, bitmap.Height, levels, usage, Format.A8R8G8B8, Pool.Managed);
+				var texDesc = new Texture2DDescription
+				{
+					ArraySize         = 1,
+					BindFlags         = BindFlags.ShaderResource,
+					CpuAccessFlags    = CpuAccessFlags.Write,
+					Format            = Format.R8G8B8A8_UNorm,
+					Width             = bitmap.Width,
+					Height            = bitmap.Height,
+					MipLevels         = levels,
+					Usage             = ResourceUsage.Dynamic,
+					SampleDescription = new SampleDescription(1, 0)
+				};
+
+				var texture = new Texture2D(device, texDesc);
 
 				if (mipmaps?.Length > 0)
 				{
@@ -409,50 +430,101 @@ namespace sadx_model_view
 
 		private void OnShown(object sender, EventArgs e)
 		{
-			present = new PresentParameters(scene.ClientRectangle.Width, scene.ClientRectangle.Height)
+			int w = scene.ClientRectangle.Width;
+			int h = scene.ClientRectangle.Height;
+
+			var desc = new SwapChainDescription
 			{
-				SwapEffect             = SwapEffect.Discard,
-				BackBufferCount        = 1,
-				BackBufferFormat       = Format.X8R8G8B8,
-				EnableAutoDepthStencil = true,
-				AutoDepthStencilFormat = Format.D24X8,
-				PresentationInterval   = PresentInterval.Immediate,
-				Windowed               = true
+				BufferCount     = 1,
+				ModeDescription = new ModeDescription(w, h, new Rational(1000, 60), Format.R8G8B8A8_UNorm),
+				Usage           = Usage.RenderTargetOutput,
+				OutputHandle    = scene.Handle,
+				IsWindowed      = true
 			};
 
-			direct3d = new Direct3D();
-			UpdatePresentParameters();
-			device = new Device(direct3d, 0, DeviceType.Hardware, scene.Handle, CreateFlags.HardwareVertexProcessing, present);
+			var levels = new FeatureLevel[]
+			{
+				FeatureLevel.Level_11_1,
+				FeatureLevel.Level_11_0,
+				FeatureLevel.Level_10_1,
+				FeatureLevel.Level_10_0,
+			};
+
+#if DEBUG
+			const DeviceCreationFlags flag = DeviceCreationFlags.Debug;
+#else
+			const DeviceCreationFlags flag = DeviceCreationFlags.None;
+#endif
+			Device.CreateWithSwapChain(DriverType.Hardware, flag, levels, desc, out device, out swapChain);
+
+			if (device.FeatureLevel < FeatureLevel.Level_10_0)
+			{
+				MessageBox.Show(this,
+					"Your GPU does not meet the minimum required feature level. (Direct3D 10.0)",
+					"GPU TOO OLD FAM",
+					MessageBoxButtons.OK);
+
+				Close();
+				return;
+			}
 
 			RefreshDevice();
 			scene.SizeChanged += OnSizeChanged;
 		}
 
-		private void RefreshDevice()
+		private void CreateRenderTarget()
 		{
-			UpdatePresentParameters();
-
-			if (initialized)
+			using (var pBackBuffer = Resource.FromSwapChain<Texture2D>(swapChain, 0))
 			{
-				device.Reset(present);
+				backBuffer?.Dispose();
+				backBuffer = new RenderTargetView(device, pBackBuffer);
 			}
 
-			initialized = true;
-			UpdateCamera();
-			SetupScene();
+			device.ImmediateContext.OutputMerger.SetRenderTargets(backBuffer);
 		}
 
-		private void UpdatePresentParameters()
+		private void SetViewPort(int x, int y, int width, int height)
 		{
-			present.BackBufferWidth = scene.ClientRectangle.Width;
-			present.BackBufferHeight = scene.ClientRectangle.Height;
+			Viewport vp = viewPort;
 
-			var width = (float)scene.ClientRectangle.Width;
-			var height = (float)scene.ClientRectangle.Height;
-			var ratio = width / height;
+			vp.X      = x;
+			vp.Y      = y;
+			vp.Width  = width;
+			vp.Height = height;
 
-			var fov = fov_v;
-			var h = 2 * (float)Math.Atan(Math.Tan(fov_v / 2.0f) * ratio);
+			if (vp == viewPort)
+			{
+				return;
+			}
+
+			viewPort = vp;
+			device.ImmediateContext.Rasterizer.SetViewport(viewPort);
+		}
+
+		private void RefreshDevice()
+		{
+			int w = scene.ClientRectangle.Width;
+			int h = scene.ClientRectangle.Height;
+
+			backBuffer?.Dispose();
+			swapChain?.ResizeBuffers(1, w, h, Format.Unknown, 0);
+			SetViewPort(0, 0, w, h);
+
+			CreateDepthStencil();
+			CreateRenderTarget();
+			CreateRasterizerState();
+			UpdateProjection();
+			UpdateCamera();
+		}
+
+		private void UpdateProjection()
+		{
+			float width = scene.ClientRectangle.Width;
+			float height = scene.ClientRectangle.Height;
+			float ratio = width / height;
+
+			float fov = fov_v;
+			float h = 2 * (float)Math.Atan(Math.Tan(fov_v / 2.0f) * ratio);
 
 			if (h < fov_h)
 			{
@@ -463,12 +535,12 @@ namespace sadx_model_view
 
 			if (height * defaultRatio == width || height * defaultRatio > width)
 			{
-				var tan = 2.0f * (float)Math.Tan(h / 2.0f);
+				float tan = 2.0f * (float)Math.Tan(h / 2.0f);
 				Screen.dist = width / tan;
 			}
 			else
 			{
-				var tan = 2.0f * (float)Math.Tan(fov / 2.0f);
+				float tan = 2.0f * (float)Math.Tan(fov / 2.0f);
 				Screen.dist = height / tan;
 			}
 
@@ -480,48 +552,94 @@ namespace sadx_model_view
 			camera.SetProjection(fov, ratio, -1.0f, -2300.0f);
 		}
 
-		private void SetupScene()
+		private void CreateDepthStencil()
 		{
-			device.SetRenderState(RenderState.ZEnable,      true);
-			device.SetRenderState(RenderState.ZWriteEnable, true);
-			device.SetRenderState(RenderState.ZFunc,        Compare.LessEqual);
+			int w = scene.ClientRectangle.Width;
+			int h = scene.ClientRectangle.Height;
 
-			device.SetRenderState(RenderState.AlphaBlendEnable, false);
-			device.SetRenderState(RenderState.AlphaTestEnable,  false);
-			device.SetRenderState(RenderState.AlphaRef,         16);
+			var depthBufferDesc = new Texture2DDescription
+			{
+				Width             = w,
+				Height            = h,
+				MipLevels         = 1,
+				ArraySize         = 1,
+				Format            = Format.D24_UNorm_S8_UInt,
+				SampleDescription = new SampleDescription(1, 0),
+				Usage             = ResourceUsage.Default,
+				BindFlags         = BindFlags.DepthStencil | BindFlags.ShaderResource,
+				CpuAccessFlags    = CpuAccessFlags.None,
+				OptionFlags       = ResourceOptionFlags.None
+			};
 
-			device.SetRenderState(RenderState.CullMode,         CullMode);
-			device.SetRenderState(RenderState.SourceBlend,      Blend.SourceAlpha);
-			device.SetRenderState(RenderState.DestinationBlend, Blend.InverseSourceAlpha);
-			device.SetRenderState(RenderState.AlphaFunc,        Compare.GreaterEqual);
+			depthStencilBuffer?.Dispose();
+			depthStencilBuffer = new Texture2D(device, depthBufferDesc);
 
-			device.SetRenderState(RenderState.Ambient, unchecked((int)0xFF888888));
+			depthStencilDesc = new DepthStencilStateDescription
+			{
+				IsDepthEnabled   = true,
+				DepthWriteMask   = DepthWriteMask.All,
+				DepthComparison  = Comparison.Less,
+				IsStencilEnabled = true,
+				StencilReadMask  = 0xFF,
+				StencilWriteMask = 0xFF,
 
-			device.SetRenderState(RenderState.ColorVertex, true);
-			device.SetRenderState(RenderState.AmbientMaterialSource,  ColorSource.Color1);
-			device.SetRenderState(RenderState.DiffuseMaterialSource,  ColorSource.Color1);
-			device.SetRenderState(RenderState.SpecularMaterialSource, ColorSource.Material);
+				FrontFace = new DepthStencilOperationDescription
+				{
+					FailOperation      = StencilOperation.Keep,
+					DepthFailOperation = StencilOperation.Increment,
+					PassOperation      = StencilOperation.Keep,
+					Comparison         = Comparison.Always
+				},
 
-			device.SetSamplerState(0, SamplerState.MagFilter, TextureFilter.Linear);
-			device.SetSamplerState(0, SamplerState.MinFilter, TextureFilter.Linear);
-			device.SetSamplerState(0, SamplerState.MipFilter, TextureFilter.Linear);
+				BackFace = new DepthStencilOperationDescription
+				{
+					FailOperation      = StencilOperation.Keep,
+					DepthFailOperation = StencilOperation.Decrement,
+					PassOperation      = StencilOperation.Keep,
+					Comparison         = Comparison.Always
+				}
+			};
 
-			device.SetTextureStageState(0, TextureStage.ColorOperation, TextureOperation.Modulate);
-			device.SetTextureStageState(0, TextureStage.ColorArg1,      TextureOperation.SelectArg1);
-			device.SetTextureStageState(0, TextureStage.ColorArg2,      TextureOperation.Disable);
-			device.SetTextureStageState(0, TextureStage.AlphaOperation, TextureOperation.Modulate);
-			device.SetTextureStageState(0, TextureStage.AlphaArg1,      TextureOperation.SelectArg1);
-			device.SetTextureStageState(0, TextureStage.AlphaArg2,      TextureOperation.Disable);
+			depthStencilState?.Dispose();
+			depthStencilState = new DepthStencilState(device, depthStencilDesc);
+			device?.ImmediateContext.OutputMerger.SetDepthStencilState(depthStencilState);
 
-			device.SetTransform(TransformState.World, Matrix.Identity);
-			UpdateCamera();
+			var depthStencilViewDesc = new DepthStencilViewDescription
+			{
+				Format    = Format.D24_UNorm_S8_UInt,
+				Dimension = DepthStencilViewDimension.Texture2D,
+				Texture2D = new DepthStencilViewDescription.Texture2DResource
+				{
+					MipSlice = 0
+				}
+			};
 
-			device.SetLight(0, ref light);
-			device.EnableLight(0, true);
-			device.SetRenderState(RenderState.Lighting, true);
+			depthStencil?.Dispose();
+			depthStencil = new DepthStencilView(device, depthStencilBuffer, depthStencilViewDesc);
+			device?.ImmediateContext.OutputMerger.SetTargets(depthStencil, backBuffer);
 		}
 
-		private float speed = 0.5f;
+		private void CreateRasterizerState()
+		{
+			rasterDesc = new RasterizerStateDescription
+			{
+				IsAntialiasedLineEnabled = false,
+				CullMode                 = CullMode,
+				DepthBias                = 0,
+				DepthBiasClamp           = 0.0f,
+				IsDepthClipEnabled       = true,
+				FillMode                 = FillMode.Solid,
+				IsFrontCounterClockwise  = false,
+				IsMultisampleEnabled     = false,
+				IsScissorEnabled         = false,
+				SlopeScaledDepthBias     = 0.0f
+			};
+
+			renderState?.Dispose();
+			renderState = new RasterizerState(device, rasterDesc);
+
+			device.ImmediateContext.Rasterizer.State = renderState;
+		}
 
 		private void UpdateCamera()
 		{
@@ -565,8 +683,6 @@ namespace sadx_model_view
 			}
 
 			camera.Update();
-			device.SetTransform(TransformState.View, camera.View);
-			device.SetTransform(TransformState.Projection, camera.Projection);
 		}
 
 		// TODO: conditional render (only render when the scene has been invalidated)
@@ -576,10 +692,9 @@ namespace sadx_model_view
 			if (WindowState == FormWindowState.Minimized)
 				return;
 
-			device.Clear(ClearFlags.Target | ClearFlags.ZBuffer, new ColorBGRA(0, 191, 191, 255), 1.0f, 0);
-			device.BeginScene();
+			device?.ImmediateContext.ClearRenderTargetView(backBuffer, new RawColor4(1.0f, 1.0f, 1.0f, 1.0f));
+			device?.ImmediateContext.ClearDepthStencilView(depthStencil, DepthStencilClearFlags.Depth, 1.0f, 0);
 
-			SetupScene();
 			obj?.Draw(device, ref camera);
 
 			if (landTable != null)
@@ -590,8 +705,7 @@ namespace sadx_model_view
 				FlowControl.Reset();
 			}
 
-			device.EndScene();
-			device.Present();
+			swapChain.Present(1, 0);
 		}
 
 		private void OnSizeChanged(object sender, EventArgs e)
@@ -603,8 +717,7 @@ namespace sadx_model_view
 
 		private void OnClosed(object sender, FormClosedEventArgs e)
 		{
-			device.Dispose();
-			direct3d.Dispose();
+			device?.Dispose();
 		}
 
 		[Flags]
@@ -619,8 +732,6 @@ namespace sadx_model_view
 			Down     = 1 << 5,
 			Look     = 1 << 6
 		}
-
-		private CamControls camcontrols = CamControls.None;
 
 		private void scene_KeyDown(object sender, KeyEventArgs e)
 		{
@@ -640,8 +751,8 @@ namespace sadx_model_view
 					break;
 
 				case Keys.C:
-					CullMode = (CullMode == Cull.Counterclockwise) ? Cull.None : Cull.Counterclockwise;
-					device.SetRenderState(RenderState.CullMode, CullMode);
+					CullMode = (CullMode == CullMode.Back) ? CullMode.None : CullMode.Back;
+					// TODO device.SetRenderState(RenderState.CullMode, CullMode);
 					break;
 
 				case Keys.W:
@@ -708,7 +819,6 @@ namespace sadx_model_view
 			}
 		}
 
-		private System.Drawing.Point last_mouse = System.Drawing.Point.Empty;
 		private void scene_MouseMove(object sender, MouseEventArgs e)
 		{
 			var delta = new System.Drawing.Point(e.Location.X - last_mouse.X, e.Location.Y - last_mouse.Y);

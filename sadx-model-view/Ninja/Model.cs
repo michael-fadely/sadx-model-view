@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using SharpDX;
-using SharpDX.Direct3D9;
+using SharpDX.Direct3D11;
+using SharpDX.DXGI;
 using SharpDX.Mathematics.Interop;
+using Device = SharpDX.Direct3D11.Device;
+using Matrix = SharpDX.Matrix;
 
 namespace sadx_model_view.Ninja
 {
@@ -426,16 +429,16 @@ namespace sadx_model_view.Ninja
 			       && screen.h >= (v.Y + radius) * v4 * v6 + screen.cy;
 		}
 		
-		private static readonly Blend[] blendModes =
+		private static readonly BlendOption[] blendModes =
 		{
-			Blend.Zero,
-			Blend.One,
-			Blend.SourceColor,
-			Blend.InverseSourceColor,
-			Blend.SourceAlpha,
-			Blend.InverseSourceAlpha,
-			Blend.DestinationAlpha,
-			Blend.InverseDestinationAlpha,
+			BlendOption.Zero,
+			BlendOption.One,
+			BlendOption.SourceColor,
+			BlendOption.InverseSourceColor,
+			BlendOption.SourceAlpha,
+			BlendOption.InverseSourceAlpha,
+			BlendOption.DestinationAlpha,
+			BlendOption.InverseDestinationAlpha,
 		};
 
 		private static void SetSADXMaterial(Device device, NJS_MATERIAL material)

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using SharpDX;
-using SharpDX.Direct3D9;
+using SharpDX.Direct3D11;
 
 namespace sadx_model_view.Ninja
 {

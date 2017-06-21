@@ -1,8 +1,8 @@
-﻿using SharpDX.Direct3D9;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using SharpDX.Direct3D11;
 
 namespace sadx_model_view.Ninja
 {
@@ -33,7 +33,7 @@ namespace sadx_model_view.Ninja
 		public uint nHeight;
 		public uint TextureSize;
 		public uint fSurfaceFlags;
-		public Texture pSurface;
+		public Texture2D pSurface;
 		public int pVirtual; // TODO: Uint32*
 		public int pPhysical; // TODO: Uint32*
 

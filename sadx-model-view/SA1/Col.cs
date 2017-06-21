@@ -2,12 +2,12 @@
 using System.IO;
 using sadx_model_view.Ninja;
 using SharpDX;
-using SharpDX.Direct3D9;
+using SharpDX.Direct3D11;
 
 namespace sadx_model_view.SA1
 {
 	[Flags]
-	enum ColFlags : uint
+	public enum ColFlags : uint
 	{
 		Solid      = 0x1,
 		Water      = 0x2,
@@ -46,7 +46,7 @@ namespace sadx_model_view.SA1
 	/// <summary>
 	/// A class defining a model in a <see cref="LandTable"/>.
 	/// </summary>
-	class Col : IDisposable
+	public class Col : IDisposable
 	{
 		public static int SizeInBytes => 0x24;
 
@@ -78,7 +78,7 @@ namespace sadx_model_view.SA1
 			pad_a  = BitConverter.ToInt32(buffer, 0x10);
 			pad_b  = BitConverter.ToInt32(buffer, 0x14);
 
-			var object_ptr = BitConverter.ToUInt32(buffer, 0x18);
+			uint object_ptr = BitConverter.ToUInt32(buffer, 0x18);
 
 			if (object_ptr > 0)
 			{

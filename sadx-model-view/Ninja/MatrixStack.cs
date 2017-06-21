@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using SharpDX;
-using SharpDX.Direct3D9;
+using SharpDX.Direct3D11;
 using SharpDX.Mathematics.Interop;
 
 namespace sadx_model_view.Ninja
