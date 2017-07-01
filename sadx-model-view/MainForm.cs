@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
 using PuyoTools.Modules.Archive;
@@ -11,14 +9,8 @@ using PuyoTools.Modules.Compression;
 using sadx_model_view.Ninja;
 using sadx_model_view.SA1;
 using SharpDX;
-using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
-using SharpDX.DXGI;
-using SharpDX.Mathematics.Interop;
 using VrSharp.PvrTexture;
-using Device = SharpDX.Direct3D11.Device;
-using MapFlags = SharpDX.Direct3D11.MapFlags;
-using Resource = SharpDX.Direct3D11.Resource;
 
 // TODO: Mipmap mode (From Texture, Always On, Always Off, Generate)
 
@@ -30,10 +22,8 @@ namespace sadx_model_view
 		private System.Drawing.Point last_mouse = System.Drawing.Point.Empty;
 		private CamControls camcontrols = CamControls.None;
 
-		// TODO: not this
-		public static CullMode CullMode = CullMode.Back;
-		// TODO: not this
-		public static readonly List<Texture2D> TexturePool = new List<Texture2D>();
+		private Renderer renderer;
+
 		// TODO: not this
 		public static NJS_SCREEN Screen;
 
@@ -44,15 +34,6 @@ namespace sadx_model_view
 
 		private NJS_OBJECT obj;
 		private LandTable landTable;
-
-		private Device device;
-		private SwapChain swapChain;
-		private RenderTargetView backBuffer;
-		private Viewport viewPort;
-		private Texture2D depthStencilBuffer;
-		private DepthStencilStateDescription depthStencilDesc;
-		private DepthStencilState depthStencilState;
-		private DepthStencilView depthStencil;
 
 		private enum ChunkTypes : uint
 		{
@@ -67,8 +48,6 @@ namespace sadx_model_view
 		}
 
 		private Camera camera = new Camera();
-		private RasterizerState renderState;
-		private RasterizerStateDescription rasterDesc;
 
 		public MainForm()
 		{
@@ -77,34 +56,38 @@ namespace sadx_model_view
 
 		private void openToolStripMenuItem_Click(object sender, EventArgs e)
 		{
-			var dialog = openModelDialog;
+			OpenFileDialog dialog = openModelDialog;
 			if (dialog.ShowDialog(this) != DialogResult.OK)
 			{
 				return;
 			}
 
-			ClearTexturePool();
+			renderer.ClearTexturePool();
 
 			using (var file = new FileStream(dialog.FileName, FileMode.Open))
 			{
 				var signature = new byte[6];
 				file.Read(signature, 0, 6);
-				var signatureStr = Encoding.UTF8.GetString(signature);
+				string signatureStr = Encoding.UTF8.GetString(signature);
 
 				if (signatureStr != "SA1MDL" && signatureStr != "SA1LVL")
+				{
 					throw new NotImplementedException();
+				}
 
 				var buffer = new byte[4096];
 				file.Position += 1;
 				file.Read(buffer, 0, 1);
 
 				if (buffer[0] != 3)
+				{
 					throw new NotImplementedException();
+				}
 
 				file.Read(buffer, 0, sizeof(int) * 2);
 
-				var object_ptr = BitConverter.ToUInt32(buffer, 0);
-				var metadata_ptr = BitConverter.ToUInt32(buffer, 4);
+				uint object_ptr = BitConverter.ToUInt32(buffer, 0);
+				uint metadata_ptr = BitConverter.ToUInt32(buffer, 4);
 
 				file.Position = object_ptr;
 
@@ -118,7 +101,7 @@ namespace sadx_model_view
 				{
 					case "SA1MDL":
 						obj = ObjectCache.FromStream(file, object_ptr);
-						obj.CommitVertexBuffer(device);
+						obj.CommitVertexBuffer(renderer);
 						obj.CalculateRadius();
 
 						camera.Position = obj.Position;
@@ -128,7 +111,7 @@ namespace sadx_model_view
 
 					case "SA1LVL":
 						landTable = new LandTable(file);
-						landTable.CommitVertexBuffer(device);
+						landTable.CommitVertexBuffer(renderer);
 						break;
 
 					default:
@@ -147,20 +130,20 @@ namespace sadx_model_view
 				// ReSharper disable once CollectionNeverQueried.Local
 				var labels = new List<KeyValuePair<uint, string>>();
 				// ReSharper disable once NotAccessedVariable
-				var description = string.Empty;
+				string description = string.Empty;
 				// ReSharper disable once NotAccessedVariable
-				var tool = string.Empty;
+				string tool = string.Empty;
 				// ReSharper disable once NotAccessedVariable
-				var animations = string.Empty;
+				string animations = string.Empty;
 				// ReSharper disable once NotAccessedVariable
-				var author = string.Empty;
+				string author = string.Empty;
 
 				while (!done)
 				{
 					file.Read(buffer, 0, 8);
 					var offset = file.Position;
 					var type = (ChunkTypes)BitConverter.ToUInt32(buffer, 0);
-					var size = BitConverter.ToInt32(buffer, 4);
+					int size = BitConverter.ToInt32(buffer, 4);
 
 					switch (type)
 					{
@@ -168,12 +151,12 @@ namespace sadx_model_view
 							while (true)
 							{
 								file.Read(buffer, 0, 8);
-								var addr = BitConverter.ToUInt32(buffer, 0);
+								uint addr = BitConverter.ToUInt32(buffer, 0);
 
 								if (addr == 0xFFFFFFFF)
 									break;
 
-								var name_addr = BitConverter.ToUInt32(buffer, 4);
+								uint name_addr = BitConverter.ToUInt32(buffer, 4);
 
 								if (name_addr == 0 || name_addr == 0xFFFFFFFF)
 									break;
@@ -181,10 +164,10 @@ namespace sadx_model_view
 								var pos = file.Position;
 								file.Position = offset + name_addr;
 
-								var i = file.ReadString(ref buffer);
+								int i = file.ReadString(ref buffer);
 
 								file.Position = pos;
-								var name = Encoding.UTF8.GetString(buffer, 0, i);
+								string name = Encoding.UTF8.GetString(buffer, 0, i);
 								labels.Add(new KeyValuePair<uint, string>(addr, name));
 							}
 							break;
@@ -253,13 +236,13 @@ namespace sadx_model_view
 
 		private void openTexturesToolStripMenuItem_Click(object sender, EventArgs e)
 		{
-			var dialog = openTexturesDialog;
+			OpenFileDialog dialog = openTexturesDialog;
 			if (dialog.ShowDialog(this) != DialogResult.OK)
 			{
 				return;
 			}
 
-			var extension = Path.GetExtension(dialog.FileName);
+			string extension = Path.GetExtension(dialog.FileName);
 
 			if (extension == null)
 			{
@@ -267,7 +250,7 @@ namespace sadx_model_view
 				return;
 			}
 
-			ClearTexturePool();
+			renderer.ClearTexturePool();
 
 			if (extension.Equals(".txt", StringComparison.OrdinalIgnoreCase))
 			{
@@ -326,37 +309,7 @@ namespace sadx_model_view
 			}
 		}
 
-		void CopyToTexture(Texture2D texture, Bitmap bitmap, int level)
-		{
-			DataStream data;
-			device.ImmediateContext.MapSubresource(texture, level, MapMode.WriteDiscard, MapFlags.None, out data);
 
-			BitmapData bmpData = bitmap.LockBits(new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-
-			var buffer = new byte[bmpData.Stride * bitmap.Height];
-			Marshal.Copy(bmpData.Scan0, buffer, 0, buffer.Length);
-
-			bitmap.UnlockBits(bmpData);
-
-			using (var stream = new MemoryStream(buffer))
-			{
-				while (stream.Position != stream.Length)
-				{
-					for (int i = 0; i < 4; i++)
-					{
-						data.WriteByte((byte)stream.ReadByte());
-					}
-				}
-			}
-
-			if (data.RemainingLength > 0)
-			{
-				throw new ArgumentOutOfRangeException();
-			}
-
-			data.Close();
-			device.ImmediateContext.UnmapSubresource(texture, level);
-		}
 
 		private void LoadPVM(Stream stream)
 		{
@@ -386,46 +339,8 @@ namespace sadx_model_view
 					bitmap = pvr.ToBitmap();
 				}
 
-				var texDesc = new Texture2DDescription
-				{
-					ArraySize         = 1,
-					BindFlags         = BindFlags.ShaderResource,
-					CpuAccessFlags    = CpuAccessFlags.Write,
-					Format            = Format.R8G8B8A8_UNorm,
-					Width             = bitmap.Width,
-					Height            = bitmap.Height,
-					MipLevels         = levels,
-					Usage             = ResourceUsage.Dynamic,
-					SampleDescription = new SampleDescription(1, 0)
-				};
-
-				var texture = new Texture2D(device, texDesc);
-
-				if (mipmaps?.Length > 0)
-				{
-					for (int i = 0; i < levels; i++)
-					{
-						CopyToTexture(texture, mipmaps[i], i);
-					}
-
-				}
-				else
-				{
-					CopyToTexture(texture, bitmap, 0);
-				}
-
-				TexturePool.Add(texture);
+				renderer.CreateTextureFromBitMap(bitmap, mipmaps, levels);
 			}
-		}
-
-		private static void ClearTexturePool()
-		{
-			foreach (var texture in TexturePool)
-			{
-				texture.Dispose();
-			}
-
-			TexturePool.Clear();
 		}
 
 		private void OnShown(object sender, EventArgs e)
@@ -433,31 +348,11 @@ namespace sadx_model_view
 			int w = scene.ClientRectangle.Width;
 			int h = scene.ClientRectangle.Height;
 
-			var desc = new SwapChainDescription
+			try
 			{
-				BufferCount     = 1,
-				ModeDescription = new ModeDescription(w, h, new Rational(1000, 60), Format.R8G8B8A8_UNorm),
-				Usage           = Usage.RenderTargetOutput,
-				OutputHandle    = scene.Handle,
-				IsWindowed      = true
-			};
-
-			var levels = new FeatureLevel[]
-			{
-				FeatureLevel.Level_11_1,
-				FeatureLevel.Level_11_0,
-				FeatureLevel.Level_10_1,
-				FeatureLevel.Level_10_0,
-			};
-
-#if DEBUG
-			const DeviceCreationFlags flag = DeviceCreationFlags.Debug;
-#else
-			const DeviceCreationFlags flag = DeviceCreationFlags.None;
-#endif
-			Device.CreateWithSwapChain(DriverType.Hardware, flag, levels, desc, out device, out swapChain);
-
-			if (device.FeatureLevel < FeatureLevel.Level_10_0)
+				renderer = new Renderer(w, h, scene.Handle);
+			}
+			catch (InsufficientFeatureLevelException)
 			{
 				MessageBox.Show(this,
 					"Your GPU does not meet the minimum required feature level. (Direct3D 10.0)",
@@ -467,54 +362,14 @@ namespace sadx_model_view
 				Close();
 				return;
 			}
-
-			RefreshDevice();
-			scene.SizeChanged += OnSizeChanged;
-		}
-
-		private void CreateRenderTarget()
-		{
-			using (var pBackBuffer = Resource.FromSwapChain<Texture2D>(swapChain, 0))
+			catch (Exception)
 			{
-				backBuffer?.Dispose();
-				backBuffer = new RenderTargetView(device, pBackBuffer);
-			}
-
-			device.ImmediateContext.OutputMerger.SetRenderTargets(backBuffer);
-		}
-
-		private void SetViewPort(int x, int y, int width, int height)
-		{
-			Viewport vp = viewPort;
-
-			vp.X      = x;
-			vp.Y      = y;
-			vp.Width  = width;
-			vp.Height = height;
-
-			if (vp == viewPort)
-			{
+				MessageBox.Show(this, "I don't know what.", "Something happened.", MessageBoxButtons.OK);
+				Close();
 				return;
 			}
 
-			viewPort = vp;
-			device.ImmediateContext.Rasterizer.SetViewport(viewPort);
-		}
-
-		private void RefreshDevice()
-		{
-			int w = scene.ClientRectangle.Width;
-			int h = scene.ClientRectangle.Height;
-
-			backBuffer?.Dispose();
-			swapChain?.ResizeBuffers(1, w, h, Format.Unknown, 0);
-			SetViewPort(0, 0, w, h);
-
-			CreateDepthStencil();
-			CreateRenderTarget();
-			CreateRasterizerState();
-			UpdateProjection();
-			UpdateCamera();
+			scene.SizeChanged += OnSizeChanged;
 		}
 
 		private void UpdateProjection()
@@ -550,95 +405,6 @@ namespace sadx_model_view
 			Screen.cy = height / 2.0f;
 
 			camera.SetProjection(fov, ratio, -1.0f, -2300.0f);
-		}
-
-		private void CreateDepthStencil()
-		{
-			int w = scene.ClientRectangle.Width;
-			int h = scene.ClientRectangle.Height;
-
-			var depthBufferDesc = new Texture2DDescription
-			{
-				Width             = w,
-				Height            = h,
-				MipLevels         = 1,
-				ArraySize         = 1,
-				Format            = Format.D24_UNorm_S8_UInt,
-				SampleDescription = new SampleDescription(1, 0),
-				Usage             = ResourceUsage.Default,
-				BindFlags         = BindFlags.DepthStencil | BindFlags.ShaderResource,
-				CpuAccessFlags    = CpuAccessFlags.None,
-				OptionFlags       = ResourceOptionFlags.None
-			};
-
-			depthStencilBuffer?.Dispose();
-			depthStencilBuffer = new Texture2D(device, depthBufferDesc);
-
-			depthStencilDesc = new DepthStencilStateDescription
-			{
-				IsDepthEnabled   = true,
-				DepthWriteMask   = DepthWriteMask.All,
-				DepthComparison  = Comparison.Less,
-				IsStencilEnabled = true,
-				StencilReadMask  = 0xFF,
-				StencilWriteMask = 0xFF,
-
-				FrontFace = new DepthStencilOperationDescription
-				{
-					FailOperation      = StencilOperation.Keep,
-					DepthFailOperation = StencilOperation.Increment,
-					PassOperation      = StencilOperation.Keep,
-					Comparison         = Comparison.Always
-				},
-
-				BackFace = new DepthStencilOperationDescription
-				{
-					FailOperation      = StencilOperation.Keep,
-					DepthFailOperation = StencilOperation.Decrement,
-					PassOperation      = StencilOperation.Keep,
-					Comparison         = Comparison.Always
-				}
-			};
-
-			depthStencilState?.Dispose();
-			depthStencilState = new DepthStencilState(device, depthStencilDesc);
-			device?.ImmediateContext.OutputMerger.SetDepthStencilState(depthStencilState);
-
-			var depthStencilViewDesc = new DepthStencilViewDescription
-			{
-				Format    = Format.D24_UNorm_S8_UInt,
-				Dimension = DepthStencilViewDimension.Texture2D,
-				Texture2D = new DepthStencilViewDescription.Texture2DResource
-				{
-					MipSlice = 0
-				}
-			};
-
-			depthStencil?.Dispose();
-			depthStencil = new DepthStencilView(device, depthStencilBuffer, depthStencilViewDesc);
-			device?.ImmediateContext.OutputMerger.SetTargets(depthStencil, backBuffer);
-		}
-
-		private void CreateRasterizerState()
-		{
-			rasterDesc = new RasterizerStateDescription
-			{
-				IsAntialiasedLineEnabled = false,
-				CullMode                 = CullMode,
-				DepthBias                = 0,
-				DepthBiasClamp           = 0.0f,
-				IsDepthClipEnabled       = true,
-				FillMode                 = FillMode.Solid,
-				IsFrontCounterClockwise  = false,
-				IsMultisampleEnabled     = false,
-				IsScissorEnabled         = false,
-				SlopeScaledDepthBias     = 0.0f
-			};
-
-			renderState?.Dispose();
-			renderState = new RasterizerState(device, rasterDesc);
-
-			device.ImmediateContext.Rasterizer.State = renderState;
 		}
 
 		private void UpdateCamera()
@@ -690,34 +456,40 @@ namespace sadx_model_view
 		{
 			DeltaTime.Update();
 			if (WindowState == FormWindowState.Minimized)
+			{
 				return;
+			}
 
-			device?.ImmediateContext.ClearRenderTargetView(backBuffer, new RawColor4(1.0f, 1.0f, 1.0f, 1.0f));
-			device?.ImmediateContext.ClearDepthStencilView(depthStencil, DepthStencilClearFlags.Depth, 1.0f, 0);
+			renderer?.Clear();
 
-			obj?.Draw(device, ref camera);
+			obj?.Draw(renderer, ref camera);
 
 			if (landTable != null)
 			{
 				FlowControl.UseMaterialFlags = true;
 				FlowControl.Add(0, NJD_FLAG.IgnoreSpecular);
-				landTable.Draw(device, ref camera);
+				landTable.Draw(renderer, ref camera);
 				FlowControl.Reset();
 			}
 
-			swapChain.Present(1, 0);
+			renderer?.Present();
 		}
 
 		private void OnSizeChanged(object sender, EventArgs e)
 		{
 			if (WindowState == FormWindowState.Minimized)
+			{
 				return;
-			RefreshDevice();
+			}
+
+			renderer.RefreshDevice(scene.ClientRectangle.Width, scene.ClientRectangle.Height);
+			UpdateProjection();
+			UpdateCamera();
 		}
 
 		private void OnClosed(object sender, FormClosedEventArgs e)
 		{
-			device?.Dispose();
+			renderer?.Dispose();
 		}
 
 		[Flags]
@@ -751,7 +523,7 @@ namespace sadx_model_view
 					break;
 
 				case Keys.C:
-					CullMode = (CullMode == CullMode.Back) ? CullMode.None : CullMode.Back;
+					renderer.CullMode = (renderer.CullMode == CullMode.Back) ? CullMode.None : CullMode.Back;
 					// TODO device.SetRenderState(RenderState.CullMode, CullMode);
 					break;
 
@@ -841,14 +613,14 @@ namespace sadx_model_view
 			if (obj != null)
 			{
 				obj.Sort();
-				obj.CommitVertexBuffer(device);
+				obj.CommitVertexBuffer(renderer);
 				obj.CalculateRadius();
 			}
 
 			if (landTable != null)
 			{
 				landTable.Sort();
-				landTable.CommitVertexBuffer(device);
+				landTable.CommitVertexBuffer(renderer);
 			}
 		}
 	}

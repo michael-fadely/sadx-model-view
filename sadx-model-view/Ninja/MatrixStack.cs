@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using SharpDX;
-using SharpDX.Direct3D11;
 using SharpDX.Mathematics.Interop;
 
 namespace sadx_model_view.Ninja
@@ -253,7 +252,7 @@ namespace sadx_model_view.Ninja
 			Push(ref m);
 		}
 
-		public static void SetTransform(Device device, TransformState state = TransformState.World)
+		public static void SetTransform(Renderer device, TransformState state = TransformState.World)
 		{
 			RawMatrix m = Peek();
 			device.SetTransform(state, ref m);

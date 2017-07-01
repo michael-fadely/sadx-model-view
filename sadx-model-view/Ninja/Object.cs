@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using SharpDX;
-using SharpDX.Direct3D11;
 
 namespace sadx_model_view.Ninja
 {
@@ -270,14 +269,14 @@ namespace sadx_model_view.Ninja
 
 		}
 
-		public void CommitVertexBuffer(Device device)
+		public void CommitVertexBuffer(Renderer device)
 		{
 			Model?.CommitVertexBuffer(device);
 			Child?.CommitVertexBuffer(device);
 			Sibling?.CommitVertexBuffer(device);
 		}
 
-		public void Draw(Device device, ref Camera camera)
+		public void Draw(Renderer device, ref Camera camera)
 		{
 			MatrixStack.Push();
 

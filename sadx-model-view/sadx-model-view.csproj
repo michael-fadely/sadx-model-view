@@ -73,6 +73,7 @@
     <Compile Include="Ninja\ModelCache.cs" />
     <Compile Include="Ninja\ObjectCache.cs" />
     <Compile Include="Ninja\Screen.cs" />
+    <Compile Include="Renderer.cs" />
     <Compile Include="SA1\Col.cs" />
     <Compile Include="SA1\GeoAnimData.cs" />
     <Compile Include="SA1\LandTable.cs" />
@@ -130,6 +131,19 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Shaders\scene_vs.hlsl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Shaders\common.hlsli">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Shaders\scene_ps.hlsl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

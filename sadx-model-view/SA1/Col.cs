@@ -2,7 +2,6 @@
 using System.IO;
 using sadx_model_view.Ninja;
 using SharpDX;
-using SharpDX.Direct3D11;
 
 namespace sadx_model_view.SA1
 {
@@ -113,17 +112,17 @@ namespace sadx_model_view.SA1
 			Object = null;
 		}
 
-		public void CommitVertexBuffer(Device device)
+		public void CommitVertexBuffer(Renderer device)
 		{
 			Object?.CommitVertexBuffer(device);
 		}
 
-		public void Draw(Device device, ref Camera camera)
+		public void Draw(Renderer device, ref Camera camera)
 		{
-			if (!Flags.HasFlag(ColFlags.Visible))
-				return;
-
-			Object?.Draw(device, ref camera);
+			if ((Flags & ColFlags.Visible) != 0)
+			{
+				Object?.Draw(device, ref camera);
+			}
 		}
 
 		public void Sort()

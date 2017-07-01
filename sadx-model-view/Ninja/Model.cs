@@ -4,10 +4,7 @@ using System.IO;
 using System.Linq;
 using SharpDX;
 using SharpDX.Direct3D11;
-using SharpDX.Mathematics.Interop;
 using Buffer = SharpDX.Direct3D11.Buffer;
-using Device = SharpDX.Direct3D11.Device;
-using MapFlags = SharpDX.Direct3D11.MapFlags;
 using Matrix = SharpDX.Matrix;
 
 namespace sadx_model_view.Ninja
@@ -175,7 +172,7 @@ namespace sadx_model_view.Ninja
 		private Buffer vertexBuffer;
 		private int vertexBufferLength;
 
-		public void CommitVertexBuffer(Device device)
+		public void CommitVertexBuffer(Renderer device)
 		{
 			if (normals.Count != 0 && points.Count != normals.Count)
 			{
@@ -271,7 +268,8 @@ namespace sadx_model_view.Ninja
 				}
 
 				// This is used for transparent sorting.
-				List<Vector3> refPoints = indices.Distinct().Select(i => vertices[i].position).Select(dummy => (Vector3)dummy).ToList();
+				List<Vector3> refPoints = indices.Distinct().Select(i => (Vector3)vertices[i].position).ToList();
+
 				if (refPoints.Count > 0)
 				{
 					set.Center = refPoints.Aggregate((a, b) => a + b) / refPoints.Count;
@@ -280,74 +278,11 @@ namespace sadx_model_view.Ninja
 
 				set.IndexPrimitiveCount = indices.Count / 3;
 				set.IndexCount = indices.Count;
-				int indexSize = set.IndexCount * sizeof(short);
-
-				var idesc = new BufferDescription(indexSize, BindFlags.IndexBuffer, ResourceUsage.Dynamic);
-				set.IndexBuffer = new Buffer(device, idesc);
-
-				device.ImmediateContext.MapSubresource(set.IndexBuffer, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
-
-				using (stream)
-				{
-					foreach (short i in indices)
-					{
-						stream.Write(i);
-					}
-
-					if (stream.RemainingLength != 0)
-					{
-						throw new Exception("Failed to fill index buffer.");
-					}
-				}
-
-				device.ImmediateContext.UnmapSubresource(set.IndexBuffer, 0);
+				set.IndexBuffer = device.CreateIndexBuffer(indices, set.IndexCount * sizeof(short));
 			}
 
-			CreateVertexBuffer(device, vertices);
-		}
-
-		private void CreateVertexBuffer(Device device, IReadOnlyCollection<Vertex> vertices)
-		{
 			vertexBufferLength = vertices.Count;
-			int vertexSize = vertexBufferLength * Vertex.SizeInBytes;
-			var vdesc = new BufferDescription(vertexSize, BindFlags.VertexBuffer, ResourceUsage.Dynamic);
-
-			vertexBuffer = new Buffer(device, vdesc);
-
-			device.ImmediateContext.MapSubresource(vertexBuffer, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
-
-			using (stream)
-			{
-				foreach (Vertex v in vertices)
-				{
-					stream.Write(v.position.X);
-					stream.Write(v.position.Y);
-					stream.Write(v.position.Z);
-
-					stream.Write(v.normal.X);
-					stream.Write(v.normal.Y);
-					stream.Write(v.normal.Z);
-
-					RawColorBGRA color = v.diffuse == null ? Color.White : v.diffuse.Value;
-
-					stream.Write(color.R);
-					stream.Write(color.G);
-					stream.Write(color.B);
-					stream.Write(color.A);
-
-					RawVector2 uv = v.uv == null ? (RawVector2)Vector2.Zero : v.uv.Value;
-
-					stream.Write(uv.X);
-					stream.Write(uv.Y);
-				}
-
-				if (stream.RemainingLength != 0)
-				{
-					throw new Exception("Failed to fill vertex buffer.");
-				}
-			}
-
-			device.ImmediateContext.UnmapSubresource(vertexBuffer, 0);
+			vertexBuffer = device.CreateVertexBuffer(vertices);
 		}
 
 		/// <summary>
@@ -456,21 +391,18 @@ namespace sadx_model_view.Ninja
 			BlendOption.InverseDestinationAlpha,
 		};
 
-		private static void SetSADXMaterial(Device device, NJS_MATERIAL material)
+		private static void SetSADXMaterial(Renderer device, NJS_MATERIAL material)
 		{
 			NJD_FLAG flags = FlowControl.Apply(material.attrflags);
 
 			if (!flags.HasFlag(NJD_FLAG.UseTexture))
 			{
-				device.SetTexture(0, null);
+				device.SetTexture(0, -1);
 			}
 			else
 			{
 				int n = (int)material.attr_texId;
-				if (n < MainForm.TexturePool.Count)
-				{
-					device.SetTexture(0, MainForm.TexturePool[n]);
-				}
+				device.SetTexture(0, n);
 
 				// Not implemented in SADX:
 				// - NJD_FLAG.Pick
@@ -533,7 +465,7 @@ namespace sadx_model_view.Ninja
 			device.Material = m;
 		}
 
-		public void Draw(Device device)
+		public void Draw(Renderer device)
 		{
 			// Set the correct vertex format for model rendering.
 			device.VertexFormat = Vertex.Format;

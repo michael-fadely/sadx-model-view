@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using sadx_model_view.Ninja;
-using SharpDX.Direct3D11;
 
 namespace sadx_model_view.SA1
 {
@@ -19,11 +18,11 @@ namespace sadx_model_view.SA1
 	{
 		public static int SizeInBytes => 0x24;
 
-		public short COLCount => (short)COL.Count;
+		public short COLCount => (short)ColList.Count;
 		public short AnimCount => (short)AnimData.Count;
 		public LandTableFlags Flags;
 		public float Unknown_1;
-		public readonly List<Col> COL;
+		public readonly List<Col> ColList;
 		public readonly List<GeoAnimData> AnimData;
 		public string TexName;
 		public NJS_TEXLIST TexList;
@@ -34,7 +33,7 @@ namespace sadx_model_view.SA1
 
 		public LandTable(Stream stream)
 		{
-			COL = new List<Col>();
+			ColList = new List<Col>();
 			AnimData = new List<GeoAnimData>();
 			TexList = null;
 
@@ -60,16 +59,16 @@ namespace sadx_model_view.SA1
 			if (col_count > 0 && col_ptr > 0)
 			{
 				stream.Position = col_ptr;
-				for (var i = 0; i < col_count; i++)
+				for (int i = 0; i < col_count; i++)
 				{
-					COL.Add(new Col(stream));
+					ColList.Add(new Col(stream));
 				}
 			}
 
 			if (anim_count > 0 && anim_ptr > 0)
 			{
 				stream.Position = anim_ptr;
-				for (var i = 0; i < anim_count; i++)
+				for (int i = 0; i < anim_count; i++)
 				{
 					AnimData.Add(new GeoAnimData(stream));
 				}
@@ -89,7 +88,7 @@ namespace sadx_model_view.SA1
 		{
 			Flags     = 0;
 			Unknown_1 = 0.0f;
-			COL       = new List<Col>();
+			ColList   = new List<Col>();
 			AnimData  = new List<GeoAnimData>();
 			TexName   = string.Empty;
 			TexList   = null;
@@ -104,25 +103,25 @@ namespace sadx_model_view.SA1
 
 		public void Dispose()
 		{
-			foreach (var c in COL)
+			foreach (Col c in ColList)
 			{
 				c.Dispose();
 			}
 
-			COL.Clear();
+			ColList.Clear();
 		}
 
-		public void CommitVertexBuffer(Device device)
+		public void CommitVertexBuffer(Renderer device)
 		{
-			foreach (var c in COL)
+			foreach (Col c in ColList)
 			{
 				c.CommitVertexBuffer(device);
 			}
 		}
 
-		public void Draw(Device device, ref Camera camera)
+		public void Draw(Renderer device, ref Camera camera)
 		{
-			foreach (var c in COL)
+			foreach (Col c in ColList)
 			{
 				c.Draw(device, ref camera);
 			}
@@ -130,7 +129,7 @@ namespace sadx_model_view.SA1
 
 		public void Sort()
 		{
-			foreach (var c in COL)
+			foreach (Col c in ColList)
 			{
 				c.Sort();
 			}
