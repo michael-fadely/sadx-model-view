@@ -362,6 +362,12 @@ namespace sadx_model_view
 				Close();
 				return;
 			}
+			catch (SharpDXException ex)
+			{
+				MessageBox.Show(this, ex.ToString(), "Something happened.", MessageBoxButtons.OK);
+				Close();
+				return;
+			}
 			catch (Exception ex)
 			{
 				MessageBox.Show(this, ex.Message, "Something happened.", MessageBoxButtons.OK);

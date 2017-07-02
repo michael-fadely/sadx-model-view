@@ -79,11 +79,12 @@ namespace sadx_model_view
 		{
 			var desc = new SwapChainDescription
 			{
-				BufferCount     = 1,
-				ModeDescription = new ModeDescription(w, h, new Rational(1000, 60), Format.R8G8B8A8_UNorm),
-				Usage           = Usage.RenderTargetOutput,
-				OutputHandle    = sceneHandle,
-				IsWindowed      = true
+				BufferCount       = 1,
+				ModeDescription   = new ModeDescription(w, h, new Rational(1000, 60), Format.R8G8B8A8_UNorm),
+				Usage             = Usage.RenderTargetOutput,
+				OutputHandle      = sceneHandle,
+				IsWindowed        = true,
+				SampleDescription = new SampleDescription(1, 0)
 			};
 
 			var levels = new FeatureLevel[]
@@ -99,6 +100,7 @@ namespace sadx_model_view
 #else
 			const DeviceCreationFlags flag = DeviceCreationFlags.None;
 #endif
+
 			Device.CreateWithSwapChain(DriverType.Hardware, flag, levels, desc, out device, out swapChain);
 
 			if (device.FeatureLevel < FeatureLevel.Level_10_0)
@@ -106,10 +108,17 @@ namespace sadx_model_view
 				throw new InsufficientFeatureLevelException(device.FeatureLevel, FeatureLevel.Level_10_0);
 			}
 
-			var bufferDesc = new BufferDescription(Matrix.SizeInBytes * 4, BindFlags.ConstantBuffer, ResourceUsage.Dynamic);
+			int mtx_size = Matrix.SizeInBytes * 4;
+			var bufferDesc = new BufferDescription(mtx_size,
+				ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write, ResourceOptionFlags.None, mtx_size);
+
 			matrixBuffer = new Buffer(device, bufferDesc);
 
-			bufferDesc = new BufferDescription(Vector4.SizeInBytes * 2 + sizeof(float), BindFlags.ConstantBuffer, ResourceUsage.Dynamic);
+			int stride = Vector4.SizeInBytes * 2 + sizeof(float);
+			int size = Vector4.SizeInBytes * 3;
+			bufferDesc = new BufferDescription(size,
+				ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write, ResourceOptionFlags.None, stride);
+
 			materialBuffer = new Buffer(device, bufferDesc);
 
 			device.ImmediateContext.VertexShader.SetConstantBuffer(0, matrixBuffer);
@@ -120,12 +129,14 @@ namespace sadx_model_view
 
 		public void Clear()
 		{
-			device?.ImmediateContext.ClearRenderTargetView(backBuffer, new RawColor4(1.0f, 1.0f, 1.0f, 1.0f));
+			device?.ImmediateContext.ClearRenderTargetView(backBuffer, new RawColor4(0.0f, 1.0f, 1.0f, 1.0f));
 			device?.ImmediateContext.ClearDepthStencilView(depthStencil, DepthStencilClearFlags.Depth, 1.0f, 0);
 		}
 
 		public void Draw(DisplayState state, Buffer vertexBuffer, Buffer indexBuffer, int indexCount)
 		{
+			// TODO: state
+
 			if (!matrixDataChanged)
 			{
 				return;
@@ -150,6 +161,7 @@ namespace sadx_model_view
 
 			device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
 			device.ImmediateContext.InputAssembler.SetVertexBuffers(0, new Buffer[] { vertexBuffer }, new []{ Vertex.SizeInBytes }, new []{ 0 });
+			device.ImmediateContext.InputAssembler.SetIndexBuffer(indexBuffer, Format.R16_UInt, 0);
 			device.ImmediateContext.DrawIndexed(indexCount, 0, 0);
 		}
 
@@ -201,6 +213,8 @@ namespace sadx_model_view
 
 		private void CreateDepthStencil(int w, int h)
 		{
+			// TODO: shader resource?
+
 			var depthBufferDesc = new Texture2DDescription
 			{
 				Width             = w,
@@ -210,7 +224,7 @@ namespace sadx_model_view
 				Format            = Format.D24_UNorm_S8_UInt,
 				SampleDescription = new SampleDescription(1, 0),
 				Usage             = ResourceUsage.Default,
-				BindFlags         = BindFlags.DepthStencil | BindFlags.ShaderResource,
+				BindFlags         = BindFlags.DepthStencil,
 				CpuAccessFlags    = CpuAccessFlags.None,
 				OptionFlags       = ResourceOptionFlags.None
 			};
