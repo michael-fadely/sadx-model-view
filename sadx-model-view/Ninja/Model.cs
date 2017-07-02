@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using SharpDX;
-using SharpDX.Direct3D11;
 using Buffer = SharpDX.Direct3D11.Buffer;
 using Matrix = SharpDX.Matrix;
 
@@ -154,7 +153,8 @@ namespace sadx_model_view.Ninja
 			}
 
 			meshsets.Clear();
-			vertexBuffer.Dispose();
+			vertexBuffer?.Dispose();
+			DisplayState?.Dispose();
 		}
 
 		private static readonly NJS_MATERIAL nullMaterial = new NJS_MATERIAL();
@@ -379,20 +379,12 @@ namespace sadx_model_view.Ninja
 			       && screen.h >= (v.Y + radius) * v4 * v6 + screen.cy;
 		}
 		
-		private static readonly BlendOption[] blendModes =
+		private void SetSADXMaterial(Renderer device, NJS_MATERIAL material)
 		{
-			BlendOption.Zero,
-			BlendOption.One,
-			BlendOption.SourceColor,
-			BlendOption.InverseSourceColor,
-			BlendOption.SourceAlpha,
-			BlendOption.InverseSourceAlpha,
-			BlendOption.DestinationAlpha,
-			BlendOption.InverseDestinationAlpha,
-		};
-
-		private static void SetSADXMaterial(Renderer device, NJS_MATERIAL material)
-		{
+			if (DisplayState == null)
+			{
+				DisplayState = device.CreateSADXDisplayState(material);
+			}
 			NJD_FLAG flags = FlowControl.Apply(material.attrflags);
 
 			if (!flags.HasFlag(NJD_FLAG.UseTexture))
@@ -403,72 +395,22 @@ namespace sadx_model_view.Ninja
 			{
 				int n = (int)material.attr_texId;
 				device.SetTexture(0, n);
-
-				// Not implemented in SADX:
-				// - NJD_FLAG.Pick
-				// - NJD_FLAG.UseAnisotropic
-				// - NJD_FLAG.UseFlat
-
-				device.SetSamplerState(0, SamplerState.AddressV, flags.HasFlag(NJD_FLAG.ClampV) ? TextureAddress.Clamp : TextureAddress.Wrap);
-				device.SetSamplerState(0, SamplerState.AddressU, flags.HasFlag(NJD_FLAG.ClampU) ? TextureAddress.Clamp : TextureAddress.Wrap);
-				device.SetSamplerState(0, SamplerState.AddressV, flags.HasFlag(NJD_FLAG.FlipV) ? TextureAddress.Mirror : TextureAddress.Wrap);
-				device.SetSamplerState(0, SamplerState.AddressU, flags.HasFlag(NJD_FLAG.FlipU) ? TextureAddress.Mirror : TextureAddress.Wrap);
-
-				if (flags.HasFlag(NJD_FLAG.UseEnv))
-				{
-					device.SetTextureStageState(0, TextureStage.TextureTransformFlags, TextureTransform.Count2);
-					device.SetTransform(TransformState.Texture0, environmentMapTransform);
-					device.SetTextureStageState(0, TextureStage.TexCoordIndex, (int)TextureCoordIndex.CameraSpaceNormal);
-				}
-				else
-				{
-					device.SetTextureStageState(0, TextureStage.TextureTransformFlags, TextureTransform.Disable);
-					device.SetTransform(TransformState.Texture0, Matrix.Identity);
-					device.SetTextureStageState(0, TextureStage.TexCoordIndex, (int)TextureCoordIndex.PassThru);
-				}
 			}
 
-			device.SetRenderState(RenderState.DestinationBlend, blendModes[material.DestinationBlend]);
-			device.SetRenderState(RenderState.SourceBlend, blendModes[material.SourceBlend]);
-
-			if (flags.HasFlag(NJD_FLAG.UseAlpha))
+			var m = new ShaderMaterial
 			{
-				device.SetRenderState(RenderState.AlphaBlendEnable, true);
-				device.SetRenderState(RenderState.AlphaTestEnable, true);
-				device.SetRenderState(RenderState.DiffuseMaterialSource, ColorSource.Material);
-				device.SetTextureStageState(0, TextureStage.AlphaOperation, TextureOperation.Modulate);
-			}
-			else
-			{
-				device.SetRenderState(RenderState.AlphaBlendEnable, false);
-				device.SetRenderState(RenderState.AlphaTestEnable, false);
-				device.SetRenderState(RenderState.DiffuseMaterialSource, ColorSource.Color1);
-				device.SetTextureStageState(0, TextureStage.AlphaOperation, TextureOperation.SelectArg2);
-			}
-
-			device.SetRenderState(RenderState.SpecularEnable, !flags.HasFlag(NJD_FLAG.IgnoreSpecular));
-			device.SetRenderState(RenderState.CullMode, flags.HasFlag(NJD_FLAG.DoubleSide) ? Cull.None : MainForm.CullMode);
-
-			device.SetRenderState(RenderState.Lighting, !flags.HasFlag(NJD_FLAG.IgnoreLight));
-
-			var m = new Material
-			{
-				Specular = new Color4(material.specular.color),
 				Diffuse  = new Color4(material.diffuse.color),
-				Power    = material.exponent
+				Specular = new Color4(material.specular.color),
+				Exponent = material.exponent
 			};
 
-			// default SADX behavior is to use diffuse for both ambient and diffuse.
-			m.Ambient = m.Diffuse;
-			m.Specular.A = 0.0f;
-
-			device.Material = m;
+			device.SetShaderMaterial(ref m);
 		}
+
+		public DisplayState DisplayState { get; set; }
 
 		public void Draw(Renderer device)
 		{
-			// Set the correct vertex format for model rendering.
-			device.VertexFormat = Vertex.Format;
 			ushort lastId = ushort.MaxValue;
 
 			foreach (NJS_MESHSET set in meshsets)
@@ -487,13 +429,7 @@ namespace sadx_model_view.Ninja
 					SetSADXMaterial(device, nullMaterial);
 				}
 
-				// Set the stream source to the current meshset's vertex buffer.
-				device.SetStreamSource(0, vertexBuffer, 0, Vertex.SizeInBytes);
-				device.Indices = set.IndexBuffer;
-
-				// Draw the model.
-				device.DrawIndexedPrimitive(PrimitiveType.TriangleList,
-					0, 0, vertexBufferLength, 0, set.IndexPrimitiveCount);
+				device.Draw(DisplayState, vertexBuffer, set.IndexBuffer, set.IndexCount);
 			}
 		}
 

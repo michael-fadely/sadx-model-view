@@ -5,6 +5,12 @@ cbuffer MatrixBuffer : register(b0)
 	matrix worldMatrix;
 	matrix viewMatrix;
 	matrix projectionMatrix;
+	matrix textureTransform;
+}
+
+cbuffer MaterialBuffer : register(b1)
+{
+	Material material;
 }
 
 VS_OUTPUT main(VS_INPUT input)

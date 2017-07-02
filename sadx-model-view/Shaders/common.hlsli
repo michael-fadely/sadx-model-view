@@ -1,4 +1,11 @@
-﻿struct VS_INPUT
+﻿struct Material
+{
+	float4 diffuse;
+	float4 specular;
+	float exponent;
+};
+
+struct VS_INPUT
 {
 	float3 position : POSITION;
 	float3 normal   : NORMAL;

@@ -5,6 +5,6 @@
 		World,
 		View,
 		Projection,
-		Transform
+		Texture
 	}
 }

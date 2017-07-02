@@ -362,9 +362,9 @@ namespace sadx_model_view
 				Close();
 				return;
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
-				MessageBox.Show(this, "I don't know what.", "Something happened.", MessageBoxButtons.OK);
+				MessageBox.Show(this, ex.Message, "Something happened.", MessageBoxButtons.OK);
 				Close();
 				return;
 			}
@@ -523,7 +523,7 @@ namespace sadx_model_view
 					break;
 
 				case Keys.C:
-					renderer.CullMode = (renderer.CullMode == CullMode.Back) ? CullMode.None : CullMode.Back;
+					renderer.DefaultCullMode = (renderer.DefaultCullMode == CullMode.Back) ? CullMode.None : CullMode.Back;
 					// TODO device.SetRenderState(RenderState.CullMode, CullMode);
 					break;
 

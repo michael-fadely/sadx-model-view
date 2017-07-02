@@ -18,12 +18,45 @@ using Resource = SharpDX.Direct3D11.Resource;
 
 namespace sadx_model_view
 {
+	public struct MatrixBuffer
+	{
+		public Matrix World;
+		public Matrix View;
+		public Matrix Projection;
+		public Matrix Texture;
+
+		public override bool Equals(object obj)
+		{
+			return base.Equals(obj);
+		}
+
+		public bool Equals(MatrixBuffer other)
+		{
+			return World.Equals(other.World)
+				&& View.Equals(other.View)
+				&& Projection.Equals(other.Projection)
+				&& Texture.Equals(other.Texture);
+		}
+
+		public override int GetHashCode() => 1;
+
+		public static bool operator ==(MatrixBuffer lhs, MatrixBuffer rhs)
+		{
+			return lhs.Equals(rhs);
+		}
+
+		public static bool operator !=(MatrixBuffer lhs, MatrixBuffer rhs)
+		{
+			return !(lhs == rhs);
+		}
+	}
+
 	public class Renderer : IDisposable
 	{
 		// TODO: not this
-		public CullMode CullMode = CullMode.Back;
+		public CullMode DefaultCullMode = CullMode.Back;
 		// TODO: not this
-		public readonly List<Texture2D> TexturePool = new List<Texture2D>();
+		private readonly List<SceneTexture> texturePool = new List<SceneTexture>();
 
 		private readonly Device device;
 		private readonly SwapChain swapChain;
@@ -33,8 +66,14 @@ namespace sadx_model_view
 		private DepthStencilStateDescription depthStencilDesc;
 		private DepthStencilState depthStencilState;
 		private DepthStencilView depthStencil;
-		private RasterizerState renderState;
-		private RasterizerStateDescription rasterDesc;
+		private RasterizerState rasterizerState;
+		private RasterizerStateDescription rasterizerDescription;
+		private readonly Buffer matrixBuffer;
+		private readonly Buffer materialBuffer;
+
+		private bool matrixDataChanged;
+		private MatrixBuffer lastMatrixData;
+		private MatrixBuffer matrixData;
 
 		public Renderer(int w, int h, IntPtr sceneHandle)
 		{
@@ -67,6 +106,15 @@ namespace sadx_model_view
 				throw new InsufficientFeatureLevelException(device.FeatureLevel, FeatureLevel.Level_10_0);
 			}
 
+			var bufferDesc = new BufferDescription(Matrix.SizeInBytes * 4, BindFlags.ConstantBuffer, ResourceUsage.Dynamic);
+			matrixBuffer = new Buffer(device, bufferDesc);
+
+			bufferDesc = new BufferDescription(Vector4.SizeInBytes * 2 + sizeof(float), BindFlags.ConstantBuffer, ResourceUsage.Dynamic);
+			materialBuffer = new Buffer(device, bufferDesc);
+
+			device.ImmediateContext.VertexShader.SetConstantBuffer(0, matrixBuffer);
+			device.ImmediateContext.VertexShader.SetConstantBuffer(1, materialBuffer);
+
 			RefreshDevice(w, h);
 		}
 
@@ -74,6 +122,35 @@ namespace sadx_model_view
 		{
 			device?.ImmediateContext.ClearRenderTargetView(backBuffer, new RawColor4(1.0f, 1.0f, 1.0f, 1.0f));
 			device?.ImmediateContext.ClearDepthStencilView(depthStencil, DepthStencilClearFlags.Depth, 1.0f, 0);
+		}
+
+		public void Draw(DisplayState state, Buffer vertexBuffer, Buffer indexBuffer, int indexCount)
+		{
+			if (!matrixDataChanged)
+			{
+				return;
+			}
+
+			if (lastMatrixData == matrixData)
+			{
+				return;
+			}
+
+			device.ImmediateContext.MapSubresource(matrixBuffer, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
+			using (stream)
+			{
+				stream.Write(matrixData.World);
+				stream.Write(matrixData.View);
+				stream.Write(matrixData.Projection);
+				stream.Write(matrixData.Texture);
+			}
+			device.ImmediateContext.UnmapSubresource(matrixBuffer, 0);
+
+			lastMatrixData = matrixData;
+
+			device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
+			device.ImmediateContext.InputAssembler.SetVertexBuffers(0, new Buffer[] { vertexBuffer }, new []{ Vertex.SizeInBytes }, new []{ 0 });
+			device.ImmediateContext.DrawIndexed(indexCount, 0, 0);
 		}
 
 		public void Present()
@@ -188,10 +265,10 @@ namespace sadx_model_view
 
 		private void CreateRasterizerState()
 		{
-			rasterDesc = new RasterizerStateDescription
+			rasterizerDescription = new RasterizerStateDescription
 			{
 				IsAntialiasedLineEnabled = false,
-				CullMode                 = CullMode,
+				CullMode                 = DefaultCullMode,
 				DepthBias                = 0,
 				DepthBiasClamp           = 0.0f,
 				IsDepthClipEnabled       = true,
@@ -202,13 +279,13 @@ namespace sadx_model_view
 				SlopeScaledDepthBias     = 0.0f
 			};
 
-			renderState?.Dispose();
-			renderState = new RasterizerState(device, rasterDesc);
+			rasterizerState?.Dispose();
+			rasterizerState = new RasterizerState(device, rasterizerDescription);
 
-			device.ImmediateContext.Rasterizer.State = renderState;
+			device.ImmediateContext.Rasterizer.State = rasterizerState;
 		}
 
-		public void CopyToTexture(Texture2D texture, Bitmap bitmap, int level)
+		private void CopyToTexture(Texture2D texture, Bitmap bitmap, int level)
 		{
 			device.ImmediateContext.MapSubresource(texture, level, MapMode.WriteDiscard, MapFlags.None, out DataStream data);
 
@@ -243,14 +320,14 @@ namespace sadx_model_view
 		{
 			var texDesc = new Texture2DDescription
 			{
-				ArraySize = 1,
-				BindFlags = BindFlags.ShaderResource,
-				CpuAccessFlags = CpuAccessFlags.Write,
-				Format = Format.R8G8B8A8_UNorm,
-				Width = bitmap.Width,
-				Height = bitmap.Height,
-				MipLevels = levels,
-				Usage = ResourceUsage.Dynamic,
+				ArraySize         = 1,
+				BindFlags         = BindFlags.ShaderResource,
+				CpuAccessFlags    = CpuAccessFlags.Write,
+				Format            = Format.R8G8B8A8_UNorm,
+				Width             = bitmap.Width,
+				Height            = bitmap.Height,
+				MipLevels         = levels,
+				Usage             = ResourceUsage.Dynamic,
 				SampleDescription = new SampleDescription(1, 0)
 			};
 
@@ -269,17 +346,18 @@ namespace sadx_model_view
 				CopyToTexture(texture, bitmap, 0);
 			}
 
-			TexturePool.Add(texture);
+			var pair = new SceneTexture(texture, new ShaderResourceView(device, texture));
+			texturePool.Add(pair);
 		}
 
 		public void ClearTexturePool()
 		{
-			foreach (Texture2D texture in TexturePool)
+			foreach (SceneTexture texture in texturePool)
 			{
 				texture.Dispose();
 			}
 
-			TexturePool.Clear();
+			texturePool.Clear();
 		}
 
 		public Buffer CreateVertexBuffer(IReadOnlyCollection<Vertex> vertices)
@@ -355,28 +433,175 @@ namespace sadx_model_view
 			depthStencilBuffer?.Dispose();
 			depthStencilState?.Dispose();
 			depthStencil?.Dispose();
-			renderState?.Dispose();
+			rasterizerState?.Dispose();
+			matrixBuffer?.Dispose();
+			materialBuffer?.Dispose();
 		}
 
 		public void SetTransform(TransformState state, ref RawMatrix rawMatrix)
 		{
-			throw new NotImplementedException();
+			switch (state)
+			{
+				case TransformState.World:
+					matrixData.World = rawMatrix;
+					break;
+				case TransformState.View:
+					matrixData.View = rawMatrix;
+					break;
+				case TransformState.Projection:
+					matrixData.Projection = rawMatrix;
+					break;
+				case TransformState.Texture:
+					matrixData.Texture = rawMatrix;
+					break;
+				default:
+					throw new ArgumentOutOfRangeException(nameof(state), state, null);
+			}
+
+			matrixDataChanged = true;
 		}
 
 		public void SetTexture(int sampler, int textureIndex)
 		{
-			if (textureIndex >= 0 && textureIndex < TexturePool.Count)
+			if (textureIndex < 0)
 			{
-				Texture2D texture = TexturePool[textureIndex];
-				// TODO: set texture
+				device.ImmediateContext.PixelShader.SetShaderResource(sampler, null);
+			}
+			else if (textureIndex < texturePool.Count)
+			{
+				SceneTexture texture = texturePool[textureIndex];
+				device.ImmediateContext.PixelShader.SetShaderResource(sampler, texture.ShaderResource);
 			}
 			else
 			{
-				// TODO: set null texture
+				throw new ArgumentOutOfRangeException();
+			}
+		}
+
+		// TODO: renderer interface to handle SADX/SA1/SA2 renderers
+
+		private static readonly BlendOption[] blendModes =
+		{
+			BlendOption.Zero,
+			BlendOption.One,
+			BlendOption.SourceColor,
+			BlendOption.InverseSourceColor,
+			BlendOption.SourceAlpha,
+			BlendOption.InverseSourceAlpha,
+			BlendOption.DestinationAlpha,
+			BlendOption.InverseDestinationAlpha,
+		};
+
+		public DisplayState CreateSADXDisplayState(NJS_MATERIAL material)
+		{
+			// TODO: communicate NJD_FLAG.UseAlpha to the shader as this determines if vertex or material diffuse is used.
+			// TODO: [shader] specular
+			// TODO: [shader] ignore light
+
+			// Not implemented in SADX:
+			// - NJD_FLAG.Pick
+			// - NJD_FLAG.UseAnisotropic
+			// - NJD_FLAG.UseFlat
+
+			NJD_FLAG flags = material.attrflags;
+			var samplerDesc = new SamplerStateDescription();
+
+			if ((flags & NJD_FLAG.ClampU) != 0)
+			{
+				samplerDesc.AddressU = TextureAddressMode.Clamp;
+			}
+			else if ((flags & NJD_FLAG.FlipU) != 0)
+			{
+				samplerDesc.AddressU = TextureAddressMode.Mirror;
+			}
+			else
+			{
+				samplerDesc.AddressU = TextureAddressMode.Wrap;
 			}
 
-			throw new NotImplementedException();
+			if ((flags & NJD_FLAG.ClampV) != 0)
+			{
+				samplerDesc.AddressV = TextureAddressMode.Clamp;
+			}
+			else if ((flags & NJD_FLAG.FlipV) != 0)
+			{
+				samplerDesc.AddressV = TextureAddressMode.Mirror;
+			}
+			else
+			{
+				samplerDesc.AddressV = TextureAddressMode.Wrap;
+			}
+
+			var sampler = new SamplerState(device, samplerDesc);
+
+			// Base it off of the default rasterizer state.
+			RasterizerStateDescription rasterDesc = rasterizerDescription;
+
+			rasterDesc.CullMode = (flags & NJD_FLAG.DoubleSide) != 0 ? CullMode.None : DefaultCullMode;
+
+			var raster = new RasterizerState(device, rasterDesc);
+
+			var blendDesc = new BlendStateDescription();
+			ref RenderTargetBlendDescription rt = ref blendDesc.RenderTarget[0];
+
+			rt.IsBlendEnabled   = (material.attrflags & NJD_FLAG.UseAlpha) != 0;
+			rt.SourceBlend      = blendModes[material.SourceBlend];
+			rt.DestinationBlend = blendModes[material.DestinationBlend];
+			rt.BlendOperation   = BlendOperation.Add;
+
+			var blend = new BlendState(device, blendDesc);
+
+			return new DisplayState(sampler, raster, blend);
 		}
+
+		private ShaderMaterial lastMaterial;
+		public void SetShaderMaterial(ref ShaderMaterial material)
+		{
+			if (material == lastMaterial)
+			{
+				return;
+			}
+
+			lastMaterial = material;
+
+			device.ImmediateContext.MapSubresource(materialBuffer, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
+			using (stream)
+			{
+				stream.Write(material.Diffuse);
+				stream.Write(material.Specular);
+				stream.Write(material.Exponent);
+			}
+			device.ImmediateContext.UnmapSubresource(materialBuffer, 0);
+		}
+	}
+
+	public struct ShaderMaterial
+	{
+		public RawColor4 Diffuse;
+		public RawColor4 Specular;
+		public float Exponent;
+
+		public override bool Equals(object obj)
+		{
+			return base.Equals(obj);
+		}
+
+		public bool Equals(ShaderMaterial other)
+		{
+			return Diffuse.Equals(other.Diffuse) && Specular.Equals(other.Specular) && Exponent.Equals(other.Exponent);
+		}
+
+		public static bool operator==(ShaderMaterial lhs, ShaderMaterial rhs)
+		{
+			return lhs.Equals(rhs);
+		}
+
+		public static bool operator !=(ShaderMaterial lhs, ShaderMaterial rhs)
+		{
+			return !(lhs == rhs);
+		}
+
+		public override int GetHashCode() => 1;
 	}
 
 	internal class InsufficientFeatureLevelException : Exception
