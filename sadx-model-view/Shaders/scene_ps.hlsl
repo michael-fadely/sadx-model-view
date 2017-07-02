@@ -1,4 +1,4 @@
-﻿#include "common.hlsli"
+#include "common.hlsli"
 
 Texture2D<float4> DiffuseTexture : register(t0);
 

@@ -122,7 +122,9 @@ namespace sadx_model_view
 				ModelCache.Clear();
 
 				if (metadata_ptr == 0)
+				{
 					return;
+				}
 
 				file.Position = metadata_ptr;
 				bool done = false;
@@ -154,12 +156,16 @@ namespace sadx_model_view
 								uint addr = BitConverter.ToUInt32(buffer, 0);
 
 								if (addr == 0xFFFFFFFF)
+								{
 									break;
+								}
 
 								uint name_addr = BitConverter.ToUInt32(buffer, 4);
 
 								if (name_addr == 0 || name_addr == 0xFFFFFFFF)
+								{
 									break;
+								}
 
 								var pos = file.Position;
 								file.Position = offset + name_addr;
@@ -174,7 +180,9 @@ namespace sadx_model_view
 
 						case ChunkTypes.Animations:
 							if (size == 0)
+							{
 								break;
+							}
 
 							// ReSharper disable once RedundantAssignment
 							animations = Encoding.UTF8.GetString(buffer, 0, file.ReadString(ref buffer));
@@ -185,7 +193,9 @@ namespace sadx_model_view
 
 						case ChunkTypes.Author:
 							if (size == 0)
+							{
 								break;
+							}
 
 							// ReSharper disable once RedundantAssignment
 							author = Encoding.UTF8.GetString(buffer, 0, file.ReadString(ref buffer));
@@ -193,7 +203,9 @@ namespace sadx_model_view
 
 						case ChunkTypes.Tool:
 							if (size == 0)
+							{
 								break;
+							}
 
 							// ReSharper disable once RedundantAssignment
 							tool = Encoding.UTF8.GetString(buffer, 0, file.ReadString(ref buffer));
@@ -201,7 +213,9 @@ namespace sadx_model_view
 
 						case ChunkTypes.Description:
 							if (size == 0)
+							{
 								break;
+							}
 
 							// ReSharper disable once RedundantAssignment
 							description = Encoding.UTF8.GetString(buffer, 0, file.ReadString(ref buffer));
@@ -308,8 +322,6 @@ namespace sadx_model_view
 				LoadPVM(file);
 			}
 		}
-
-
 
 		private void LoadPVM(Stream stream)
 		{
@@ -525,11 +537,13 @@ namespace sadx_model_view
 
 				case Keys.F:
 					if (obj != null)
+					{
 						camera.LookAt(obj.Position);
+					}
 					break;
 
 				case Keys.C:
-					renderer.DefaultCullMode = (renderer.DefaultCullMode == CullMode.Back) ? CullMode.None : CullMode.Back;
+					renderer.DefaultCullMode = renderer.DefaultCullMode == CullMode.Back ? CullMode.None : CullMode.Back;
 					// TODO device.SetRenderState(RenderState.CullMode, CullMode);
 					break;
 

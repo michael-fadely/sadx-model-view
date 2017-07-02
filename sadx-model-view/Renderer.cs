@@ -114,8 +114,9 @@ namespace sadx_model_view
 
 			matrixBuffer = new Buffer(device, bufferDesc);
 
-			int stride = Vector4.SizeInBytes * 2 + sizeof(float);
+			// Size must be divisible by 16, so this is just padding.
 			int size = Vector4.SizeInBytes * 3;
+			int stride = Vector4.SizeInBytes * 2 + sizeof(float);
 			bufferDesc = new BufferDescription(size,
 				ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write, ResourceOptionFlags.None, stride);
 

@@ -6,12 +6,12 @@ cbuffer MatrixBuffer : register(b0)
 	matrix viewMatrix;
 	matrix projectionMatrix;
 	matrix textureTransform;
-}
+};
 
 cbuffer MaterialBuffer : register(b1)
 {
 	Material material;
-}
+};
 
 VS_OUTPUT main(VS_INPUT input)
 {
@@ -22,9 +22,9 @@ VS_OUTPUT main(VS_INPUT input)
 	result.position = mul(result.position, viewMatrix);
 	result.position = mul(result.position, projectionMatrix);
 	
-	output.normal = input.normal;
-	output.color = input.color;
-	output.tex = input.tex;
+	result.normal = input.normal;
+	result.color = input.color;
+	result.tex = input.tex;
 
 	return result;
 }
