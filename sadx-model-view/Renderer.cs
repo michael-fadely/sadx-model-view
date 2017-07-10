@@ -146,10 +146,10 @@ namespace sadx_model_view
 
 				var layout = new InputElement[]
 				{
-					new InputElement("POSITION", 0, Format.R32G32B32_Float,    InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
-					new InputElement("NORMAL",   0, Format.R32G32B32_Float,    InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
-					new InputElement("COLOR",    0, Format.R32G32B32A32_Float, InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
-					new InputElement("TEXCOORD", 0, Format.R32G32_Float,       InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0)
+					new InputElement("POSITION", 0, Format.R32G32B32_Float, InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
+					new InputElement("NORMAL",   0, Format.R32G32B32_Float, InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
+					new InputElement("COLOR",    0, Format.R8G8B8A8_UNorm,  InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
+					new InputElement("TEXCOORD", 0, Format.R32G32_Float,    InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0)
 				};
 
 				inputLayout = new InputLayout(device, vs_result.Bytecode, layout);
@@ -435,9 +435,9 @@ namespace sadx_model_view
 
 					RawColorBGRA color = v.diffuse == null ? Color.White : v.diffuse.Value;
 
-					stream.Write(color.R);
-					stream.Write(color.G);
 					stream.Write(color.B);
+					stream.Write(color.G);
+					stream.Write(color.R);
 					stream.Write(color.A);
 
 					RawVector2 uv = v.uv == null ? (RawVector2)Vector2.Zero : v.uv.Value;
