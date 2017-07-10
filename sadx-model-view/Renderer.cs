@@ -6,6 +6,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using sadx_model_view.Ninja;
 using SharpDX;
+using SharpDX.D3DCompiler;
 using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
@@ -53,9 +54,7 @@ namespace sadx_model_view
 
 	public class Renderer : IDisposable
 	{
-		// TODO: not this
 		public CullMode DefaultCullMode = CullMode.Back;
-		// TODO: not this
 		private readonly List<SceneTexture> texturePool = new List<SceneTexture>();
 
 		private readonly Device device;
@@ -117,15 +116,48 @@ namespace sadx_model_view
 			// Size must be divisible by 16, so this is just padding.
 			int size = Vector4.SizeInBytes * 3;
 			int stride = Vector4.SizeInBytes * 2 + sizeof(float);
+
 			bufferDesc = new BufferDescription(size,
 				ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write, ResourceOptionFlags.None, stride);
 
 			materialBuffer = new Buffer(device, bufferDesc);
 
+			LoadShaders();
+
 			device.ImmediateContext.VertexShader.SetConstantBuffer(0, matrixBuffer);
 			device.ImmediateContext.VertexShader.SetConstantBuffer(1, materialBuffer);
 
 			RefreshDevice(w, h);
+		}
+
+		private void LoadShaders()
+		{
+			using (var includeMan = new DefaultIncludeHandler())
+			{
+				vertexShader?.Dispose();
+				pixelShader?.Dispose();
+				inputLayout?.Dispose();
+
+				CompilationResult vs_result = ShaderBytecode.CompileFromFile("Shaders\\scene_vs.hlsl", "main", "vs_4_0", include: includeMan);
+				vertexShader = new VertexShader(device, vs_result.Bytecode);
+
+				CompilationResult ps_result = ShaderBytecode.CompileFromFile("Shaders\\scene_ps.hlsl", "main", "ps_4_0", include: includeMan);
+				pixelShader = new PixelShader(device, ps_result.Bytecode);
+
+				var layout = new InputElement[]
+				{
+					new InputElement("POSITION", 0, Format.R32G32B32_Float,    InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
+					new InputElement("NORMAL",   0, Format.R32G32B32_Float,    InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
+					new InputElement("COLOR",    0, Format.R32G32B32A32_Float, InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
+					new InputElement("TEXCOORD", 0, Format.R32G32_Float,       InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0)
+				};
+
+				inputLayout = new InputLayout(device, vs_result.Bytecode, layout);
+
+				device.ImmediateContext.VertexShader.Set(vertexShader);
+				device.ImmediateContext.PixelShader.Set(pixelShader);
+				device.ImmediateContext.InputAssembler.InputLayout = inputLayout;
+			}
 		}
 
 		public void Clear()
@@ -138,27 +170,28 @@ namespace sadx_model_view
 		{
 			// TODO: state
 
-			if (!matrixDataChanged)
+			if (matrixDataChanged && lastMatrixData != matrixData)
 			{
-				return;
-			}
+				device.ImmediateContext.MapSubresource(matrixBuffer, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
+				using (stream)
+				{
+					Matrix m;
+					Matrix.Transpose(ref matrixData.World, out m);
+					stream.Write(m);
 
-			if (lastMatrixData == matrixData)
-			{
-				return;
-			}
+					Matrix.Transpose(ref matrixData.View, out m);
+					stream.Write(m);
 
-			device.ImmediateContext.MapSubresource(matrixBuffer, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
-			using (stream)
-			{
-				stream.Write(matrixData.World);
-				stream.Write(matrixData.View);
-				stream.Write(matrixData.Projection);
-				stream.Write(matrixData.Texture);
-			}
-			device.ImmediateContext.UnmapSubresource(matrixBuffer, 0);
+					Matrix.Transpose(ref matrixData.Projection, out m);
+					stream.Write(m);
 
-			lastMatrixData = matrixData;
+					Matrix.Transpose(ref matrixData.Texture, out m);
+					stream.Write(m);
+				}
+				device.ImmediateContext.UnmapSubresource(matrixBuffer, 0);
+
+				lastMatrixData = matrixData;
+			}
 
 			device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
 			device.ImmediateContext.InputAssembler.SetVertexBuffers(0, new Buffer[] { vertexBuffer }, new []{ Vertex.SizeInBytes }, new []{ 0 });
@@ -322,10 +355,10 @@ namespace sadx_model_view
 				}
 			}
 
-			if (data.RemainingLength > 0)
-			{
-				throw new ArgumentOutOfRangeException();
-			}
+			//if (data.RemainingLength > 0)
+			//{
+			//	throw new ArgumentOutOfRangeException();
+			//}
 
 			data.Close();
 			device.ImmediateContext.UnmapSubresource(texture, level);
@@ -379,7 +412,12 @@ namespace sadx_model_view
 		{
 			int vertexSize = vertices.Count * Vertex.SizeInBytes;
 
-			var result = new Buffer(device, new BufferDescription(vertexSize, BindFlags.VertexBuffer, ResourceUsage.Dynamic));
+			var desc = new BufferDescription(vertexSize, BindFlags.VertexBuffer, ResourceUsage.Dynamic)
+			{
+				CpuAccessFlags = CpuAccessFlags.Write
+			};
+
+			var result = new Buffer(device, desc);
 
 			device.ImmediateContext.MapSubresource(result, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
 
@@ -420,7 +458,12 @@ namespace sadx_model_view
 
 		public Buffer CreateIndexBuffer(IEnumerable<short> indices, int sizeInBytes)
 		{
-			var result = new Buffer(device, new BufferDescription(sizeInBytes, BindFlags.IndexBuffer, ResourceUsage.Dynamic));
+			var desc = new BufferDescription(sizeInBytes, BindFlags.IndexBuffer, ResourceUsage.Dynamic)
+			{
+				CpuAccessFlags = CpuAccessFlags.Write
+			};
+
+			var result = new Buffer(device, desc);
 			device.ImmediateContext.MapSubresource(result, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
 
 			using (stream)
@@ -451,6 +494,9 @@ namespace sadx_model_view
 			rasterizerState?.Dispose();
 			matrixBuffer?.Dispose();
 			materialBuffer?.Dispose();
+			vertexShader?.Dispose();
+			pixelShader?.Dispose();
+			inputLayout?.Dispose();
 		}
 
 		public void SetTransform(TransformState state, ref RawMatrix rawMatrix)
@@ -478,18 +524,14 @@ namespace sadx_model_view
 
 		public void SetTexture(int sampler, int textureIndex)
 		{
-			if (textureIndex < 0)
-			{
-				device.ImmediateContext.PixelShader.SetShaderResource(sampler, null);
-			}
-			else if (textureIndex < texturePool.Count)
+			if (textureIndex >= 0 && textureIndex < texturePool.Count)
 			{
 				SceneTexture texture = texturePool[textureIndex];
 				device.ImmediateContext.PixelShader.SetShaderResource(sampler, texture.ShaderResource);
 			}
 			else
 			{
-				throw new ArgumentOutOfRangeException();
+				device.ImmediateContext.PixelShader.SetShaderResource(sampler, null);
 			}
 		}
 
@@ -519,7 +561,11 @@ namespace sadx_model_view
 			// - NJD_FLAG.UseFlat
 
 			NJD_FLAG flags = material.attrflags;
-			var samplerDesc = new SamplerStateDescription();
+
+			var samplerDesc = new SamplerStateDescription
+			{
+				AddressW = TextureAddressMode.Wrap
+			};
 
 			if ((flags & NJD_FLAG.ClampU) != 0)
 			{
@@ -564,12 +610,21 @@ namespace sadx_model_view
 			rt.DestinationBlend = blendModes[material.DestinationBlend];
 			rt.BlendOperation   = BlendOperation.Add;
 
+			// crap
+			rt.SourceAlphaBlend      = BlendOption.One;
+			rt.DestinationAlphaBlend = BlendOption.Zero;
+			rt.AlphaBlendOperation   = BlendOperation.Add;
+
 			var blend = new BlendState(device, blendDesc);
 
 			return new DisplayState(sampler, raster, blend);
 		}
 
 		private ShaderMaterial lastMaterial;
+		private VertexShader vertexShader;
+		private PixelShader pixelShader;
+		private InputLayout inputLayout;
+
 		public void SetShaderMaterial(ref ShaderMaterial material)
 		{
 			if (material == lastMaterial)

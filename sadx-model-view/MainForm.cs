@@ -10,6 +10,7 @@ using sadx_model_view.Ninja;
 using sadx_model_view.SA1;
 using SharpDX;
 using SharpDX.Direct3D11;
+using SharpDX.Mathematics.Interop;
 using VrSharp.PvrTexture;
 
 // TODO: Mipmap mode (From Texture, Always On, Always Off, Generate)
@@ -387,6 +388,7 @@ namespace sadx_model_view
 				return;
 			}
 
+			UpdateProjection();
 			scene.SizeChanged += OnSizeChanged;
 		}
 
@@ -467,6 +469,11 @@ namespace sadx_model_view
 			}
 
 			camera.Update();
+
+			RawMatrix m = camera.Projection;
+			renderer.SetTransform(TransformState.Projection, ref m);
+			m = camera.View;
+			renderer.SetTransform(TransformState.View, ref m);
 		}
 
 		// TODO: conditional render (only render when the scene has been invalidated)
@@ -479,6 +486,8 @@ namespace sadx_model_view
 			}
 
 			renderer?.Clear();
+
+			UpdateCamera();
 
 			obj?.Draw(renderer, ref camera);
 

@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using SharpDX;
-using SharpDX.Direct3D11;
-using SharpDX.DXGI;
 using SharpDX.Mathematics.Interop;
 using Buffer = SharpDX.Direct3D11.Buffer;
 
@@ -49,14 +47,6 @@ namespace sadx_model_view.Ninja
 	/// </summary>
 	public struct Vertex
 	{
-		public InputElement[] Layout => new[]
-		{
-			new InputElement("POSITION", 0, Format.R32G32B32_Float, InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
-			new InputElement("NORMAL", 0, Format.R32G32B32_Float, InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
-			new InputElement("COLOR", 0, Format.R32G32B32A32_Float, InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
-			new InputElement("TEXCOORD", 0, Format.R32G32_Float, InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0)
-		};
-
 		//public const VertexFormat Format = VertexFormat.Position | VertexFormat.Normal | VertexFormat.Diffuse | VertexFormat.Texture1;
 		public static int SizeInBytes => 36;
 		public RawVector3 position;
