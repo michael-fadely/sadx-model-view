@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.IO;
 using System.Runtime.InteropServices;
 using sadx_model_view.Ninja;
 using SharpDX;
@@ -180,10 +179,10 @@ namespace sadx_model_view
 
 		public void Draw(DisplayState state, Buffer vertexBuffer, Buffer indexBuffer, int indexCount)
 		{
-			// TODO: state
+			// TODO: blend
+			// TODO: raster
 
 			device.ImmediateContext.PixelShader.SetSampler(0, state.Sampler);
-
 
 			if (matrixDataChanged && lastMatrixData != matrixData)
 			{
@@ -350,33 +349,14 @@ namespace sadx_model_view
 
 		private void CopyToTexture(Texture2D texture, Bitmap bitmap, int level)
 		{
-			device.ImmediateContext.MapSubresource(texture, level, MapMode.WriteDiscard, MapFlags.None, out DataStream data);
-
+			// Copy the bitmap into system memory
 			BitmapData bmpData = bitmap.LockBits(new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-
 			var buffer = new byte[bmpData.Stride * bitmap.Height];
 			Marshal.Copy(bmpData.Scan0, buffer, 0, buffer.Length);
-
 			bitmap.UnlockBits(bmpData);
 
-			using (var stream = new MemoryStream(buffer))
-			{
-				while (stream.Position != stream.Length)
-				{
-					for (int i = 0; i < 4; i++)
-					{
-						data.WriteByte((byte)stream.ReadByte());
-					}
-				}
-			}
-
-			//if (data.RemainingLength > 0)
-			//{
-			//	throw new ArgumentOutOfRangeException();
-			//}
-
-			data.Close();
-			device.ImmediateContext.UnmapSubresource(texture, level);
+			// Update the texture sub-resource (where 0 is full size and [n] is mipmap)
+			device.ImmediateContext.UpdateSubresource(buffer, texture, level, 4 * bitmap.Width, 4 * bitmap.Height);
 		}
 
 		public void CreateTextureFromBitMap(Bitmap bitmap, Bitmap[] mipmaps, int levels)
@@ -390,7 +370,7 @@ namespace sadx_model_view
 				Width             = bitmap.Width,
 				Height            = bitmap.Height,
 				MipLevels         = levels,
-				Usage             = ResourceUsage.Dynamic, // TODO: Default in order to populate mipmaps
+				Usage             = ResourceUsage.Default,
 				SampleDescription = new SampleDescription(1, 0)
 			};
 
@@ -402,7 +382,6 @@ namespace sadx_model_view
 				{
 					CopyToTexture(texture, mipmaps[i], i);
 				}
-
 			}
 			else
 			{
@@ -579,7 +558,11 @@ namespace sadx_model_view
 
 			var samplerDesc = new SamplerStateDescription
 			{
-				AddressW = TextureAddressMode.Wrap
+				AddressW          = TextureAddressMode.Wrap,
+				Filter            = Filter.MinMagMipLinear,
+				MinimumLod        = -float.MaxValue,
+				MaximumLod        = float.MaxValue,
+				MaximumAnisotropy = 1
 			};
 
 			// TODO: fix clamp
