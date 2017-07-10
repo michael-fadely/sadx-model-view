@@ -388,7 +388,7 @@ namespace sadx_model_view.Ninja
 
 			NJD_FLAG flags = FlowControl.Apply(material.attrflags);
 
-			if (!flags.HasFlag(NJD_FLAG.UseTexture))
+			if ((flags & NJD_FLAG.UseTexture) == 0)
 			{
 				device.SetTexture(0, -1);
 			}
@@ -449,8 +449,8 @@ namespace sadx_model_view.Ninja
 				NJS_MATERIAL matA = mats[instance.MaterialId];
 				NJS_MATERIAL matB = mats[other.MaterialId];
 
-				bool alphaA = matA.attrflags.HasFlag(NJD_FLAG.UseAlpha);
-				bool alphaB = matB.attrflags.HasFlag(NJD_FLAG.UseAlpha);
+				bool alphaA = (matA.attrflags & NJD_FLAG.UseAlpha) != 0;
+				bool alphaB = (matB.attrflags & NJD_FLAG.UseAlpha) != 0;
 
 				if (alphaA && alphaB)
 				{

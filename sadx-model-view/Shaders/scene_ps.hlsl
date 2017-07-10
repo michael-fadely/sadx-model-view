@@ -9,8 +9,20 @@ SamplerState DiffuseSampler
 	AddressV = Wrap;
 };
 
+cbuffer MaterialBuffer : register(b1)
+{
+	Material material;
+};
+
 float4 main(VS_OUTPUT input) : SV_TARGET
 {
 	float4 diffuse = DiffuseMap.Sample(DiffuseSampler, input.tex);
-	return diffuse * input.color;
+	if (!any(diffuse))
+	{
+		return input.color * material.diffuse;
+	}
+	else
+	{
+		return diffuse * input.color * material.diffuse;
+	}
 }

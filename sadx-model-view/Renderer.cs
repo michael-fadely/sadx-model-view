@@ -53,7 +53,7 @@ namespace sadx_model_view
 
 	public class Renderer : IDisposable
 	{
-		public CullMode DefaultCullMode = CullMode.Back;
+		public CullMode DefaultCullMode = CullMode.None;
 		private readonly List<SceneTexture> texturePool = new List<SceneTexture>();
 
 		private readonly Device device;
@@ -62,7 +62,8 @@ namespace sadx_model_view
 		private Viewport viewPort;
 		private Texture2D depthTexture;
 		private DepthStencilStateDescription depthDesc;
-		private DepthStencilState depthState;
+		private DepthStencilState depthStateRW;
+		private DepthStencilState depthStateRO;
 		private DepthStencilView depthView;
 		private RasterizerState rasterizerState;
 		private RasterizerStateDescription rasterizerDescription;
@@ -125,6 +126,7 @@ namespace sadx_model_view
 
 			device.ImmediateContext.VertexShader.SetConstantBuffer(0, matrixBuffer);
 			device.ImmediateContext.VertexShader.SetConstantBuffer(1, materialBuffer);
+			device.ImmediateContext.PixelShader.SetConstantBuffer(1, materialBuffer);
 
 			RefreshDevice(w, h);
 		}
@@ -173,16 +175,35 @@ namespace sadx_model_view
 
 		public void Clear()
 		{
-			device?.ImmediateContext.ClearRenderTargetView(backBuffer, new RawColor4(0.0f, 1.0f, 1.0f, 1.0f));
-			device?.ImmediateContext.ClearDepthStencilView(depthView, DepthStencilClearFlags.Depth, 1.0f, 0);
+			if (device == null)
+			{
+				return;
+			}
+
+			device.ImmediateContext.Rasterizer.State = rasterizerState;
+			device.ImmediateContext.ClearRenderTargetView(backBuffer, new RawColor4(0.0f, 1.0f, 1.0f, 1.0f));
+			device.ImmediateContext.ClearDepthStencilView(depthView, DepthStencilClearFlags.Depth, 1.0f, 0);
 		}
 
 		public void Draw(DisplayState state, Buffer vertexBuffer, Buffer indexBuffer, int indexCount)
 		{
-			// TODO: blend
-			// TODO: raster
+			if (device == null)
+			{
+				return;
+			}
+
+			if (state.Blend.Description.RenderTarget[0].IsBlendEnabled)
+			{
+				device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRO);
+			}
+			else
+			{
+				device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
+			}
 
 			device.ImmediateContext.PixelShader.SetSampler(0, state.Sampler);
+			device.ImmediateContext.Rasterizer.State = state.Raster;
+			device.ImmediateContext.OutputMerger.SetBlendState(state.Blend);
 
 			if (matrixDataChanged && lastMatrixData != matrixData)
 			{
@@ -305,8 +326,12 @@ namespace sadx_model_view
 				}
 			};
 
-			depthState?.Dispose();
-			depthState = new DepthStencilState(device, depthDesc);
+			depthStateRW?.Dispose();
+			depthStateRW = new DepthStencilState(device, depthDesc);
+			
+			depthDesc.DepthWriteMask = DepthWriteMask.Zero;
+			depthStateRO?.Dispose();
+			depthStateRO = new DepthStencilState(device, depthDesc);
 
 			var depthViewDesc = new DepthStencilViewDescription
 			{
@@ -322,7 +347,7 @@ namespace sadx_model_view
 			depthView = new DepthStencilView(device, depthTexture, depthViewDesc);
 
 			device?.ImmediateContext.OutputMerger.SetTargets(depthView, backBuffer);
-			device?.ImmediateContext.OutputMerger.SetDepthStencilState(depthState);
+			device?.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
 		}
 
 		private void CreateRasterizerState()
@@ -483,7 +508,8 @@ namespace sadx_model_view
 			swapChain?.Dispose();
 			backBuffer?.Dispose();
 			depthTexture?.Dispose();
-			depthState?.Dispose();
+			depthStateRW?.Dispose();
+			depthStateRO?.Dispose();
 			depthView?.Dispose();
 			rasterizerState?.Dispose();
 			matrixBuffer?.Dispose();
@@ -614,6 +640,7 @@ namespace sadx_model_view
 			rt.SourceAlphaBlend      = BlendOption.One;
 			rt.DestinationAlphaBlend = BlendOption.Zero;
 			rt.AlphaBlendOperation   = BlendOperation.Add;
+			rt.RenderTargetWriteMask = ColorWriteMaskFlags.All;
 
 			var blend = new BlendState(device, blendDesc);
 
