@@ -331,16 +331,6 @@ namespace sadx_model_view.Ninja
 			return (short)result;
 		}
 
-		/// <summary>
-		/// This is the texture transformation matrix that SADX uses for anything with an environment map.
-		/// </summary>
-		private static readonly Matrix environmentMapTransform = new Matrix(
-			-0.5f, 0.0f, 0.0f, 0.0f,
-			 0.0f, 0.5f, 0.0f, 0.0f,
-			 0.0f, 0.0f, 1.0f, 0.0f,
-			 0.5f, 0.5f, 0.0f, 1.0f
-		);
-
 		public bool IsVisible(ref Camera camera)
 		{
 			NJS_SCREEN screen = MainForm.Screen;

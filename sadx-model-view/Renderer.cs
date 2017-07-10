@@ -53,6 +53,16 @@ namespace sadx_model_view
 
 	public class Renderer : IDisposable
 	{
+		/// <summary>
+		/// This is the texture transformation matrix that SADX uses for anything with an environment map.
+		/// </summary>
+		private static RawMatrix environmentMapTransform = new Matrix(
+			-0.5f, 0.0f, 0.0f, 0.0f,
+			0.0f, 0.5f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			0.5f, 0.5f, 0.0f, 1.0f
+		);
+
 		public CullMode DefaultCullMode = CullMode.None;
 		private readonly List<SceneTexture> texturePool = new List<SceneTexture>();
 
@@ -78,6 +88,8 @@ namespace sadx_model_view
 
 		public Renderer(int w, int h, IntPtr sceneHandle)
 		{
+			SetTransform(TransformState.Texture, ref environmentMapTransform);
+
 			var desc = new SwapChainDescription
 			{
 				BufferCount       = 1,
@@ -109,7 +121,7 @@ namespace sadx_model_view
 				throw new InsufficientFeatureLevelException(device.FeatureLevel, FeatureLevel.Level_10_0);
 			}
 
-			int mtx_size = Matrix.SizeInBytes * 4;
+			int mtx_size = Matrix.SizeInBytes * 3;
 			var bufferDesc = new BufferDescription(mtx_size,
 				ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write, ResourceOptionFlags.None, mtx_size);
 
@@ -228,16 +240,18 @@ namespace sadx_model_view
 				device.ImmediateContext.MapSubresource(matrixBuffer, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
 				using (stream)
 				{
-					Matrix m;
-					Matrix.Transpose(ref matrixData.World, out m);
+					Matrix wvMatrix = matrixData.World * matrixData.View;
+
+					// Concatenated world/view/projection matrix.
+					Matrix wvpMatrix = wvMatrix * matrixData.Projection;
+					Matrix.Transpose(ref wvpMatrix, out Matrix m);
 					stream.Write(m);
 
-					Matrix.Transpose(ref matrixData.View, out m);
+					// Inverse transpose world view matrix (for environment maps)
+					Matrix.Invert(ref wvMatrix, out m);
 					stream.Write(m);
 
-					Matrix.Transpose(ref matrixData.Projection, out m);
-					stream.Write(m);
-
+					// Texture transformation matrix (for environment maps)
 					Matrix.Transpose(ref matrixData.Texture, out m);
 					stream.Write(m);
 				}
