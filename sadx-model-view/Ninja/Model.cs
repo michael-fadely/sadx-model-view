@@ -416,22 +416,36 @@ namespace sadx_model_view.Ninja
 
 			foreach (NJS_MESHSET set in meshsets)
 			{
-				if (mats.Count > 0)
+				ushort i = set.MaterialId;
+
+				if (i < mats.Count && (mats[i].attrflags & NJD_FLAG.UseAlpha) != 0)
 				{
-					ushort i = set.MaterialId;
-					if (i != lastId)
-					{
-						SetSADXMaterial(device, i < mats.Count ? mats[i] : nullMaterial);
-						lastId = i;
-					}
+					device.Enqueue(this, set);
 				}
 				else
 				{
-					SetSADXMaterial(device, nullMaterial);
+					DrawSet(device, set, ref lastId);
 				}
-
-				device.Draw(DisplayState, vertexBuffer, set.IndexBuffer, set.IndexCount);
 			}
+		}
+
+		public void DrawSet(Renderer device, NJS_MESHSET set, ref ushort lastId)
+		{
+			if (mats.Count > 0)
+			{
+				ushort i = set.MaterialId;
+				if (i != lastId)
+				{
+					SetSADXMaterial(device, i < mats.Count ? mats[i] : nullMaterial);
+					lastId = i;
+				}
+			}
+			else
+			{
+				SetSADXMaterial(device, nullMaterial);
+			}
+
+			device.Draw(DisplayState, vertexBuffer, set.IndexBuffer, set.IndexCount);
 		}
 
 		/// <summary>

@@ -74,6 +74,8 @@ namespace sadx_model_view
 		private MatrixBuffer lastMatrixData;
 		private MatrixBuffer matrixData;
 
+		private List<AlphaSortMeshset> alphaList = new List<AlphaSortMeshset>();
+
 		public Renderer(int w, int h, IntPtr sceneHandle)
 		{
 			var desc = new SwapChainDescription
@@ -180,11 +182,19 @@ namespace sadx_model_view
 				return;
 			}
 
+			alphaList.Clear();
+
 			device.ImmediateContext.Rasterizer.State = rasterizerState;
 			device.ImmediateContext.ClearRenderTargetView(backBuffer, new RawColor4(0.0f, 1.0f, 1.0f, 1.0f));
 			device.ImmediateContext.ClearDepthStencilView(depthView, DepthStencilClearFlags.Depth, 1.0f, 0);
 		}
 
+		public void Enqueue(NJS_MODEL model, NJS_MESHSET set)
+		{
+			alphaList.Add(new AlphaSortMeshset(model, set));
+		}
+
+		private bool zwrite;
 		public void Draw(DisplayState state, Buffer vertexBuffer, Buffer indexBuffer, int indexCount)
 		{
 			if (device == null)
@@ -194,11 +204,19 @@ namespace sadx_model_view
 
 			if (state.Blend.Description.RenderTarget[0].IsBlendEnabled)
 			{
-				device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRO);
+				if (zwrite)
+				{
+					zwrite = false;
+					device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRO);
+				}
 			}
 			else
 			{
-				device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
+				if (!zwrite)
+				{
+					zwrite = true;
+					device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
+				}
 			}
 
 			device.ImmediateContext.PixelShader.SetSampler(0, state.Sampler);
@@ -234,8 +252,29 @@ namespace sadx_model_view
 			device.ImmediateContext.DrawIndexed(indexCount, 0, 0);
 		}
 
-		public void Present()
+		public void Present(Camera camera)
 		{
+			Vector3 camPos = camera.Position;
+
+			alphaList.Sort((a, b) =>
+			{
+				float distA = (a.Position - camPos).LengthSquared() - a.Radius;
+				float distB = (b.Position - camPos).LengthSquared() - b.Radius;
+
+				return distA > distB ? 1 : -1;
+			});
+
+			foreach (AlphaSortMeshset a in alphaList)
+			{
+				RawMatrix m = a.Transform;
+				SetTransform(TransformState.World, ref m);
+
+				ushort dummy = ushort.MaxValue;
+				a.Parent.DrawSet(this, a.Set, ref dummy);
+			}
+
+			alphaList.Clear();
+
 			swapChain.Present(0, 0);
 		}
 
@@ -710,6 +749,29 @@ namespace sadx_model_view
 		{
 			SupportedLevel = supported;
 			TargetLevel = target;
+		}
+	}
+
+	public class AlphaSortMeshset
+	{
+		public NJS_MODEL Parent { get; private set; }
+		public NJS_MESHSET Set { get; private set; }
+		public Matrix Transform { get; private set; }
+		public Vector3 Position { get; private set; }
+		public float Radius => Set.Radius;
+
+		public AlphaSortMeshset(NJS_MODEL parent, NJS_MESHSET set)
+		{
+			Parent    = parent;
+			Set       = set;
+			Transform = MatrixStack.Peek();
+
+			MatrixStack.Push();
+
+			MatrixStack.Translate(ref set.Center);
+			Position = MatrixStack.Peek().TranslationVector;
+
+			MatrixStack.Pop();
 		}
 	}
 }

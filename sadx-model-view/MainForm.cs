@@ -499,7 +499,7 @@ namespace sadx_model_view
 				FlowControl.Reset();
 			}
 
-			renderer?.Present();
+			renderer?.Present(camera);
 		}
 
 		private void OnSizeChanged(object sender, EventArgs e)
