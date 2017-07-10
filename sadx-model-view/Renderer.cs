@@ -74,7 +74,7 @@ namespace sadx_model_view
 		private MatrixBuffer lastMatrixData;
 		private MatrixBuffer matrixData;
 
-		private List<AlphaSortMeshset> alphaList = new List<AlphaSortMeshset>();
+		private readonly List<AlphaSortMeshset> alphaList = new List<AlphaSortMeshset>();
 
 		public Renderer(int w, int h, IntPtr sceneHandle)
 		{
@@ -116,8 +116,8 @@ namespace sadx_model_view
 			matrixBuffer = new Buffer(device, bufferDesc);
 
 			// Size must be divisible by 16, so this is just padding.
-			int size = Vector4.SizeInBytes * 3;
-			int stride = Vector4.SizeInBytes * 2 + sizeof(float);
+			int size = Math.Max(ShaderMaterial.SizeInBytes, 64);
+			int stride = ShaderMaterial.SizeInBytes;
 
 			bufferDesc = new BufferDescription(size,
 				ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write, ResourceOptionFlags.None, stride);
@@ -133,7 +133,7 @@ namespace sadx_model_view
 			RefreshDevice(w, h);
 		}
 
-		private void LoadShaders()
+		public void LoadShaders()
 		{
 			using (var includeMan = new DefaultIncludeHandler())
 			{
@@ -670,14 +670,12 @@ namespace sadx_model_view
 			var blendDesc = new BlendStateDescription();
 			ref RenderTargetBlendDescription rt = ref blendDesc.RenderTarget[0];
 
-			rt.IsBlendEnabled   = (material.attrflags & NJD_FLAG.UseAlpha) != 0;
-			rt.SourceBlend      = blendModes[material.SourceBlend];
-			rt.DestinationBlend = blendModes[material.DestinationBlend];
-			rt.BlendOperation   = BlendOperation.Add;
-
-			// crap
-			rt.SourceAlphaBlend      = BlendOption.One;
-			rt.DestinationAlphaBlend = BlendOption.Zero;
+			rt.IsBlendEnabled        = (material.attrflags & NJD_FLAG.UseAlpha) != 0;
+			rt.SourceBlend           = blendModes[material.SourceBlend];
+			rt.DestinationBlend      = blendModes[material.DestinationBlend];
+			rt.BlendOperation        = BlendOperation.Add;
+			rt.SourceAlphaBlend      = blendModes[material.SourceBlend];
+			rt.DestinationAlphaBlend = blendModes[material.DestinationBlend];
 			rt.AlphaBlendOperation   = BlendOperation.Add;
 			rt.RenderTargetWriteMask = ColorWriteMaskFlags.All;
 
@@ -706,38 +704,14 @@ namespace sadx_model_view
 				stream.Write(material.Diffuse);
 				stream.Write(material.Specular);
 				stream.Write(material.Exponent);
+				stream.Write(material.UseLight ? 1 : 0);
+				stream.Write(material.UseAlpha ? 1 : 0);
+				stream.Write(material.UseEnv ? 1 : 0);
+				stream.Write(material.UseTexture ? 1 : 0);
+				stream.Write(material.UseSpecular ? 1 : 0);
 			}
 			device.ImmediateContext.UnmapSubresource(materialBuffer, 0);
 		}
-	}
-
-	public struct ShaderMaterial
-	{
-		public RawColor4 Diffuse;
-		public RawColor4 Specular;
-		public float Exponent;
-
-		public override bool Equals(object obj)
-		{
-			return base.Equals(obj);
-		}
-
-		public bool Equals(ShaderMaterial other)
-		{
-			return Diffuse.Equals(other.Diffuse) && Specular.Equals(other.Specular) && Exponent.Equals(other.Exponent);
-		}
-
-		public static bool operator==(ShaderMaterial lhs, ShaderMaterial rhs)
-		{
-			return lhs.Equals(rhs);
-		}
-
-		public static bool operator !=(ShaderMaterial lhs, ShaderMaterial rhs)
-		{
-			return !(lhs == rhs);
-		}
-
-		public override int GetHashCode() => 1;
 	}
 
 	internal class InsufficientFeatureLevelException : Exception
@@ -752,12 +726,12 @@ namespace sadx_model_view
 		}
 	}
 
-	public class AlphaSortMeshset
+	internal class AlphaSortMeshset
 	{
-		public NJS_MODEL Parent { get; private set; }
-		public NJS_MESHSET Set { get; private set; }
-		public Matrix Transform { get; private set; }
-		public Vector3 Position { get; private set; }
+		public NJS_MODEL Parent { get; }
+		public NJS_MESHSET Set { get; }
+		public Matrix Transform { get; }
+		public Vector3 Position { get; }
 		public float Radius => Set.Radius;
 
 		public AlphaSortMeshset(NJS_MODEL parent, NJS_MESHSET set)

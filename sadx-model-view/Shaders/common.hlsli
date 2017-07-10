@@ -3,6 +3,11 @@ struct Material
 	float4 diffuse;
 	float4 specular;
 	float exponent;
+	bool useLight;
+	bool useAlpha;
+	bool useEnv;
+	bool useTexture;
+	bool useSpecular;
 };
 
 struct VS_INPUT

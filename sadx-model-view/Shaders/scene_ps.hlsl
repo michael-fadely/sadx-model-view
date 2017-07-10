@@ -16,13 +16,25 @@ cbuffer MaterialBuffer : register(b1)
 
 float4 main(VS_OUTPUT input) : SV_TARGET
 {
-	float4 diffuse = DiffuseMap.Sample(DiffuseSampler, input.tex);
-	if (!any(diffuse))
+	float4 result;
+
+	if (material.useAlpha)
 	{
-		return input.color * material.diffuse;
+		result = material.diffuse;
 	}
 	else
 	{
-		return diffuse * input.color * material.diffuse;
+		result = input.color;
 	}
+
+	if (material.useTexture)
+	{
+		result *= DiffuseMap.Sample(DiffuseSampler, input.tex);
+	}
+	else if (!material.useAlpha)
+	{
+		result *= input.color;
+	}
+
+	return result;
 }

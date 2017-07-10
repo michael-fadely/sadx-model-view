@@ -400,9 +400,14 @@ namespace sadx_model_view.Ninja
 
 			var m = new ShaderMaterial
 			{
-				Diffuse  = new Color4(material.diffuse.color),
-				Specular = new Color4(material.specular.color),
-				Exponent = material.exponent
+				Diffuse     = new Color4(material.diffuse.color),
+				Specular    = new Color4(material.specular.color),
+				Exponent    = material.exponent,
+				UseAlpha    = (flags & NJD_FLAG.UseAlpha) != 0,
+				UseEnv      = (flags & NJD_FLAG.UseEnv) != 0,
+				UseTexture  = (flags & NJD_FLAG.UseTexture) != 0,
+				UseSpecular = (flags & NJD_FLAG.IgnoreSpecular) == 0,
+				UseLight    = (flags & NJD_FLAG.IgnoreLight) == 0
 			};
 
 			device.SetShaderMaterial(ref m);

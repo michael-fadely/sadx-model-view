@@ -652,5 +652,21 @@ namespace sadx_model_view
 				landTable.CommitVertexBuffer(renderer);
 			}
 		}
+
+		private void recompileShadersToolStripMenuItem_Click(object sender, EventArgs e)
+		{
+			while (true)
+			{
+				try
+				{
+					renderer?.LoadShaders();
+					break;
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show(this, ex.Message, "Shader Compilation Failure", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				}
+			}
+		}
 	}
 }
