@@ -107,6 +107,7 @@
 			// 
 			// scene
 			// 
+			this.scene.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
 			this.scene.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.scene.Location = new System.Drawing.Point(0, 24);
 			this.scene.Margin = new System.Windows.Forms.Padding(0);

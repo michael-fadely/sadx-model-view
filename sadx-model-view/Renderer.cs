@@ -61,10 +61,10 @@ namespace sadx_model_view
 		private readonly SwapChain swapChain;
 		private RenderTargetView backBuffer;
 		private Viewport viewPort;
-		private Texture2D depthStencilBuffer;
-		private DepthStencilStateDescription depthStencilDesc;
-		private DepthStencilState depthStencilState;
-		private DepthStencilView depthStencil;
+		private Texture2D depthTexture;
+		private DepthStencilStateDescription depthDesc;
+		private DepthStencilState depthState;
+		private DepthStencilView depthView;
 		private RasterizerState rasterizerState;
 		private RasterizerStateDescription rasterizerDescription;
 		private readonly Buffer matrixBuffer;
@@ -175,7 +175,7 @@ namespace sadx_model_view
 		public void Clear()
 		{
 			device?.ImmediateContext.ClearRenderTargetView(backBuffer, new RawColor4(0.0f, 1.0f, 1.0f, 1.0f));
-			device?.ImmediateContext.ClearDepthStencilView(depthStencil, DepthStencilClearFlags.Depth, 1.0f, 0);
+			device?.ImmediateContext.ClearDepthStencilView(depthView, DepthStencilClearFlags.Depth, 1.0f, 0);
 		}
 
 		public void Draw(DisplayState state, Buffer vertexBuffer, Buffer indexBuffer, int indexCount)
@@ -216,8 +216,7 @@ namespace sadx_model_view
 
 		public void Present()
 		{
-			// Presents v-sync'd
-			swapChain.Present(1, 0);
+			swapChain.Present(0, 0);
 		}
 
 		private void CreateRenderTarget()
@@ -233,6 +232,9 @@ namespace sadx_model_view
 
 		private void SetViewPort(int x, int y, int width, int height)
 		{
+			viewPort.MinDepth = 0f;
+			viewPort.MaxDepth = 1f;
+
 			Viewport vp = viewPort;
 
 			vp.X = x;
@@ -255,9 +257,9 @@ namespace sadx_model_view
 			swapChain?.ResizeBuffers(1, w, h, Format.Unknown, 0);
 			SetViewPort(0, 0, w, h);
 
-			CreateDepthStencil(w, h);
 			CreateRenderTarget();
 			CreateRasterizerState();
+			CreateDepthStencil(w, h);
 		}
 
 		private void CreateDepthStencil(int w, int h)
@@ -278,24 +280,21 @@ namespace sadx_model_view
 				OptionFlags       = ResourceOptionFlags.None
 			};
 
-			depthStencilBuffer?.Dispose();
-			depthStencilBuffer = new Texture2D(device, depthBufferDesc);
+			depthTexture?.Dispose();
+			depthTexture = new Texture2D(device, depthBufferDesc);
 
-			depthStencilDesc = new DepthStencilStateDescription
+			depthDesc = new DepthStencilStateDescription
 			{
 				IsDepthEnabled   = true,
 				DepthWriteMask   = DepthWriteMask.All,
 				DepthComparison  = Comparison.Less,
-				IsStencilEnabled = true,
-				StencilReadMask  = 0xFF,
-				StencilWriteMask = 0xFF,
-
+				
 				FrontFace = new DepthStencilOperationDescription
 				{
 					FailOperation      = StencilOperation.Keep,
 					DepthFailOperation = StencilOperation.Increment,
 					PassOperation      = StencilOperation.Keep,
-					Comparison         = Comparison.Always
+					Comparison         = Comparison.Never
 				},
 
 				BackFace = new DepthStencilOperationDescription
@@ -303,15 +302,14 @@ namespace sadx_model_view
 					FailOperation      = StencilOperation.Keep,
 					DepthFailOperation = StencilOperation.Decrement,
 					PassOperation      = StencilOperation.Keep,
-					Comparison         = Comparison.Always
+					Comparison         = Comparison.Never
 				}
 			};
 
-			depthStencilState?.Dispose();
-			depthStencilState = new DepthStencilState(device, depthStencilDesc);
-			device?.ImmediateContext.OutputMerger.SetDepthStencilState(depthStencilState);
+			depthState?.Dispose();
+			depthState = new DepthStencilState(device, depthDesc);
 
-			var depthStencilViewDesc = new DepthStencilViewDescription
+			var depthViewDesc = new DepthStencilViewDescription
 			{
 				Format    = Format.D24_UNorm_S8_UInt,
 				Dimension = DepthStencilViewDimension.Texture2D,
@@ -321,9 +319,11 @@ namespace sadx_model_view
 				}
 			};
 
-			depthStencil?.Dispose();
-			depthStencil = new DepthStencilView(device, depthStencilBuffer, depthStencilViewDesc);
-			device?.ImmediateContext.OutputMerger.SetTargets(depthStencil, backBuffer);
+			depthView?.Dispose();
+			depthView = new DepthStencilView(device, depthTexture, depthViewDesc);
+
+			device?.ImmediateContext.OutputMerger.SetTargets(depthView, backBuffer);
+			device?.ImmediateContext.OutputMerger.SetDepthStencilState(depthState);
 		}
 
 		private void CreateRasterizerState()
@@ -390,7 +390,7 @@ namespace sadx_model_view
 				Width             = bitmap.Width,
 				Height            = bitmap.Height,
 				MipLevels         = levels,
-				Usage             = ResourceUsage.Dynamic,
+				Usage             = ResourceUsage.Dynamic, // TODO: Default in order to populate mipmaps
 				SampleDescription = new SampleDescription(1, 0)
 			};
 
@@ -503,9 +503,9 @@ namespace sadx_model_view
 			device?.Dispose();
 			swapChain?.Dispose();
 			backBuffer?.Dispose();
-			depthStencilBuffer?.Dispose();
-			depthStencilState?.Dispose();
-			depthStencil?.Dispose();
+			depthTexture?.Dispose();
+			depthState?.Dispose();
+			depthView?.Dispose();
 			rasterizerState?.Dispose();
 			matrixBuffer?.Dispose();
 			materialBuffer?.Dispose();
@@ -582,11 +582,13 @@ namespace sadx_model_view
 				AddressW = TextureAddressMode.Wrap
 			};
 
-			if ((flags & NJD_FLAG.ClampU) != 0)
+			// TODO: fix clamp
+
+			/*if ((flags & NJD_FLAG.ClampU) != 0)
 			{
 				samplerDesc.AddressU = TextureAddressMode.Clamp;
 			}
-			else if ((flags & NJD_FLAG.FlipU) != 0)
+			else*/ if ((flags & NJD_FLAG.FlipU) != 0)
 			{
 				samplerDesc.AddressU = TextureAddressMode.Mirror;
 			}
@@ -595,11 +597,11 @@ namespace sadx_model_view
 				samplerDesc.AddressU = TextureAddressMode.Wrap;
 			}
 
-			if ((flags & NJD_FLAG.ClampV) != 0)
+			/*if ((flags & NJD_FLAG.ClampV) != 0)
 			{
 				samplerDesc.AddressV = TextureAddressMode.Clamp;
 			}
-			else if ((flags & NJD_FLAG.FlipV) != 0)
+			else*/ if ((flags & NJD_FLAG.FlipV) != 0)
 			{
 				samplerDesc.AddressV = TextureAddressMode.Mirror;
 			}
