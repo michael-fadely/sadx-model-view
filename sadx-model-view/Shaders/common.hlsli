@@ -18,5 +18,6 @@ struct VS_OUTPUT
 	float4 position : SV_POSITION;
 	float3 normal   : NORMAL;
 	float4 color    : COLOR;
-	float2 tex      : TEXCOORD;
+	float2 tex      : TEXCOORD0;
+	float2 depth    : TEXCOORD1;
 };

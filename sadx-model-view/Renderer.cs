@@ -139,9 +139,21 @@ namespace sadx_model_view
 				inputLayout?.Dispose();
 
 				CompilationResult vs_result = ShaderBytecode.CompileFromFile("Shaders\\scene_vs.hlsl", "main", "vs_4_0", include: includeMan);
+
+				if (vs_result.HasErrors || !string.IsNullOrEmpty(vs_result.Message))
+				{
+					throw new Exception(vs_result.Message);
+				}
+
 				vertexShader = new VertexShader(device, vs_result.Bytecode);
 
 				CompilationResult ps_result = ShaderBytecode.CompileFromFile("Shaders\\scene_ps.hlsl", "main", "ps_4_0", include: includeMan);
+
+				if (ps_result.HasErrors || !string.IsNullOrEmpty(ps_result.Message))
+				{
+					throw new Exception(ps_result.Message);
+				}
+
 				pixelShader = new PixelShader(device, ps_result.Bytecode);
 
 				var layout = new InputElement[]
@@ -169,6 +181,9 @@ namespace sadx_model_view
 		public void Draw(DisplayState state, Buffer vertexBuffer, Buffer indexBuffer, int indexCount)
 		{
 			// TODO: state
+
+			device.ImmediateContext.PixelShader.SetSampler(0, state.Sampler);
+
 
 			if (matrixDataChanged && lastMatrixData != matrixData)
 			{
@@ -371,7 +386,7 @@ namespace sadx_model_view
 				ArraySize         = 1,
 				BindFlags         = BindFlags.ShaderResource,
 				CpuAccessFlags    = CpuAccessFlags.Write,
-				Format            = Format.R8G8B8A8_UNorm,
+				Format            = Format.B8G8R8A8_UNorm,
 				Width             = bitmap.Width,
 				Height            = bitmap.Height,
 				MipLevels         = levels,

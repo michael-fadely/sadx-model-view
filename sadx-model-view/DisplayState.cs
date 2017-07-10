@@ -5,15 +5,15 @@ namespace sadx_model_view
 {
 	public class DisplayState : IDisposable
 	{
-		private readonly SamplerState sampler;
-		private readonly RasterizerState raster;
-		private readonly BlendState blend;
+		public SamplerState Sampler { get; private set; }
+		public RasterizerState Raster { get; private set; }
+		public BlendState Blend { get; private set; }
 
 		public DisplayState(SamplerState sampler, RasterizerState raster, BlendState blend)
 		{
-			this.sampler = sampler;
-			this.raster = raster;
-			this.blend = blend;
+			Sampler = sampler;
+			Raster = raster;
+			Blend = blend;
 		}
 
 		~DisplayState()
@@ -23,9 +23,9 @@ namespace sadx_model_view
 
 		public void Dispose()
 		{
-			sampler?.Dispose();
-			raster?.Dispose();
-			blend?.Dispose();
+			Sampler?.Dispose();
+			Raster?.Dispose();
+			Blend?.Dispose();
 		}
 	}
 }
