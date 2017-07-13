@@ -90,15 +90,15 @@ namespace sadx_model_view
 				throw new InsufficientFeatureLevelException(device.FeatureLevel, FeatureLevel.Level_10_0);
 			}
 
-			int mtx_size = Matrix.SizeInBytes * 3;
+			int mtx_size = Matrix.SizeInBytes * 4;
 			var bufferDesc = new BufferDescription(mtx_size,
 				ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write, ResourceOptionFlags.None, mtx_size);
 
 			matrixBuffer = new Buffer(device, bufferDesc);
 
 			// Size must be divisible by 16, so this is just padding.
-			int size = Math.Max(ShaderMaterial.SizeInBytes, 64);
-			int stride = ShaderMaterial.SizeInBytes;
+			int size = Math.Max(ShaderMaterial.SizeInBytes, 80);
+			int stride = ShaderMaterial.SizeInBytes + Vector3.SizeInBytes;
 
 			bufferDesc = new BufferDescription(size,
 				ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write, ResourceOptionFlags.None, stride);
@@ -181,7 +181,7 @@ namespace sadx_model_view
 
 				if (!obj.SkipDraw && obj.Model?.IsVisible(camera) == true)
 				{
-					Draw(obj, obj.Model);
+					Draw(obj, camera, obj.Model);
 				}
 
 				if (!obj.SkipChildren)
@@ -196,7 +196,7 @@ namespace sadx_model_view
 
 		private static readonly NJS_MATERIAL nullMaterial = new NJS_MATERIAL();
 
-		public void Draw(NJS_OBJECT parent, NJS_MODEL model)
+		public void Draw(NJS_OBJECT parent, Camera camera, NJS_MODEL model)
 		{
 			List<NJS_MATERIAL> mats = model.mats;
 
@@ -210,18 +210,18 @@ namespace sadx_model_view
 				}
 				else
 				{
-					DrawSet(model, set);
+					DrawSet(camera, model, set);
 				}
 			}
 		}
 
-		private void DrawSet(NJS_MODEL parent, NJS_MESHSET set)
+		private void DrawSet(Camera camera, NJS_MODEL parent, NJS_MESHSET set)
 		{
 			ushort matId = set.MaterialId;
 			List<NJS_MATERIAL> mats = parent.mats;
 
 			ShaderMaterial mat = parent.GetSADXMaterial(this, mats.Count > 0 && matId < mats.Count ? mats[matId] : nullMaterial);
-			SetShaderMaterial(ref mat);
+			SetShaderMaterial(ref mat, camera);
 
 			DisplayState state = parent.DisplayState;
 
@@ -262,6 +262,8 @@ namespace sadx_model_view
 					Matrix.Invert(ref wvMatrix, out m);
 					stream.Write(m);
 
+					stream.Write(matrixData.World);
+
 					// Texture transformation matrix (for environment maps)
 					Matrix.Transpose(ref matrixData.Texture, out m);
 					stream.Write(m);
@@ -294,7 +296,7 @@ namespace sadx_model_view
 				RawMatrix m = a.Transform;
 				SetTransform(TransformState.World, ref m);
 
-				DrawSet(a.Parent, a.Set);
+				DrawSet(camera, a.Parent, a.Set);
 			}
 
 			alphaList.Clear();
@@ -734,7 +736,7 @@ namespace sadx_model_view
 		private PixelShader pixelShader;
 		private InputLayout inputLayout;
 
-		public void SetShaderMaterial(ref ShaderMaterial material)
+		public void SetShaderMaterial(ref ShaderMaterial material, Camera camera)
 		{
 			if (material == lastMaterial)
 			{
@@ -754,6 +756,7 @@ namespace sadx_model_view
 				stream.Write(material.UseEnv ? 1 : 0);
 				stream.Write(material.UseTexture ? 1 : 0);
 				stream.Write(material.UseSpecular ? 1 : 0);
+				stream.Write(camera.Position);
 			}
 			device.ImmediateContext.UnmapSubresource(materialBuffer, 0);
 		}

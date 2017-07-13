@@ -9,32 +9,20 @@ SamplerState DiffuseSampler
 	AddressV = Wrap;
 };
 
-cbuffer MaterialBuffer : register(b1)
-{
-	Material material;
-};
-
 float4 main(VS_OUTPUT input) : SV_TARGET
 {
 	float4 result;
 
-	if (material.useAlpha)
+	if (material.useTexture)
 	{
-		result = material.diffuse;
+		result = DiffuseMap.Sample(DiffuseSampler, input.tex);
 	}
 	else
 	{
-		result = input.color;
+		result = float4(1, 1, 1, 1);
 	}
 
-	if (material.useTexture)
-	{
-		result *= DiffuseMap.Sample(DiffuseSampler, input.tex);
-	}
-	else if (!material.useAlpha)
-	{
-		result *= input.color;
-	}
+	result = result * input.diffuse + input.specular;
 
 	return result;
 }
