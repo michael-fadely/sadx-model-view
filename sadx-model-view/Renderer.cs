@@ -31,6 +31,8 @@ namespace sadx_model_view
 			0.5f, 0.5f, 0.0f, 1.0f
 		);
 
+		public FlowControl FlowControl;
+
 		public CullMode DefaultCullMode = CullMode.None;
 		private readonly List<SceneTexture> texturePool = new List<SceneTexture>();
 
@@ -57,6 +59,8 @@ namespace sadx_model_view
 
 		public Renderer(int w, int h, IntPtr sceneHandle)
 		{
+			FlowControl.Reset();
+
 			SetTransform(TransformState.Texture, ref environmentMapTransform);
 
 			var desc = new SwapChainDescription
@@ -206,7 +210,7 @@ namespace sadx_model_view
 
 				if (matId < mats.Count && (mats[matId].attrflags & NJD_FLAG.UseAlpha) != 0)
 				{
-					alphaList.Add(new AlphaSortMeshset(parent, camera, model, set));
+					alphaList.Add(new AlphaSortMeshset(this, parent, camera, model, set));
 				}
 				else
 				{
@@ -287,8 +291,11 @@ namespace sadx_model_view
 
 			foreach (AlphaSortMeshset a in alphaList)
 			{
+				FlowControl = a.FlowControl;
+
 				RawMatrix m = a.Transform;
 				SetTransform(TransformState.World, ref m);
+
 				DrawSet(camera, a.Parent, a.Set);
 			}
 
@@ -777,11 +784,13 @@ namespace sadx_model_view
 		public NJS_MESHSET Set { get; }
 		public Matrix Transform { get; }
 		public readonly float Depth;
+		public readonly FlowControl FlowControl;
 
-		public AlphaSortMeshset(NJS_OBJECT node, Camera camera, NJS_MODEL parent, NJS_MESHSET set)
+		public AlphaSortMeshset(Renderer renderer, NJS_OBJECT node, Camera camera, NJS_MODEL parent, NJS_MESHSET set)
 		{
-			Parent = parent;
-			Set    = set;
+			Parent      = parent;
+			Set         = set;
+			FlowControl = renderer.FlowControl;
 
 			// Pop (and backup) any existing transformations for
 			// this node as it will be relative to its parent (if any).

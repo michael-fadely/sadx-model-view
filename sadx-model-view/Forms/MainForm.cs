@@ -502,10 +502,10 @@ namespace sadx_model_view.Forms
 
 			if (landTable != null)
 			{
-				FlowControl.UseMaterialFlags = true;
-				FlowControl.Add(0, NJD_FLAG.IgnoreSpecular);
+				renderer.FlowControl.UseMaterialFlags = true;
+				renderer.FlowControl.Add(0, NJD_FLAG.IgnoreSpecular);
 				renderer.Draw(landTable, camera);
-				FlowControl.Reset();
+				renderer.FlowControl.Reset();
 			}
 
 			renderer.Present(camera);
@@ -548,7 +548,7 @@ namespace sadx_model_view.Forms
 			switch (e.KeyCode)
 			{
 				case Keys.Subtract:
-					speed -= 0.125f;
+					speed = Math.Max(0.125f, speed - 0.125f);
 					break;
 
 				case Keys.Add:

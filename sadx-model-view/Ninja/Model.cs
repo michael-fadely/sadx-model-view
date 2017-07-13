@@ -370,7 +370,7 @@ namespace sadx_model_view.Ninja
 				DisplayState = device.CreateSADXDisplayState(material);
 			}
 
-			NJD_FLAG flags = FlowControl.Apply(material.attrflags);
+			NJD_FLAG flags = device.FlowControl.Apply(material.attrflags);
 
 			if ((flags & NJD_FLAG.UseTexture) == 0)
 			{
