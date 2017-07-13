@@ -101,15 +101,9 @@ namespace sadx_model_view.SA1
 			Flags       = 0;
 		}
 
-		~Col()
-		{
-			Dispose();
-		}
-
 		public void Dispose()
 		{
 			Object?.Dispose();
-			Object = null;
 		}
 
 		public void CommitVertexBuffer(Renderer device)

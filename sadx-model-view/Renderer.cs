@@ -206,7 +206,7 @@ namespace sadx_model_view
 
 				if (matId < mats.Count && (mats[matId].attrflags & NJD_FLAG.UseAlpha) != 0)
 				{
-					alphaList.Add(new AlphaSortMeshset(parent, model, set));
+					alphaList.Add(new AlphaSortMeshset(parent, camera, model, set));
 				}
 				else
 				{
@@ -283,21 +283,12 @@ namespace sadx_model_view
 
 		public void Present(Camera camera)
 		{
-			Vector3 camPos = camera.Position;
-
-			alphaList.Sort((a, b) =>
-			{
-				float distA = (a.CenterPosition - camPos).LengthSquared() - a.Radius;
-				float distB = (b.CenterPosition - camPos).LengthSquared() - b.Radius;
-
-				return distA > distB ? 1 : -1;
-			});
+			alphaList.Sort((a, b) => a.Depth > b.Depth ? 1 : -1);
 
 			foreach (AlphaSortMeshset a in alphaList)
 			{
 				RawMatrix m = a.Transform;
 				SetTransform(TransformState.World, ref m);
-
 				DrawSet(camera, a.Parent, a.Set);
 			}
 
@@ -590,23 +581,6 @@ namespace sadx_model_view
 			return result;
 		}
 
-		public void Dispose()
-		{
-			device?.Dispose();
-			swapChain?.Dispose();
-			backBuffer?.Dispose();
-			depthTexture?.Dispose();
-			depthStateRW?.Dispose();
-			depthStateRO?.Dispose();
-			depthView?.Dispose();
-			rasterizerState?.Dispose();
-			matrixBuffer?.Dispose();
-			materialBuffer?.Dispose();
-			vertexShader?.Dispose();
-			pixelShader?.Dispose();
-			inputLayout?.Dispose();
-		}
-
 		public void SetTransform(TransformState state, ref RawMatrix rawMatrix)
 		{
 			switch (state)
@@ -762,6 +736,27 @@ namespace sadx_model_view
 			}
 			device.ImmediateContext.UnmapSubresource(materialBuffer, 0);
 		}
+
+		public void Dispose()
+		{
+			swapChain?.Dispose();
+			backBuffer?.Dispose();
+			depthTexture?.Dispose();
+			depthStateRW?.Dispose();
+			depthStateRO?.Dispose();
+			depthView?.Dispose();
+			rasterizerState?.Dispose();
+			matrixBuffer?.Dispose();
+			materialBuffer?.Dispose();
+			vertexShader?.Dispose();
+			pixelShader?.Dispose();
+			inputLayout?.Dispose();
+
+			ClearTexturePool();
+
+			device?.ImmediateContext.Dispose();
+			device?.Dispose();
+		}
 	}
 
 	internal class InsufficientFeatureLevelException : Exception
@@ -781,26 +776,36 @@ namespace sadx_model_view
 		public NJS_MODEL Parent { get; }
 		public NJS_MESHSET Set { get; }
 		public Matrix Transform { get; }
-		public Vector3 CenterPosition { get; }
-		public float Radius => Set.Radius;
+		public readonly float Depth;
 
-		public AlphaSortMeshset(NJS_OBJECT node, NJS_MODEL parent, NJS_MESHSET set)
+		public AlphaSortMeshset(NJS_OBJECT node, Camera camera, NJS_MODEL parent, NJS_MESHSET set)
 		{
 			Parent = parent;
 			Set    = set;
 
-			Matrix transform = MatrixStack.Peek();
+			// Pop (and backup) any existing transformations for
+			// this node as it will be relative to its parent (if any).
+			Matrix transform = MatrixStack.Pop();
 
-			MatrixStack.Pop();
+			// Push a new matrix onto the stack, relative to this node's
+			// parent (if any).
 			MatrixStack.Push();
+			{
+				// Translate our meshset center first.
+				MatrixStack.Translate(ref set.Center);
 
-			MatrixStack.Translate(ref set.Center);
-			node?.PushTransform();
+				// Then handle the node's transform.
+				node?.PushTransform();
 
-			CenterPosition = MatrixStack.Peek().TranslationVector;
-
+				Vector3 center = MatrixStack.Peek().TranslationVector;
+				Depth = (center - camera.Position).LengthSquared() - set.Radius;
+			}
 			MatrixStack.Pop();
+
+			// Restore the backup.
 			MatrixStack.Push(ref transform);
+
+			// Store the real transform to be used for drawing after sorting.
 			Transform = transform;
 		}
 	}

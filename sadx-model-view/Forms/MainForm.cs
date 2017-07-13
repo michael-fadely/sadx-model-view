@@ -525,6 +525,8 @@ namespace sadx_model_view.Forms
 
 		private void OnClosed(object sender, FormClosedEventArgs e)
 		{
+			obj?.Dispose();
+			landTable?.Dispose();
 			renderer?.Dispose();
 		}
 

@@ -337,17 +337,6 @@ namespace sadx_model_view.Ninja
 			vertuv              = new List<NJS_TEX>();
 		}
 
-		~NJS_MESHSET()
-		{
-			Dispose();
-		}
-
-		public void Dispose()
-		{
-			IndexBuffer?.Dispose();
-			IndexBuffer = null;
-		}
-
 		private void CalculateStripPrimitiveCount()
 		{
 			PrimitiveCount = 0;
@@ -358,10 +347,15 @@ namespace sadx_model_view.Ninja
 			{
 				int n = meshes[i] & 0x3FFF;
 				PrimitiveCount += n + 2;
-				i += (n + 1);
+				i += n + 1;
 			} while (--count > 0);
 
 			PrimitiveCount -= 2;
+		}
+
+		public void Dispose()
+		{
+			IndexBuffer?.Dispose();
 		}
 	}
 }

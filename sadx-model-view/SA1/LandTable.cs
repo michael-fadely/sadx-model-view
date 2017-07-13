@@ -96,27 +96,30 @@ namespace sadx_model_view.SA1
 			Unknown_3 = 0;
 		}
 
-		~LandTable()
-		{
-			Dispose();
-		}
-
-		public void Dispose()
-		{
-			foreach (Col c in ColList)
-			{
-				c.Dispose();
-			}
-
-			ColList.Clear();
-		}
-
 		public void CommitVertexBuffer(Renderer device)
 		{
 			foreach (Col c in ColList)
 			{
 				c.CommitVertexBuffer(device);
 			}
+		}
+
+		public void Dispose()
+		{
+			foreach (Col col in ColList)
+			{
+				col?.Dispose();
+			}
+
+			ColList.Clear();
+
+
+			foreach (GeoAnimData anim in AnimData)
+			{
+				anim?.Dispose();
+			}
+
+			AnimData.Clear();
 		}
 	}
 }

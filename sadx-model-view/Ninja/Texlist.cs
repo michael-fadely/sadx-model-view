@@ -51,15 +51,9 @@ namespace sadx_model_view.Ninja
 			pPhysical     = 0;
 		}
 
-		~NJS_TEXSURFACE()
-		{
-			Dispose();
-		}
-
 		public void Dispose()
 		{
 			pSurface?.Dispose();
-			pSurface = null;
 		}
 	}
 
@@ -74,15 +68,9 @@ namespace sadx_model_view.Ninja
 			texsurface = new NJS_TEXSURFACE();
 		}
 
-		~NJS_TEXINFO()
-		{
-			Dispose();
-		}
-
 		public void Dispose()
 		{
 			texsurface?.Dispose();
-			texsurface = null;
 		}
 	}
 
@@ -109,15 +97,9 @@ namespace sadx_model_view.Ninja
 			dummy          = 0;
 		}
 
-		~NJS_TEXMEMLIST()
-		{
-			Dispose();
-		}
-
 		public void Dispose()
 		{
 			texinfo?.Dispose();
-			texinfo = null;
 		}
 	}
 

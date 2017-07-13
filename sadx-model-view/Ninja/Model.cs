@@ -143,11 +143,6 @@ namespace sadx_model_view.Ninja
 			VertexBuffer = null;
 		}
 
-		~NJS_MODEL()
-		{
-			Dispose();
-		}
-
 		public void Dispose()
 		{
 			foreach (NJS_MESHSET set in meshsets)

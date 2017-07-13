@@ -58,15 +58,9 @@ namespace sadx_model_view.Ninja
 			motion  = new NJS_MOTION();
 		}
 
-		~NJS_ACTION()
-		{
-			Dispose();
-		}
-
 		public void Dispose()
 		{
 			_object?.Dispose();
-			_object = null;
 		}
 	}
 }

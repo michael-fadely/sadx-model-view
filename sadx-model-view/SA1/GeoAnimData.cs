@@ -66,18 +66,10 @@ namespace sadx_model_view.SA1
 			TexList     = null;
 		}
 
-		~GeoAnimData()
-		{
-			Dispose();
-		}
-
 		public void Dispose()
 		{
 			Model?.Dispose();
-			Model = null;
-
 			Animation?.Dispose();
-			Animation = null;
 		}
 	}
 }

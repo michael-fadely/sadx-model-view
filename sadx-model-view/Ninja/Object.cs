@@ -124,21 +124,11 @@ namespace sadx_model_view.Ninja
 			Sibling   = obj.Sibling;
 		}
 
-		~NJS_OBJECT()
-		{
-			Dispose();
-		}
-
 		public void Dispose()
 		{
 			Model?.Dispose();
-			Model = null;
-
 			Child?.Dispose();
-			Child = null;
-
 			Sibling?.Dispose();
-			Sibling = null;
 		}
 
 		public uint evalflags;     /* evalation flags              */

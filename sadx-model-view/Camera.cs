@@ -16,10 +16,7 @@ namespace sadx_model_view
 		// ReSharper disable once UnusedMember.Global
 		public Vector3 Position
 		{
-			get
-			{
-				return position;
-			}
+			get => position;
 			set
 			{
 				position = value;
@@ -30,10 +27,7 @@ namespace sadx_model_view
 		// ReSharper disable once UnusedMember.Global
 		public Vector3 Rotation
 		{
-			get
-			{
-				return rotation;
-			}
+			get => rotation;
 			set
 			{
 				rotation = value;
@@ -44,7 +38,7 @@ namespace sadx_model_view
 
 		public Matrix View
 		{
-			get { return _view; }
+			get => _view;
 			private set { _view = value; InverseView = -value; }
 		}
 
@@ -69,7 +63,9 @@ namespace sadx_model_view
 		public void Update()
 		{
 			if (!Invalid)
+			{
 				return;
+			}
 
 			View = Matrix.LookAtRH(position, position + (Vector3)Vector3.Transform(Vector3.ForwardRH, rotationMatrix), Vector3.Up);
 			UpdateRotationMatrix();
@@ -95,7 +91,9 @@ namespace sadx_model_view
 		private void UpdateProjectionMatrix()
 		{
 			if (!Invalid)
+			{
 				return;
+			}
 
 			Matrix.PerspectiveFovRH(FieldOfView, AspectRatio, -MinDrawDistance, -MaxDrawDistance, out _projection);
 		}
@@ -145,7 +143,9 @@ namespace sadx_model_view
 		private void UpdateRotationMatrix()
 		{
 			if (!Invalid)
+			{
 				return;
+			}
 
 			rotationMatrix = Matrix.RotationX(rotation.X)
 							 * Matrix.RotationY(rotation.Y)
