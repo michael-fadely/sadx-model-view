@@ -127,17 +127,16 @@ namespace sadx_model_view.Ninja
 
 		public NJS_MODEL()
 		{
-			points             = new List<Vector3>();
-			normals            = new List<Vector3>();
-			nbPoint            = 0;
-			meshsets           = new List<NJS_MESHSET>();
-			mats               = new List<NJS_MATERIAL>();
-			nbMeshset          = 0;
-			nbMat              = 0;
-			center             = Vector3.Zero;
-			r                  = 0.0f;
-			vertexBuffer       = null;
-			vertexBufferLength = 0;
+			points       = new List<Vector3>();
+			normals      = new List<Vector3>();
+			nbPoint      = 0;
+			meshsets     = new List<NJS_MESHSET>();
+			mats         = new List<NJS_MATERIAL>();
+			nbMeshset    = 0;
+			nbMat        = 0;
+			center       = Vector3.Zero;
+			r            = 0.0f;
+			vertexBuffer = null;
 		}
 
 		~NJS_MODEL()
@@ -170,7 +169,6 @@ namespace sadx_model_view.Ninja
 		public float r;                          // radius
 
 		private Buffer vertexBuffer;
-		private int vertexBufferLength;
 
 		public void CommitVertexBuffer(Renderer device)
 		{
@@ -281,7 +279,6 @@ namespace sadx_model_view.Ninja
 				set.IndexBuffer = device.CreateIndexBuffer(indices, set.IndexCount * sizeof(short));
 			}
 
-			vertexBufferLength = vertices.Count;
 			vertexBuffer = device.CreateVertexBuffer(vertices);
 		}
 
