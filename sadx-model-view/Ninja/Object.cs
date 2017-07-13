@@ -65,13 +65,8 @@ namespace sadx_model_view.Ninja
 		/// Constructs <see cref="NJS_OBJECT"/>, its children, and all of its available members from a file.
 		/// </summary>
 		/// <param name="stream">A stream containing the data.</param>
-		/// <param name="parent">A parent object.</param>
-		/// <param name="previousSibling">A previous sibling object.</param>
-		public NJS_OBJECT(Stream stream, NJS_OBJECT parent = null, NJS_OBJECT previousSibling = null)
+		public NJS_OBJECT(Stream stream)
 		{
-			Parent          = parent;
-			PreviousSibling = previousSibling;
-
 			var buffer = new byte[SizeInBytes];
 			stream.Read(buffer, 0, buffer.Length);
 
@@ -102,12 +97,12 @@ namespace sadx_model_view.Ninja
 
 			if (child_ptr != 0)
 			{
-				Child = ObjectCache.FromStream(stream, child_ptr, this, previousSibling);
+				Child = ObjectCache.FromStream(stream, child_ptr);
 			}
 
 			if (sibling_ptr != 0)
 			{
-				Sibling = ObjectCache.FromStream(stream, sibling_ptr, parent, this);
+				Sibling = ObjectCache.FromStream(stream, sibling_ptr);
 			}
 
 			stream.Position = position;
@@ -120,15 +115,13 @@ namespace sadx_model_view.Ninja
 		/// <param name="obj">Object to copy from.</param>
 		public NJS_OBJECT(NJS_OBJECT obj)
 		{
-			evalflags       = obj.evalflags;
-			Model           = obj.Model != null ? new NJS_MODEL(obj.Model) : null;
-			Position        = obj.Position;
-			Angle           = obj.Angle;
-			Scale           = obj.Scale;
-			Parent          = obj.Parent;
-			Child           = obj.Child;
-			PreviousSibling = obj.PreviousSibling;
-			Sibling         = obj.Sibling;
+			evalflags = obj.evalflags;
+			Model     = obj.Model != null ? new NJS_MODEL(obj.Model) : null;
+			Position  = obj.Position;
+			Angle     = obj.Angle;
+			Scale     = obj.Scale;
+			Child     = obj.Child;
+			Sibling   = obj.Sibling;
 		}
 
 		~NJS_OBJECT()
@@ -146,16 +139,6 @@ namespace sadx_model_view.Ninja
 
 			Sibling?.Dispose();
 			Sibling = null;
-
-			if (Parent != null)
-			{
-				Parent.Child = null;
-			}
-
-			if (PreviousSibling != null)
-			{
-				PreviousSibling.Sibling = null;
-			}
 		}
 
 		public uint evalflags;     /* evalation flags              */
@@ -164,22 +147,14 @@ namespace sadx_model_view.Ninja
 		public Rotation3 Angle;    /* rotation                     */
 		public Vector3 Scale;      /* scaling                      */
 
-		/// <summary>
-		/// (Extension) Parent of this child object.
-		/// </summary>
-		public NJS_OBJECT Parent;
 		public NJS_OBJECT Child;
-		/// <summary>
-		/// (Extension) Last sibling of this sibling object.
-		/// </summary>
-		public NJS_OBJECT PreviousSibling;
 		public NJS_OBJECT Sibling;
 
 		public float Radius { get; private set; }
 
 		public bool IgnoreTranslation
 		{
-			get { return ((NJD_EVAL)evalflags).HasFlag(NJD_EVAL.UNIT_POS); }
+			get => (evalflags & (uint)NJD_EVAL.UNIT_POS) != 0;
 			set
 			{
 				if (value)
@@ -194,7 +169,7 @@ namespace sadx_model_view.Ninja
 		}
 		public bool IgnoreRotation
 		{
-			get { return ((NJD_EVAL)evalflags).HasFlag(NJD_EVAL.UNIT_ANG); }
+			get => (evalflags & (uint)NJD_EVAL.UNIT_ANG) != 0;
 			set
 			{
 				if (value)
@@ -209,7 +184,7 @@ namespace sadx_model_view.Ninja
 		}
 		public bool IgnoreScale
 		{
-			get { return ((NJD_EVAL)evalflags).HasFlag(NJD_EVAL.UNIT_SCL); }
+			get => (evalflags & (uint)NJD_EVAL.UNIT_SCL) != 0;
 			set
 			{
 				if (value)
@@ -224,7 +199,7 @@ namespace sadx_model_view.Ninja
 		}
 		public bool SkipDraw
 		{
-			get { return ((NJD_EVAL)evalflags).HasFlag(NJD_EVAL.HIDE); }
+			get => (evalflags & (uint)NJD_EVAL.HIDE) != 0;
 			set
 			{
 				if (value)
@@ -239,7 +214,7 @@ namespace sadx_model_view.Ninja
 		}
 		public bool SkipChildren
 		{
-			get { return ((NJD_EVAL)evalflags).HasFlag(NJD_EVAL.BREAK); }
+			get => (evalflags & (uint)NJD_EVAL.BREAK) != 0;
 			set
 			{
 				if (value)
@@ -254,7 +229,7 @@ namespace sadx_model_view.Ninja
 		}
 		public bool UseZXYRotation
 		{
-			get { return ((NJD_EVAL)evalflags).HasFlag(NJD_EVAL.ZXY_ANG); }
+			get => (evalflags & (uint)NJD_EVAL.ZXY_ANG) != 0;
 			set
 			{
 				if (value)
@@ -269,17 +244,11 @@ namespace sadx_model_view.Ninja
 
 		}
 
-		public void CommitVertexBuffer(Renderer device)
+		/// <summary>
+		/// Applies this object's transform to the top of the matrix stack.
+		/// </summary>
+		public void PushTransform()
 		{
-			Model?.CommitVertexBuffer(device);
-			Child?.CommitVertexBuffer(device);
-			Sibling?.CommitVertexBuffer(device);
-		}
-
-		public void Draw(Renderer device, ref Camera camera)
-		{
-			MatrixStack.Push();
-
 			if (!IgnoreTranslation)
 			{
 				MatrixStack.Translate(ref Position);
@@ -294,21 +263,13 @@ namespace sadx_model_view.Ninja
 			{
 				MatrixStack.Scale(ref Scale);
 			}
+		}
 
-			MatrixStack.SetTransform(device);
-
-			if (!SkipDraw && Model?.IsVisible(ref camera) == true)
-			{
-				Model?.Draw(device);
-			}
-
-			if (!SkipChildren)
-			{
-				Child?.Draw(device, ref camera);
-			}
-
-			MatrixStack.Pop();
-			Sibling?.Draw(device, ref camera);
+		public void CommitVertexBuffer(Renderer device)
+		{
+			Model?.CommitVertexBuffer(device);
+			Child?.CommitVertexBuffer(device);
+			Sibling?.CommitVertexBuffer(device);
 		}
 
 		public void CalculateRadius()
@@ -328,15 +289,12 @@ namespace sadx_model_view.Ninja
 			}
 		}
 
-		public void Sort()
-		{
-			Sort(this);
-		}
-
 		public static NJS_OBJECT Copy(NJS_OBJECT @object, bool copyChildren, bool copySiblings)
 		{
 			if (@object == null)
+			{
 				return null;
+			}
 
 			var obj = new NJS_OBJECT(@object);
 
@@ -351,22 +309,6 @@ namespace sadx_model_view.Ninja
 			}
 
 			return obj;
-		}
-
-		// TODO: Sort objects, not just meshsets.
-		private static void Sort(NJS_OBJECT obj)
-		{
-			obj.Model?.Sort();
-
-			if (obj.Child != null)
-			{
-				Sort(obj.Child);
-			}
-
-			if (obj.Sibling != null)
-			{
-				Sort(obj.Sibling);
-			}
 		}
 	}
 }

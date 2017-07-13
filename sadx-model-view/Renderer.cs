@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using sadx_model_view.Ninja;
+using sadx_model_view.SA1;
 using SharpDX;
 using SharpDX.D3DCompiler;
 using SharpDX.Direct3D;
@@ -18,39 +19,6 @@ using Resource = SharpDX.Direct3D11.Resource;
 
 namespace sadx_model_view
 {
-	public struct MatrixBuffer
-	{
-		public Matrix World;
-		public Matrix View;
-		public Matrix Projection;
-		public Matrix Texture;
-
-		public override bool Equals(object obj)
-		{
-			return base.Equals(obj);
-		}
-
-		public bool Equals(MatrixBuffer other)
-		{
-			return World.Equals(other.World)
-				&& View.Equals(other.View)
-				&& Projection.Equals(other.Projection)
-				&& Texture.Equals(other.Texture);
-		}
-
-		public override int GetHashCode() => 1;
-
-		public static bool operator ==(MatrixBuffer lhs, MatrixBuffer rhs)
-		{
-			return lhs.Equals(rhs);
-		}
-
-		public static bool operator !=(MatrixBuffer lhs, MatrixBuffer rhs)
-		{
-			return !(lhs == rhs);
-		}
-	}
-
 	public class Renderer : IDisposable
 	{
 		/// <summary>
@@ -80,6 +48,7 @@ namespace sadx_model_view
 		private readonly Buffer matrixBuffer;
 		private readonly Buffer materialBuffer;
 
+		private bool zwrite;
 		private bool matrixDataChanged;
 		private MatrixBuffer lastMatrixData;
 		private MatrixBuffer matrixData;
@@ -201,18 +170,60 @@ namespace sadx_model_view
 			device.ImmediateContext.ClearDepthStencilView(depthView, DepthStencilClearFlags.Depth, 1.0f, 0);
 		}
 
-		public void Enqueue(NJS_MODEL model, NJS_MESHSET set)
+		public void Draw(NJS_OBJECT obj, Camera camera)
 		{
-			alphaList.Add(new AlphaSortMeshset(model, set));
+			while (!(obj is null))
+			{
+				MatrixStack.Push();
+				obj.PushTransform();
+				RawMatrix m = MatrixStack.Peek();
+				SetTransform(TransformState.World, ref m);
+
+				if (!obj.SkipDraw && obj.Model?.IsVisible(camera) == true)
+				{
+					Draw(obj, obj.Model);
+				}
+
+				if (!obj.SkipChildren)
+				{
+					Draw(obj.Child, camera);
+				}
+
+				MatrixStack.Pop();
+				obj = obj.Sibling;
+			}
 		}
 
-		private bool zwrite;
-		public void Draw(DisplayState state, Buffer vertexBuffer, Buffer indexBuffer, int indexCount)
+		private static readonly NJS_MATERIAL nullMaterial = new NJS_MATERIAL();
+
+		public void Draw(NJS_OBJECT parent, NJS_MODEL model)
 		{
-			if (device == null)
+			List<NJS_MATERIAL> mats = model.mats;
+
+			foreach (NJS_MESHSET set in model.meshsets)
 			{
-				return;
+				ushort matId = set.MaterialId;
+
+				if (matId < mats.Count && (mats[matId].attrflags & NJD_FLAG.UseAlpha) != 0)
+				{
+					alphaList.Add(new AlphaSortMeshset(parent, model, set));
+				}
+				else
+				{
+					DrawSet(model, set);
+				}
 			}
+		}
+
+		private void DrawSet(NJS_MODEL parent, NJS_MESHSET set)
+		{
+			ushort matId = set.MaterialId;
+			List<NJS_MATERIAL> mats = parent.mats;
+
+			ShaderMaterial mat = parent.GetSADXMaterial(this, mats.Count > 0 && matId < mats.Count ? mats[matId] : nullMaterial);
+			SetShaderMaterial(ref mat);
+
+			DisplayState state = parent.DisplayState;
 
 			if (state.Blend.Description.RenderTarget[0].IsBlendEnabled)
 			{
@@ -261,9 +272,9 @@ namespace sadx_model_view
 			}
 
 			device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
-			device.ImmediateContext.InputAssembler.SetVertexBuffers(0, new Buffer[] { vertexBuffer }, new []{ Vertex.SizeInBytes }, new []{ 0 });
-			device.ImmediateContext.InputAssembler.SetIndexBuffer(indexBuffer, Format.R16_UInt, 0);
-			device.ImmediateContext.DrawIndexed(indexCount, 0, 0);
+			device.ImmediateContext.InputAssembler.SetVertexBuffers(0, new Buffer[] { parent.VertexBuffer }, new[] { Vertex.SizeInBytes }, new[] { 0 });
+			device.ImmediateContext.InputAssembler.SetIndexBuffer(set.IndexBuffer, Format.R16_UInt, 0);
+			device.ImmediateContext.DrawIndexed(set.IndexCount, 0, 0);
 		}
 
 		public void Present(Camera camera)
@@ -272,8 +283,8 @@ namespace sadx_model_view
 
 			alphaList.Sort((a, b) =>
 			{
-				float distA = (a.Position - camPos).LengthSquared() - a.Radius;
-				float distB = (b.Position - camPos).LengthSquared() - b.Radius;
+				float distA = (a.CenterPosition - camPos).LengthSquared() - a.Radius;
+				float distB = (b.CenterPosition - camPos).LengthSquared() - b.Radius;
 
 				return distA > distB ? 1 : -1;
 			});
@@ -283,13 +294,17 @@ namespace sadx_model_view
 				RawMatrix m = a.Transform;
 				SetTransform(TransformState.World, ref m);
 
-				ushort dummy = ushort.MaxValue;
-				a.Parent.DrawSet(this, a.Set, ref dummy);
+				DrawSet(a.Parent, a.Set);
 			}
 
 			alphaList.Clear();
 
 			swapChain.Present(0, 0);
+
+			if (!MatrixStack.Empty)
+			{
+				throw new Exception("Matrix stack still contains data");
+			}
 		}
 
 		private void CreateRenderTarget()
@@ -401,6 +416,22 @@ namespace sadx_model_view
 
 			device?.ImmediateContext.OutputMerger.SetTargets(depthView, backBuffer);
 			device?.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
+		}
+
+		public void Draw(LandTable landTable, Camera camera)
+		{
+			if (landTable == null)
+			{
+				return;
+			}
+
+			foreach (Col col in landTable.ColList)
+			{
+				if ((col.Flags & ColFlags.Visible) != 0)
+				{
+					Draw(col.Object, camera);
+				}
+			}
 		}
 
 		private void CreateRasterizerState()
@@ -745,21 +776,27 @@ namespace sadx_model_view
 		public NJS_MODEL Parent { get; }
 		public NJS_MESHSET Set { get; }
 		public Matrix Transform { get; }
-		public Vector3 Position { get; }
+		public Vector3 CenterPosition { get; }
 		public float Radius => Set.Radius;
 
-		public AlphaSortMeshset(NJS_MODEL parent, NJS_MESHSET set)
+		public AlphaSortMeshset(NJS_OBJECT node, NJS_MODEL parent, NJS_MESHSET set)
 		{
-			Parent    = parent;
-			Set       = set;
-			Transform = MatrixStack.Peek();
+			Parent = parent;
+			Set    = set;
 
+			Matrix transform = MatrixStack.Peek();
+
+			MatrixStack.Pop();
 			MatrixStack.Push();
 
 			MatrixStack.Translate(ref set.Center);
-			Position = MatrixStack.Peek().TranslationVector;
+			node?.PushTransform();
+
+			CenterPosition = MatrixStack.Peek().TranslationVector;
 
 			MatrixStack.Pop();
+			MatrixStack.Push(ref transform);
+			Transform = transform;
 		}
 	}
 }

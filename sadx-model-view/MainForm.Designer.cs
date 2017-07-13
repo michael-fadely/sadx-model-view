@@ -33,11 +33,10 @@
 			this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.openTexturesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.editToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.sortToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.recompileShadersToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.openModelDialog = new System.Windows.Forms.OpenFileDialog();
 			this.openTexturesDialog = new System.Windows.Forms.OpenFileDialog();
 			this.scene = new sadx_model_view.Scene();
-			this.recompileShadersToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.menuStrip1.SuspendLayout();
 			this.SuspendLayout();
 			// 
@@ -80,18 +79,17 @@
 			// editToolStripMenuItem
 			// 
 			this.editToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.sortToolStripMenuItem,
             this.recompileShadersToolStripMenuItem});
 			this.editToolStripMenuItem.Name = "editToolStripMenuItem";
 			this.editToolStripMenuItem.Size = new System.Drawing.Size(39, 20);
 			this.editToolStripMenuItem.Text = "&Edit";
 			// 
-			// sortToolStripMenuItem
+			// recompileShadersToolStripMenuItem
 			// 
-			this.sortToolStripMenuItem.Name = "sortToolStripMenuItem";
-			this.sortToolStripMenuItem.Size = new System.Drawing.Size(174, 22);
-			this.sortToolStripMenuItem.Text = "&Sort Models";
-			this.sortToolStripMenuItem.Click += new System.EventHandler(this.sortToolStripMenuItem_Click);
+			this.recompileShadersToolStripMenuItem.Name = "recompileShadersToolStripMenuItem";
+			this.recompileShadersToolStripMenuItem.Size = new System.Drawing.Size(174, 22);
+			this.recompileShadersToolStripMenuItem.Text = "Recompile Shaders";
+			this.recompileShadersToolStripMenuItem.Click += new System.EventHandler(this.recompileShadersToolStripMenuItem_Click);
 			// 
 			// openModelDialog
 			// 
@@ -119,13 +117,6 @@
 			this.scene.KeyDown += new System.Windows.Forms.KeyEventHandler(this.scene_KeyDown);
 			this.scene.KeyUp += new System.Windows.Forms.KeyEventHandler(this.scene_KeyUp);
 			this.scene.MouseMove += new System.Windows.Forms.MouseEventHandler(this.scene_MouseMove);
-			// 
-			// recompileShadersToolStripMenuItem
-			// 
-			this.recompileShadersToolStripMenuItem.Name = "recompileShadersToolStripMenuItem";
-			this.recompileShadersToolStripMenuItem.Size = new System.Drawing.Size(174, 22);
-			this.recompileShadersToolStripMenuItem.Text = "Recompile Shaders";
-			this.recompileShadersToolStripMenuItem.Click += new System.EventHandler(this.recompileShadersToolStripMenuItem_Click);
 			// 
 			// MainForm
 			// 
@@ -156,7 +147,6 @@
 		private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem editToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem sortToolStripMenuItem;
 		private System.Windows.Forms.OpenFileDialog openModelDialog;
 		private System.Windows.Forms.OpenFileDialog openTexturesDialog;
 		private System.Windows.Forms.ToolStripMenuItem openTexturesToolStripMenuItem;

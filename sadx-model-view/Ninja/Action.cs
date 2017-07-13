@@ -3,7 +3,7 @@ using System.IO;
 
 namespace sadx_model_view.Ninja
 {
-	class NJS_MOTION
+	public class NJS_MOTION
 	{
 		public int mdata; // TODO: void*
 		public uint nbFrame;
@@ -22,7 +22,7 @@ namespace sadx_model_view.Ninja
 		}
 	}
 
-	class NJS_ACTION : IDisposable
+	public class NJS_ACTION : IDisposable
 	{
 		public static int SizeInBytes => 0x8;
 

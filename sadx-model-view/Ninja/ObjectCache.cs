@@ -7,18 +7,19 @@ namespace sadx_model_view.Ninja
 	{
 		private static readonly Dictionary<long, NJS_OBJECT> objectCache = new Dictionary<long, NJS_OBJECT>();
 
-		public static NJS_OBJECT FromStream(Stream stream, long offset, NJS_OBJECT parent = null, NJS_OBJECT previousSibling = null)
+		public static NJS_OBJECT FromStream(Stream stream, long offset)
 		{
 			lock (objectCache)
 			{
-				NJS_OBJECT result;
-				objectCache.TryGetValue(offset, out result);
+				objectCache.TryGetValue(offset, out NJS_OBJECT result);
 
 				if (result != null)
+				{
 					return result;
+				}
 
 				stream.Position = offset;
-				result = new NJS_OBJECT(stream, parent, previousSibling);
+				result = new NJS_OBJECT(stream);
 				objectCache[offset] = result;
 				return result;
 			}
@@ -36,9 +37,9 @@ namespace sadx_model_view.Ninja
 		{
 			lock (objectCache)
 			{
-				foreach (var pair in objectCache)
+				foreach (NJS_OBJECT obj in objectCache.Values)
 				{
-					pair.Value.Dispose();
+					obj.Dispose();
 				}
 
 				objectCache.Clear();

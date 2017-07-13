@@ -7,7 +7,7 @@ namespace sadx_model_view.SA1
 	/// <summary>
 	/// Animation definition for a <see cref="LandTable"/>.
 	/// </summary>
-	class GeoAnimData : IDisposable
+	public class GeoAnimData : IDisposable
 	{
 		public static int SizeInBytes => 0x18;
 

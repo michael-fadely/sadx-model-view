@@ -6,7 +6,7 @@ using SharpDX.Direct3D11;
 
 namespace sadx_model_view.Ninja
 {
-	class NJS_TEXPALETTE
+	public class NJS_TEXPALETTE
 	{
 		public int palette; // TODO: void*
 		public ushort mode;
@@ -24,7 +24,7 @@ namespace sadx_model_view.Ninja
 		}
 	}
 
-	class NJS_TEXSURFACE : IDisposable
+	public class NJS_TEXSURFACE : IDisposable
 	{
 		public uint Type;
 		public uint BitDepth;
@@ -63,7 +63,7 @@ namespace sadx_model_view.Ninja
 		}
 	}
 
-	class NJS_TEXINFO : IDisposable
+	public class NJS_TEXINFO : IDisposable
 	{
 		public int texaddr; // TODO: void*
 		public NJS_TEXSURFACE texsurface;
@@ -86,7 +86,7 @@ namespace sadx_model_view.Ninja
 		}
 	}
 
-	class NJS_TEXMEMLIST : IDisposable
+	public class NJS_TEXMEMLIST : IDisposable
 	{
 		public uint globalIndex;
 		public NJS_TEXPALETTE bank;
@@ -122,7 +122,7 @@ namespace sadx_model_view.Ninja
 	}
 
 	[Flags]
-	enum NJD_TEXATTR : uint
+	public enum NJD_TEXATTR : uint
 	{
 		CACHE            = unchecked((uint)(1 << 31)),
 		TYPE_MEMORY      = 1 << 30,
@@ -135,7 +135,7 @@ namespace sadx_model_view.Ninja
 		TEXCONTINUE      = 1 << 16 
 	}
 
-	class NJS_TEXNAME
+	public class NJS_TEXNAME
 	{
 		public static int SizeInBytes => 0xC;
 
@@ -180,7 +180,7 @@ namespace sadx_model_view.Ninja
 		}
 	}
 
-	class NJS_TEXLIST
+	public class NJS_TEXLIST
 	{
 		public static int SizeInBytes => 0x8;
 

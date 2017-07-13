@@ -7,14 +7,14 @@ using sadx_model_view.Ninja;
 namespace sadx_model_view.SA1
 {
 	[Flags]
-	enum LandTableFlags
+	public enum LandTableFlags
 	{
 		Animation   = 0x1,
 		TextureList = 0x2,
 		TextureName = 0x8,
 	}
 
-	class LandTable : IDisposable
+	public class LandTable : IDisposable
 	{
 		public static int SizeInBytes => 0x24;
 
@@ -116,22 +116,6 @@ namespace sadx_model_view.SA1
 			foreach (Col c in ColList)
 			{
 				c.CommitVertexBuffer(device);
-			}
-		}
-
-		public void Draw(Renderer device, ref Camera camera)
-		{
-			foreach (Col c in ColList)
-			{
-				c.Draw(device, ref camera);
-			}
-		}
-
-		public void Sort()
-		{
-			foreach (Col c in ColList)
-			{
-				c.Sort();
 			}
 		}
 	}

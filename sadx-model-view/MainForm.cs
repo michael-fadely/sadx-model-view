@@ -480,26 +480,35 @@ namespace sadx_model_view
 		public void MainLoop()
 		{
 			DeltaTime.Update();
+
 			if (WindowState == FormWindowState.Minimized)
 			{
 				return;
 			}
 
-			renderer?.Clear();
-
 			UpdateCamera();
 
-			obj?.Draw(renderer, ref camera);
+			if (renderer == null)
+			{
+				return;
+			}
+
+			renderer.Clear();
+
+			if (obj != null)
+			{
+				renderer.Draw(obj, camera);
+			}
 
 			if (landTable != null)
 			{
 				FlowControl.UseMaterialFlags = true;
 				FlowControl.Add(0, NJD_FLAG.IgnoreSpecular);
-				landTable.Draw(renderer, ref camera);
+				renderer.Draw(landTable, camera);
 				FlowControl.Reset();
 			}
 
-			renderer?.Present(camera);
+			renderer.Present(camera);
 		}
 
 		private void OnSizeChanged(object sender, EventArgs e)
@@ -635,22 +644,6 @@ namespace sadx_model_view
 			rotation.X = (float)(Math.PI * (delta.Y / (float)ClientRectangle.Height));
 			rotation.Z = 0.0f;
 			camera.Rotate(rotation);
-		}
-
-		private void sortToolStripMenuItem_Click(object sender, EventArgs e)
-		{
-			if (obj != null)
-			{
-				obj.Sort();
-				obj.CommitVertexBuffer(renderer);
-				obj.CalculateRadius();
-			}
-
-			if (landTable != null)
-			{
-				landTable.Sort();
-				landTable.CommitVertexBuffer(renderer);
-			}
 		}
 
 		private void recompileShadersToolStripMenuItem_Click(object sender, EventArgs e)

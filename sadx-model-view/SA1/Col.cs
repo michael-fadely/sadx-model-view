@@ -116,18 +116,5 @@ namespace sadx_model_view.SA1
 		{
 			Object?.CommitVertexBuffer(device);
 		}
-
-		public void Draw(Renderer device, ref Camera camera)
-		{
-			if ((Flags & ColFlags.Visible) != 0)
-			{
-				Object?.Draw(device, ref camera);
-			}
-		}
-
-		public void Sort()
-		{
-			Object?.Sort();
-		}
 	}
 }

@@ -15,6 +15,9 @@ namespace sadx_model_view.Ninja
 		/// </summary>
 		public static int SizeInBytes => 0x28;
 
+
+		public DisplayState DisplayState { get; set; }
+
 		/// <summary>
 		/// Constructs <see cref="NJS_MODEL"/>, its points, normals, materials, and meshsets from a file.<para/>
 		/// See also:
@@ -136,7 +139,7 @@ namespace sadx_model_view.Ninja
 			nbMat        = 0;
 			center       = Vector3.Zero;
 			r            = 0.0f;
-			vertexBuffer = null;
+			VertexBuffer = null;
 		}
 
 		~NJS_MODEL()
@@ -152,11 +155,9 @@ namespace sadx_model_view.Ninja
 			}
 
 			meshsets.Clear();
-			vertexBuffer?.Dispose();
+			VertexBuffer?.Dispose();
 			DisplayState?.Dispose();
 		}
-
-		private static readonly NJS_MATERIAL nullMaterial = new NJS_MATERIAL();
 
 		public readonly List<Vector3> points;    // vertex list
 		public readonly List<Vector3> normals;   // vertex normal list
@@ -168,7 +169,7 @@ namespace sadx_model_view.Ninja
 		public Vector3 center;                   // model center
 		public float r;                          // radius
 
-		private Buffer vertexBuffer;
+		public Buffer VertexBuffer;
 
 		public void CommitVertexBuffer(Renderer device)
 		{
@@ -279,7 +280,7 @@ namespace sadx_model_view.Ninja
 				set.IndexBuffer = device.CreateIndexBuffer(indices, set.IndexCount * sizeof(short));
 			}
 
-			vertexBuffer = device.CreateVertexBuffer(vertices);
+			VertexBuffer = device.CreateVertexBuffer(vertices);
 		}
 
 		/// <summary>
@@ -328,7 +329,8 @@ namespace sadx_model_view.Ninja
 			return (short)result;
 		}
 
-		public bool IsVisible(ref Camera camera)
+		// TODO: Generate a view frustum and do culling that way.
+		public bool IsVisible(Camera camera)
 		{
 			NJS_SCREEN screen = MainForm.Screen;
 			float radius = r * 1.2f;
@@ -338,8 +340,7 @@ namespace sadx_model_view.Ninja
 			Matrix inverse = camera.InverseView;
 			MatrixStack.Multiply(ref inverse);
 
-			Vector3 v;
-			MatrixStack.CalcPoint(ref center, out v);
+			MatrixStack.CalcPoint(ref center, out Vector3 v);
 
 			MatrixStack.Pop();
 
@@ -365,8 +366,8 @@ namespace sadx_model_view.Ninja
 			return (v.Y - radius) * v4 * v6 + screen.cy >= 0.0
 			       && screen.h >= (v.Y + radius) * v4 * v6 + screen.cy;
 		}
-		
-		private void SetSADXMaterial(Renderer device, NJS_MATERIAL material)
+
+		public ShaderMaterial GetSADXMaterial(Renderer device, NJS_MATERIAL material)
 		{
 			if (DisplayState == null)
 			{
@@ -397,75 +398,7 @@ namespace sadx_model_view.Ninja
 				UseLight    = (flags & NJD_FLAG.IgnoreLight) == 0
 			};
 
-			device.SetShaderMaterial(ref m);
-		}
-
-		public DisplayState DisplayState { get; set; }
-
-		public void Draw(Renderer device)
-		{
-			ushort lastId = ushort.MaxValue;
-
-			foreach (NJS_MESHSET set in meshsets)
-			{
-				ushort i = set.MaterialId;
-
-				if (i < mats.Count && (mats[i].attrflags & NJD_FLAG.UseAlpha) != 0)
-				{
-					device.Enqueue(this, set);
-				}
-				else
-				{
-					DrawSet(device, set, ref lastId);
-				}
-			}
-		}
-
-		public void DrawSet(Renderer device, NJS_MESHSET set, ref ushort lastId)
-		{
-			if (mats.Count > 0)
-			{
-				ushort i = set.MaterialId;
-				if (i != lastId)
-				{
-					SetSADXMaterial(device, i < mats.Count ? mats[i] : nullMaterial);
-					lastId = i;
-				}
-			}
-			else
-			{
-				SetSADXMaterial(device, nullMaterial);
-			}
-
-			device.Draw(DisplayState, vertexBuffer, set.IndexBuffer, set.IndexCount);
-		}
-
-		/// <summary>
-		/// Sorts the meshsets in this model to mitigate alpha problems.
-		/// </summary>
-		public void Sort()
-		{
-			if (nbMat < 2 || nbMeshset < 2)
-			{
-				return;
-			}
-
-			meshsets.Sort((instance, other) =>
-			{
-				NJS_MATERIAL matA = mats[instance.MaterialId];
-				NJS_MATERIAL matB = mats[other.MaterialId];
-
-				bool alphaA = (matA.attrflags & NJD_FLAG.UseAlpha) != 0;
-				bool alphaB = (matB.attrflags & NJD_FLAG.UseAlpha) != 0;
-
-				if (alphaA && alphaB)
-				{
-					float dist = (instance.Center - other.Center).Length();
-					return dist - instance.Radius < other.Radius ? -1 : 0;
-				}
-
-				return alphaA ? 1 : -1;
-			});
+			return m;
 		}
 	}
 }

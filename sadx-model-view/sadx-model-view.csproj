@@ -74,6 +74,7 @@
     <Compile Include="DeltaTime.cs" />
     <Compile Include="DisplayState.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="MatrixBuffer.cs" />
     <Compile Include="Ninja\FlowControl.cs" />
     <Compile Include="Ninja\ModelCache.cs" />
     <Compile Include="Ninja\ObjectCache.cs" />

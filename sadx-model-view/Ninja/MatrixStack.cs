@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using SharpDX;
-using SharpDX.Mathematics.Interop;
 
 namespace sadx_model_view.Ninja
 {
@@ -41,24 +40,28 @@ namespace sadx_model_view.Ninja
 			}
 			else
 			{
-				var m = stack.Peek();
+				Matrix m = stack.Peek();
 				Push(ref m);
 			}
 		}
 
 		public static void PushIdentity()
 		{
-			var m = Matrix.Identity;
+			Matrix m = Matrix.Identity;
 			Push(ref m);
 		}
 
 		public static void Pop(int n)
 		{
 			if (stack.Count < 1)
+			{
 				return;
+			}
 
 			if (n < 1)
+			{
 				throw new ArgumentOutOfRangeException(nameof(n), "Value must be greater than zero");
+			}
 
 			do
 			{
@@ -83,11 +86,11 @@ namespace sadx_model_view.Ninja
 
 		public static void Translate(ref Vector3 v)
 		{
-			var m = Pop();
+			Matrix m = Pop();
 
-			var x = v.X;
-			var y = v.Y;
-			var z = v.Z;
+			float x = v.X;
+			float y = v.Y;
+			float z = v.Z;
 
 			m[M30] = z * m[M20] + y * m[M10] + x * m[M00] + m[M30];
 			m[M31] = z * m[M21] + y * m[M11] + x * m[M01] + m[M31];
@@ -99,18 +102,18 @@ namespace sadx_model_view.Ninja
 
 		public static void Rotate(ref Vector3 v, bool useZXY = false)
 		{
-			var m = Pop();
+			Matrix m = Pop();
 
 			if (useZXY)
 			{
 				if (v.Y != 0)
 				{
-					var sin = (float)Math.Sin(v.Y);
-					var cos = (float)Math.Cos(v.Y);
-					var m00 = m[M00];
-					var m01 = m[M01];
-					var m02 = m[M02];
-					var m03 = m[M03];
+					float sin = (float)Math.Sin(v.Y);
+					float cos = (float)Math.Cos(v.Y);
+					float m00 = m[M00];
+					float m01 = m[M01];
+					float m02 = m[M02];
+					float m03 = m[M03];
 
 					m[M00] = m00 * cos - sin * m[M20];
 					m[M01] = m01 * cos - sin * m[M21];
@@ -124,12 +127,12 @@ namespace sadx_model_view.Ninja
 
 				if (v.X != 0)
 				{
-					var sin = (float)Math.Sin(v.X);
-					var cos = (float)Math.Cos(v.X);
-					var m10 = m[M10];
-					var m11 = m[M11];
-					var m12 = m[M12];
-					var m13 = m[M13];
+					float sin = (float)Math.Sin(v.X);
+					float cos = (float)Math.Cos(v.X);
+					float m10 = m[M10];
+					float m11 = m[M11];
+					float m12 = m[M12];
+					float m13 = m[M13];
 
 					m[M10] = sin * m[M20] + m10 * cos;
 					m[M11] = sin * m[M21] + m11 * cos;
@@ -143,12 +146,12 @@ namespace sadx_model_view.Ninja
 
 				if (v.Z != 0)
 				{
-					var sin = (float)Math.Sin(v.Z);
-					var cos = (float)Math.Cos(v.Z);
-					var m00 = m[M00];
-					var m01 = m[M01];
-					var m02 = m[M02];
-					var m03 = m[M03];
+					float sin = (float)Math.Sin(v.Z);
+					float cos = (float)Math.Cos(v.Z);
+					float m00 = m[M00];
+					float m01 = m[M01];
+					float m02 = m[M02];
+					float m03 = m[M03];
 
 					m[M00] = sin * m[M10] + m00 * cos;
 					m[M01] = sin * m[M11] + m01 * cos;
@@ -164,12 +167,12 @@ namespace sadx_model_view.Ninja
 			{
 				if (v.Z != 0)
 				{
-					var sin = (float)Math.Sin(v.Z);
-					var cos = (float)Math.Cos(v.Z);
-					var m00 = m[M00];
-					var m01 = m[M01];
-					var m02 = m[M02];
-					var m03 = m[M03];
+					float sin = (float)Math.Sin(v.Z);
+					float cos = (float)Math.Cos(v.Z);
+					float m00 = m[M00];
+					float m01 = m[M01];
+					float m02 = m[M02];
+					float m03 = m[M03];
 
 					m[M00] = sin * m[M10] + m00 * cos;
 					m[M01] = sin * m[M11] + m01 * cos;
@@ -183,12 +186,12 @@ namespace sadx_model_view.Ninja
 
 				if (v.Y != 0)
 				{
-					var sin = (float)Math.Sin(v.Y);
-					var cos = (float)Math.Cos(v.Y);
-					var m00 = m[M00];
-					var m01 = m[M01];
-					var m02 = m[M02];
-					var m03 = m[M03];
+					float sin = (float)Math.Sin(v.Y);
+					float cos = (float)Math.Cos(v.Y);
+					float m00 = m[M00];
+					float m01 = m[M01];
+					float m02 = m[M02];
+					float m03 = m[M03];
 
 					m[M00] = m00 * cos - sin * m[M20];
 					m[M01] = m01 * cos - sin * m[M21];
@@ -202,12 +205,12 @@ namespace sadx_model_view.Ninja
 
 				if (v.X != 0)
 				{
-					var sin = (float)Math.Sin(v.X);
-					var cos = (float)Math.Cos(v.X);
-					var m10 = m[M10];
-					var m11 = m[M11];
-					var m12 = m[M12];
-					var m13 = m[M13];
+					float sin = (float)Math.Sin(v.X);
+					float cos = (float)Math.Cos(v.X);
+					float m10 = m[M10];
+					float m11 = m[M11];
+					float m12 = m[M12];
+					float m13 = m[M13];
 
 					m[M10] = sin * m[M20] + m10 * cos;
 					m[M11] = sin * m[M21] + m11 * cos;
@@ -226,15 +229,17 @@ namespace sadx_model_view.Ninja
 		public static void Rotate(ref Rotation3 r, bool useZXY = false)
 		{
 			if (r.X == 0 && r.Y == 0 && r.Z == 0)
+			{
 				return;
+			}
 
-			var v = Util.AngleToRadian(ref r);
+			Vector3 v = Util.AngleToRadian(ref r);
 			Rotate(ref v, useZXY);
 		}
 
 		public static void Scale(ref Vector3 v)
 		{
-			var m = Pop();
+			Matrix m = Pop();
 
 			m[M00] = v.X * m[M00];
 			m[M01] = v.X * m[M01];
@@ -251,19 +256,13 @@ namespace sadx_model_view.Ninja
 
 			Push(ref m);
 		}
-
-		public static void SetTransform(Renderer device, TransformState state = TransformState.World)
-		{
-			RawMatrix m = Peek();
-			device.SetTransform(state, ref m);
-		}
-
+		
 		public static void CalcPoint(ref Vector3 vs, out Vector3 vd)
 		{
-			var m = Peek();
-			var x = vs.X;
-			var y = vs.Y;
-			var z = vs.Z;
+			Matrix m = Peek();
+			float x = vs.X;
+			float y = vs.Y;
+			float z = vs.Z;
 
 			vd.X = z * m[M20] + y * m[M10] + x * m[M00] + m[M30];
 			vd.Y = z * m[M21] + y * m[M11] + x * m[M01] + m[M31];
@@ -272,10 +271,10 @@ namespace sadx_model_view.Ninja
 
 		public static void CalcVector(ref Vector3 vs, out Vector3 vd)
 		{
-			var m = Peek();
-			var x = vs.X;
-			var y = vs.Y;
-			var z = vs.Z;
+			Matrix m = Peek();
+			float x = vs.X;
+			float y = vs.Y;
+			float z = vs.Z;
 
 			vd.X = z * m[M20] + y * m[M10] + x * m[M00];
 			vd.Y = z * m[M21] + y * m[M11] + x * m[M01];
