@@ -90,7 +90,7 @@ namespace sadx_model_view
 				throw new InsufficientFeatureLevelException(device.FeatureLevel, FeatureLevel.Level_10_0);
 			}
 
-			int mtx_size = Matrix.SizeInBytes * 4;
+			int mtx_size = Matrix.SizeInBytes * 5;
 			var bufferDesc = new BufferDescription(mtx_size,
 				ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write, ResourceOptionFlags.None, mtx_size);
 
@@ -251,22 +251,24 @@ namespace sadx_model_view
 				device.ImmediateContext.MapSubresource(matrixBuffer, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
 				using (stream)
 				{
-					Matrix wvMatrix = matrixData.World * matrixData.View;
+					Matrix world = matrixData.World;
+					Matrix view = matrixData.View;
+					Matrix projection = matrixData.Projection;
+					Matrix texture = matrixData.Texture;
 
-					// Concatenated world/view/projection matrix.
-					Matrix wvpMatrix = wvMatrix * matrixData.Projection;
-					Matrix.Transpose(ref wvpMatrix, out Matrix m);
-					stream.Write(m);
+					Matrix wvMatrixInvT = world * view;
+					Matrix.Invert(ref wvMatrixInvT, out wvMatrixInvT);
 
-					// Inverse transpose world view matrix (for environment maps)
-					Matrix.Invert(ref wvMatrix, out m);
-					stream.Write(m);
+					world.Transpose();
+					view.Transpose();
+					projection.Transpose();
+					texture.Transpose();
 
-					stream.Write(matrixData.World);
-
-					// Texture transformation matrix (for environment maps)
-					Matrix.Transpose(ref matrixData.Texture, out m);
-					stream.Write(m);
+					stream.Write(world);
+					stream.Write(view);
+					stream.Write(projection);
+					stream.Write(wvMatrixInvT);
+					stream.Write(texture);
 				}
 				device.ImmediateContext.UnmapSubresource(matrixBuffer, 0);
 

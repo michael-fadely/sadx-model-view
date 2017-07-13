@@ -2,18 +2,25 @@
 
 cbuffer MatrixBuffer : register(b0)
 {
-	matrix wvpMatrix;
-	matrix wvMatrixInvT;
 	matrix worldMatrix;
+	matrix viewMatrix;
+	matrix projectionMatrix;
+	matrix wvMatrixInvT;
 	matrix textureTransform;
 };
 
 VS_OUTPUT main(VS_INPUT input)
 {
 	VS_OUTPUT result;
+	float4 viewPos;
 
 	result.position = float4(input.position, 1.0f);
-	result.position = mul(result.position, wvpMatrix);
+	result.position = mul(result.position, worldMatrix);
+	result.position = mul(result.position, viewMatrix);
+
+	viewPos = result.position;
+
+	result.position = mul(result.position, projectionMatrix);
 
 	result.normal = input.normal;
 
@@ -35,7 +42,7 @@ VS_OUTPUT main(VS_INPUT input)
 
 		float3 worldNormal = mul(input.normal, (float3x3)worldMatrix);
 		float _dot = dot(lightDir, worldNormal);
-		float3 halfAngle = normalize(normalize(result.position.xyz + cameraPos) + lightDir);
+		float3 halfAngle = normalize(normalize(viewPos.xyz - cameraPos) + lightDir);
 
 		const float ambient = 0.25f;
 
