@@ -15,7 +15,7 @@ using VrSharp.PvrTexture;
 
 // TODO: Mipmap mode (From Texture, Always On, Always Off, Generate)
 
-namespace sadx_model_view
+namespace sadx_model_view.Forms
 {
 	public partial class MainForm : Form
 	{

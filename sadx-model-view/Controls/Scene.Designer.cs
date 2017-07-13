@@ -1,4 +1,4 @@
-﻿namespace sadx_model_view
+﻿namespace sadx_model_view.Controls
 {
 	partial class Scene
 	{

@@ -1,4 +1,6 @@
-﻿namespace sadx_model_view
+﻿using sadx_model_view.Controls;
+
+namespace sadx_model_view.Forms
 {
 	partial class MainForm
 	{
@@ -36,7 +38,7 @@
 			this.recompileShadersToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.openModelDialog = new System.Windows.Forms.OpenFileDialog();
 			this.openTexturesDialog = new System.Windows.Forms.OpenFileDialog();
-			this.scene = new sadx_model_view.Scene();
+			this.scene = new Scene();
 			this.menuStrip1.SuspendLayout();
 			this.SuspendLayout();
 			// 

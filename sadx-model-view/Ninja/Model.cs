@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using sadx_model_view.Forms;
 using SharpDX;
 using Buffer = SharpDX.Direct3D11.Buffer;
 using Matrix = SharpDX.Matrix;
