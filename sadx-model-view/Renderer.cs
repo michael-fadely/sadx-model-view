@@ -223,11 +223,21 @@ namespace sadx_model_view
 		{
 			ushort matId = set.MaterialId;
 			List<NJS_MATERIAL> mats = parent.mats;
+			NJS_MATERIAL njMat = mats.Count > 0 && matId < mats.Count ? mats[matId] : nullMaterial;
 
-			ShaderMaterial mat = parent.GetSADXMaterial(this, mats.Count > 0 && matId < mats.Count ? mats[matId] : nullMaterial);
-			SetShaderMaterial(ref mat, camera);
+			ShaderMaterial shaderMat = parent.GetSADXMaterial(this, njMat);
+			SetShaderMaterial(ref shaderMat, camera);
 
-			DisplayState state = parent.DisplayState;
+			DisplayState state;
+			if (set.DisplayState == null)
+			{
+				state = CreateSADXDisplayState(njMat);
+				set.DisplayState = state;
+			}
+			else
+			{
+				state = set.DisplayState;
+			}
 
 			if (state.Blend.Description.RenderTarget[0].IsBlendEnabled)
 			{
@@ -638,12 +648,9 @@ namespace sadx_model_view
 			BlendOption.InverseDestinationAlpha,
 		};
 
+		// TODO: generate in bulk
 		public DisplayState CreateSADXDisplayState(NJS_MATERIAL material)
 		{
-			// TODO: communicate NJD_FLAG.UseAlpha to the shader as this determines if vertex or material diffuse is used.
-			// TODO: [shader] specular
-			// TODO: [shader] ignore light
-
 			// Not implemented in SADX:
 			// - NJD_FLAG.Pick
 			// - NJD_FLAG.UseAnisotropic
@@ -653,20 +660,23 @@ namespace sadx_model_view
 
 			var samplerDesc = new SamplerStateDescription
 			{
-				AddressW          = TextureAddressMode.Wrap,
-				Filter            = Filter.MinMagMipLinear,
-				MinimumLod        = -float.MaxValue,
-				MaximumLod        = float.MaxValue,
-				MaximumAnisotropy = 1
+				AddressW           = TextureAddressMode.Wrap,
+				Filter             = Filter.MinMagMipLinear,
+				MinimumLod         = -float.MaxValue,
+				MaximumLod         = float.MaxValue,
+				MaximumAnisotropy  = 1,
+				ComparisonFunction = Comparison.Never
 			};
 
-			// TODO: fix clamp
-
-			/*if ((flags & NJD_FLAG.ClampU) != 0)
+			if ((flags & (NJD_FLAG.ClampU | NJD_FLAG.FlipU)) == (NJD_FLAG.ClampU | NJD_FLAG.FlipU))
+			{
+				samplerDesc.AddressU = TextureAddressMode.MirrorOnce;
+			}
+			else if ((flags & NJD_FLAG.ClampU) != 0)
 			{
 				samplerDesc.AddressU = TextureAddressMode.Clamp;
 			}
-			else*/ if ((flags & NJD_FLAG.FlipU) != 0)
+			else if ((flags & NJD_FLAG.FlipU) != 0)
 			{
 				samplerDesc.AddressU = TextureAddressMode.Mirror;
 			}
@@ -675,11 +685,15 @@ namespace sadx_model_view
 				samplerDesc.AddressU = TextureAddressMode.Wrap;
 			}
 
-			/*if ((flags & NJD_FLAG.ClampV) != 0)
+			if ((flags & (NJD_FLAG.ClampV | NJD_FLAG.FlipV)) == (NJD_FLAG.ClampV | NJD_FLAG.FlipV))
+			{
+				samplerDesc.AddressV = TextureAddressMode.MirrorOnce;
+			}
+			else if ((flags & NJD_FLAG.ClampV) != 0)
 			{
 				samplerDesc.AddressV = TextureAddressMode.Clamp;
 			}
-			else*/ if ((flags & NJD_FLAG.FlipV) != 0)
+			else if ((flags & NJD_FLAG.FlipV) != 0)
 			{
 				samplerDesc.AddressV = TextureAddressMode.Mirror;
 			}

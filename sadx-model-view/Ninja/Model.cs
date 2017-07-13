@@ -16,9 +16,6 @@ namespace sadx_model_view.Ninja
 		/// </summary>
 		public static int SizeInBytes => 0x28;
 
-
-		public DisplayState DisplayState { get; set; }
-
 		/// <summary>
 		/// Constructs <see cref="NJS_MODEL"/>, its points, normals, materials, and meshsets from a file.<para/>
 		/// See also:
@@ -152,7 +149,6 @@ namespace sadx_model_view.Ninja
 
 			meshsets.Clear();
 			VertexBuffer?.Dispose();
-			DisplayState?.Dispose();
 		}
 
 		public readonly List<Vector3> points;    // vertex list
@@ -365,11 +361,6 @@ namespace sadx_model_view.Ninja
 
 		public ShaderMaterial GetSADXMaterial(Renderer device, NJS_MATERIAL material)
 		{
-			if (DisplayState == null)
-			{
-				DisplayState = device.CreateSADXDisplayState(material);
-			}
-
 			NJD_FLAG flags = device.FlowControl.Apply(material.attrflags);
 
 			if ((flags & NJD_FLAG.UseTexture) == 0)
