@@ -69,6 +69,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AlphaSortMeshset.cs" />
     <Compile Include="Camera.cs" />
     <Compile Include="DefaultIncludeHandler.cs" />
     <Compile Include="DeltaTime.cs" />

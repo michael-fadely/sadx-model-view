@@ -186,7 +186,7 @@ namespace sadx_model_view
 
 				if (!obj.SkipDraw && obj.Model?.IsVisible(camera) == true)
 				{
-					Draw(obj, camera, obj.Model);
+					Draw(camera, obj.Model);
 				}
 
 				if (!obj.SkipChildren)
@@ -201,7 +201,7 @@ namespace sadx_model_view
 
 		private static readonly NJS_MATERIAL nullMaterial = new NJS_MATERIAL();
 
-		public void Draw(NJS_OBJECT parent, Camera camera, NJS_MODEL model)
+		public void Draw(Camera camera, NJS_MODEL model)
 		{
 			List<NJS_MATERIAL> mats = model.mats;
 
@@ -211,7 +211,7 @@ namespace sadx_model_view
 
 				if (matId < mats.Count && (mats[matId].attrflags & NJD_FLAG.UseAlpha) != 0)
 				{
-					alphaList.Add(new AlphaSortMeshset(this, parent, camera, model, set));
+					alphaList.Add(new AlphaSortMeshset(this, camera, model, set));
 				}
 				else
 				{
@@ -289,7 +289,15 @@ namespace sadx_model_view
 
 		public void Present(Camera camera)
 		{
-			alphaList.Sort((a, b) => a.Depth > b.Depth ? -1 : 1);
+			alphaList.Sort((a, b) =>
+			{
+				if (Math.Abs(a.Depth - b.Depth) < float.Epsilon)
+				{
+					return 0;
+				}
+
+				return a.Depth > b.Depth ? -1 : 1;
+			});
 
 			foreach (AlphaSortMeshset a in alphaList)
 			{
@@ -796,47 +804,6 @@ namespace sadx_model_view
 		{
 			SupportedLevel = supported;
 			TargetLevel = target;
-		}
-	}
-
-	internal class AlphaSortMeshset
-	{
-		public NJS_MODEL Parent { get; }
-		public NJS_MESHSET Set { get; }
-		public Matrix Transform { get; }
-		public readonly float Depth;
-		public readonly FlowControl FlowControl;
-
-		public AlphaSortMeshset(Renderer renderer, NJS_OBJECT node, Camera camera, NJS_MODEL parent, NJS_MESHSET set)
-		{
-			Parent      = parent;
-			Set         = set;
-			FlowControl = renderer.FlowControl;
-
-			// Pop (and backup) any existing transformations for
-			// this node as it will be relative to its parent (if any).
-			Matrix transform = MatrixStack.Pop();
-
-			// Push a new matrix onto the stack, relative to this node's
-			// parent (if any).
-			MatrixStack.Push();
-			{
-				// Translate our meshset center first.
-				MatrixStack.Translate(ref set.Center);
-
-				// Then handle the node's transform.
-				node?.PushTransform();
-
-				Vector3 center = MatrixStack.Peek().TranslationVector;
-				Depth = (center - camera.Position).Length() + set.Radius;
-			}
-			MatrixStack.Pop();
-
-			// Restore the backup.
-			MatrixStack.Push(ref transform);
-
-			// Store the real transform to be used for drawing after sorting.
-			Transform = transform;
 		}
 	}
 }
