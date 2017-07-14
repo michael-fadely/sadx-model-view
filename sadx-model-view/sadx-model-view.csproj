@@ -75,11 +75,14 @@
     <Compile Include="DeltaTime.cs" />
     <Compile Include="DisplayState.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="Interfaces\IInvalidatable.cs" />
     <Compile Include="MatrixBuffer.cs" />
     <Compile Include="Ninja\FlowControl.cs" />
     <Compile Include="Ninja\ModelCache.cs" />
+    <Compile Include="Ninja\Tex.cs" />
     <Compile Include="Ninja\ObjectCache.cs" />
     <Compile Include="Ninja\Screen.cs" />
+    <Compile Include="Ninja\Vertex.cs" />
     <Compile Include="Renderer.cs" />
     <Compile Include="SA1\Col.cs" />
     <Compile Include="SA1\GeoAnimData.cs" />

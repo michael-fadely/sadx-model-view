@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using sadx_model_view.Interfaces;
 using SharpDX;
-using SharpDX.Mathematics.Interop;
 using Buffer = SharpDX.Direct3D11.Buffer;
 
 namespace sadx_model_view.Ninja
@@ -44,46 +44,12 @@ namespace sadx_model_view.Ninja
 	}
 
 	/// <summary>
-	/// Custom vertex used for rendering <see cref="NJS_MESHSET"/>.
-	/// </summary>
-	public struct Vertex
-	{
-		//public const VertexFormat Format = VertexFormat.Position | VertexFormat.Normal | VertexFormat.Diffuse | VertexFormat.Texture1;
-		public static int SizeInBytes => 2 * Vector3.SizeInBytes + sizeof(uint) + Vector2.SizeInBytes;
-		public RawVector3 position;
-		public RawVector3 normal;
-		public RawColorBGRA? diffuse;
-		public RawVector2? uv;
-	}
-
-	/// <summary>
-	/// <para>Defines UV coordinates for <see cref="NJS_MESHSET"/>.</para>
-	/// See also:
-	/// <seealso cref="NJS_MESHSET"/>
-	/// </summary>
-	public struct NJS_TEX
-	{
-		/// <summary>
-		/// Native structure size in bytes.
-		/// </summary>
-		public static int SizeInBytes => sizeof(short) * 2;
-
-		public NJS_TEX(ref byte[] buffer, int offset = 0)
-		{
-			u = BitConverter.ToInt16(buffer, offset);
-			v = BitConverter.ToInt16(buffer, offset + sizeof(short));
-		}
-
-		public short u, v;
-	}
-
-	/// <summary>
 	/// <para>Defines a list of polygons and their type for <see cref="NJS_MODEL"/>.</para>
 	/// See also:
 	/// <seealso cref="NJD_MESHSET"/>
 	/// <seealso cref="NJS_MODEL"/>
 	/// </summary>
-	public class NJS_MESHSET : IDisposable
+	public class NJS_MESHSET : IDisposable, IInvalidatable
 	{
 		/// <summary>
 		/// Native structure size in bytes.
@@ -124,6 +90,8 @@ namespace sadx_model_view.Ninja
 			}
 		}
 
+		public NJS_MODEL Parent { get; }
+
 		/// <summary>
 		/// <para>The actual number of vertices referenced by this meshset.</para>
 		/// <para>
@@ -148,21 +116,18 @@ namespace sadx_model_view.Ninja
 		public readonly List<NJS_COLOR> vertcolor;  /* polygon vertex color list    */
 		public readonly List<NJS_TEX> vertuv;       /* polygon vertex uv list       */
 
-		/// <summary>
-		/// (Extension) Center of this meshset.
-		/// </summary>
-		public Vector3 Center = Vector3.Zero;
-		/// <summary>
-		/// (Extension) Radius of this meshset. This is not the square root.
-		/// </summary>
-		public float Radius;
+		public BoundingSphere LocalBoundingSphere;
+		public BoundingBox LocalBoundingBox;
+		private Vector3[] refPoints;
 
 		/// <summary>
 		/// Constructs a <see cref="NJS_MESHSET"/> from a file.
 		/// </summary>
 		/// <param name="stream">A stream containing the data.</param>
-		public NJS_MESHSET(Stream stream)
+		/// <param name="parent">Parent model.</param>
+		public NJS_MESHSET(Stream stream, NJS_MODEL parent)
 		{
+			Parent = parent;
 			var buffer = new byte[SizeInBytes];
 			stream.Read(buffer, 0, buffer.Length);
 
@@ -478,21 +443,69 @@ namespace sadx_model_view.Ninja
 			}
 
 			// This is used for transparent sorting.
-			List<Vector3> refPoints = indices.Distinct().Select(i => (Vector3)vertices[i].position).ToList();
+			refPoints = indices.Distinct().Select(i => (Vector3)vertices[i].position).ToArray();
 
-			if (refPoints.Count > 0)
+			if (refPoints.Length > 0)
 			{
-				Center = refPoints.Aggregate((a, b) => a + b) / refPoints.Count;
-				Radius = refPoints.Select(point => point - Center).Select(distance => distance.Length()).Concat(new[] { 0.0f }).Max();
+				BoundingBox.FromPoints(refPoints, out LocalBoundingBox);
+				BoundingSphere.FromBox(ref LocalBoundingBox, out LocalBoundingSphere);
 			}
 
 			IndexCount = indices.Count;
 			IndexBuffer = device.CreateIndexBuffer(indices, IndexCount * sizeof(short));
 		}
 
+		private bool boxInvalid = true;
+		private bool sphereInvalid = true;
+
+		private BoundingBox worldBox;
+		private BoundingSphere worldSphere;
+
+		public BoundingBox GetWorldSpaceBoundingBox()
+		{
+			if (!boxInvalid)
+			{
+				return worldBox;
+			}
+
+			boxInvalid = false;
+			Matrix m = MatrixStack.Peek();
+			var points = new Vector3[refPoints.Length];
+
+			for (int i = 0; i < points.Length; i++)
+			{
+				points[i] = (Vector3)Vector3.Transform(refPoints[i], m);
+			}
+
+			worldBox = BoundingBox.FromPoints(points);
+			return worldBox;
+		}
+
+		public BoundingSphere GetWorldSpaceBoundingSphere()
+		{
+			if (!sphereInvalid)
+			{
+				return worldSphere;
+			}
+
+			sphereInvalid = false;
+			worldSphere = BoundingSphere.FromBox(GetWorldSpaceBoundingBox());
+			return worldSphere;
+		}
+
 		public void Dispose()
 		{
 			IndexBuffer?.Dispose();
+		}
+
+		public bool IsInvalid
+		{
+			get => boxInvalid || sphereInvalid;
+			set
+			{
+				boxInvalid = value;
+				sphereInvalid = value;
+			}
 		}
 	}
 }

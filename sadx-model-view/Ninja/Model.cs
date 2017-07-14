@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using sadx_model_view.Forms;
+using sadx_model_view.Interfaces;
 using SharpDX;
 using Buffer = SharpDX.Direct3D11.Buffer;
 using Matrix = SharpDX.Matrix;
 
 namespace sadx_model_view.Ninja
 {
-	public class NJS_MODEL : IDisposable
+	public class NJS_MODEL : IDisposable, IInvalidatable
 	{
 		/// <summary>
 		/// Native structure size in bytes.
@@ -77,7 +78,7 @@ namespace sadx_model_view.Ninja
 				stream.Position = meshsets_ptr;
 				for (int i = 0; i < nbMeshset; i++)
 				{
-					meshsets.Add(new NJS_MESHSET(stream));
+					meshsets.Add(new NJS_MESHSET(stream, this));
 				}
 			}
 
@@ -92,6 +93,8 @@ namespace sadx_model_view.Ninja
 			}
 
 			stream.Position = position;
+
+			IsInvalid = true;
 		}
 
 		/// <summary>
@@ -124,6 +127,8 @@ namespace sadx_model_view.Ninja
 
 			center = model.center;
 			r = model.r;
+
+			IsInvalid = true;
 		}
 
 		public NJS_MODEL()
@@ -138,6 +143,8 @@ namespace sadx_model_view.Ninja
 			center       = Vector3.Zero;
 			r            = 0.0f;
 			VertexBuffer = null;
+
+			IsInvalid = true;
 		}
 
 		public void Dispose()
@@ -224,6 +231,17 @@ namespace sadx_model_view.Ninja
 			       && screen.h >= (v.Y + radius) * v4 * v6 + screen.cy;
 		}
 
+		public IEnumerable<Vector3> GetPoints(IEnumerable<short> indices)
+		{
+			foreach (short i in indices)
+			{
+				if (i < points.Count)
+				{
+					yield return points[i];
+				}
+			}
+		}
+
 		public ShaderMaterial GetSADXMaterial(Renderer device, NJS_MATERIAL material)
 		{
 			NJD_FLAG flags = device.FlowControl.Apply(material.attrflags);
@@ -251,6 +269,22 @@ namespace sadx_model_view.Ninja
 			};
 
 			return m;
+		}
+
+		private bool isInvalid;
+
+		public bool IsInvalid
+		{
+			get => isInvalid;
+			set
+			{
+				foreach (NJS_MESHSET set in meshsets)
+				{
+					set.IsInvalid = value;
+				}
+
+				isInvalid = value;
+			}
 		}
 	}
 }

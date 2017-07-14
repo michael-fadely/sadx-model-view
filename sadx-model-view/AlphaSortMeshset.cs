@@ -18,8 +18,8 @@ namespace sadx_model_view
 			FlowControl = renderer.FlowControl;
 			Transform   = MatrixStack.Peek();
 
-			var center = (Vector3)Vector3.Transform(Set.Center, Transform);
-			Depth = (center - camera.Position).Length() - set.Radius;
+			BoundingSphere sphere = Set.GetWorldSpaceBoundingSphere();
+			Depth = (sphere.Center - camera.Position).LengthSquared() - sphere.Radius;
 		}
 	}
 }

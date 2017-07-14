@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using sadx_model_view.Interfaces;
 using SharpDX;
 
 namespace sadx_model_view.Ninja
@@ -54,7 +55,7 @@ namespace sadx_model_view.Ninja
 	/// See also:
 	/// <seealso cref="NJS_MODEL"/>
 	/// </summary>
-	public class NJS_OBJECT : IDisposable
+	public class NJS_OBJECT : IDisposable, IInvalidatable
 	{
 		/// <summary>
 		/// Native structure size in bytes.
@@ -106,6 +107,7 @@ namespace sadx_model_view.Ninja
 			}
 
 			stream.Position = position;
+			IsInvalid = true;
 		}
 
 		/// <summary>
@@ -122,6 +124,7 @@ namespace sadx_model_view.Ninja
 			Scale     = obj.Scale;
 			Child     = obj.Child;
 			Sibling   = obj.Sibling;
+			IsInvalid = true;
 		}
 
 		public void Dispose()
@@ -299,6 +302,32 @@ namespace sadx_model_view.Ninja
 			}
 
 			return obj;
+		}
+
+		private bool isInvalid;
+
+		public bool IsInvalid
+		{
+			get => isInvalid;
+			set
+			{
+				isInvalid = value;
+
+				if (Model != null && Model.IsInvalid != value)
+				{
+					Model.IsInvalid = value;
+				}
+
+				if (Child != null && Child.IsInvalid != value)
+				{
+					Child.IsInvalid = value;
+				}
+
+				if (Sibling != null && Sibling.IsInvalid != value)
+				{
+					Sibling.IsInvalid = value;
+				}
+			}
 		}
 	}
 }
