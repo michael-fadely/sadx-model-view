@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using SharpDX;
 using SharpDX.Mathematics.Interop;
 using Buffer = SharpDX.Direct3D11.Buffer;
@@ -134,7 +135,6 @@ namespace sadx_model_view.Ninja
 
 		public Buffer IndexBuffer;
 		public int IndexCount;
-		public int IndexPrimitiveCount;
 
 		// TODO: Manage this in Renderer
 		public DisplayState DisplayState { get; set; }
@@ -158,7 +158,7 @@ namespace sadx_model_view.Ninja
 		/// <summary>
 		/// (Extension) Radius of this meshset. This is not the square root.
 		/// </summary>
-		public float Radius = 0.0f;
+		public float Radius;
 
 		/// <summary>
 		/// Constructs a <see cref="NJS_MESHSET"/> from a file.
@@ -328,16 +328,15 @@ namespace sadx_model_view.Ninja
 
 		public NJS_MESHSET()
 		{
-			IndexBuffer         = null;
-			IndexCount          = 0;
-			IndexPrimitiveCount = 0;
-			type_matId          = 0;
-			nbMesh              = 0;
-			meshes              = new List<short>();
-			attrs               = new List<uint>();
-			normals             = new List<Vector3>();
-			vertcolor           = new List<NJS_COLOR>();
-			vertuv              = new List<NJS_TEX>();
+			IndexBuffer = null;
+			IndexCount  = 0;
+			type_matId  = 0;
+			nbMesh      = 0;
+			meshes      = new List<short>();
+			attrs       = new List<uint>();
+			normals     = new List<Vector3>();
+			vertcolor   = new List<NJS_COLOR>();
+			vertuv      = new List<NJS_TEX>();
 		}
 
 		private void CalculateStripPrimitiveCount()
@@ -354,6 +353,144 @@ namespace sadx_model_view.Ninja
 			} while (--count > 0);
 
 			PrimitiveCount -= 2;
+		}
+
+		/// <summary>
+		/// Updates the specified vertex with UV cooridnates and/or colors.
+		/// Creates a new vertex if a vertex is used more than once with different colors or UVs.
+		/// </summary>
+		/// <param name="vertices">List of vertices to update.</param>
+		/// <param name="localIndex">Index of the current UV cooridnates and/or color to use.</param>
+		/// <param name="vertexIndex">Index of the vertex in <paramref name="vertices"/>.</param>
+		/// <returns><paramref name="localIndex"/> if the vertex was updated, or a new index if a new vertex was added.</returns>
+		private short UpdateVertex(IList<Vertex> vertices, int localIndex, int vertexIndex)
+		{
+			bool added = false;
+			int result = vertexIndex;
+
+			Vertex vertex = vertices[vertexIndex];
+
+			if (vertcolor.Count != 0)
+			{
+				if (vertex.diffuse.HasValue)
+				{
+					result = (short)vertices.Count;
+					vertices.Add(vertex);
+					added = true;
+				}
+
+				NJS_BGRA vcolor = vertcolor[localIndex].argb;
+				vertex.diffuse = new ColorBGRA(vcolor.b, vcolor.g, vcolor.r, vcolor.a);
+			}
+
+			if (vertuv.Count != 0)
+			{
+				var uv = new Vector2(vertuv[localIndex].u / 255.0f, vertuv[localIndex].v / 255.0f);
+
+				if (!added && vertex.uv.HasValue)
+				{
+					result = (short)vertices.Count;
+					vertices.Add(vertex);
+				}
+
+				vertex.uv = uv;
+			}
+
+			vertices[result] = vertex;
+			return (short)result;
+		}
+
+		public void CommitIndexBuffer(Renderer device, List<Vertex> vertices)
+		{
+			var indices = new List<short>();
+
+			switch (Type)
+			{
+				case NJD_MESHSET.Tri:
+					for (int i = VertexCount - 1; i >= 0; i--)
+					{
+						short n = meshes[i];
+						UpdateVertex(vertices, i, n);
+						indices.Add(n);
+					}
+					break;
+
+				case NJD_MESHSET.Quad:
+					for (int i = 0; i < VertexCount; i += 4)
+					{
+						short v0 = UpdateVertex(vertices, i + 0, meshes[i + 0]);
+						short v1 = UpdateVertex(vertices, i + 1, meshes[i + 1]);
+						short v2 = UpdateVertex(vertices, i + 2, meshes[i + 2]);
+						short v3 = UpdateVertex(vertices, i + 3, meshes[i + 3]);
+
+						indices.Add(v3);
+						indices.Add(v1);
+						indices.Add(v2);
+						indices.Add(v2);
+						indices.Add(v1);
+						indices.Add(v0);
+					}
+
+					break;
+
+				case NJD_MESHSET.NSided:
+				case NJD_MESHSET.Strip:
+				{
+					int index = 0;
+					for (int i = 0; i < nbMesh; i++)
+					{
+						short n = meshes[index++];
+						bool flip = (n & 0x8000) == 0;
+						n &= 0x3FFF;
+
+						var tempIndices = new List<short>();
+
+						for (int j = 0; j < n; j++)
+						{
+							// i - (k + 1), where i = index and k = mesh number
+							tempIndices.Add(UpdateVertex(vertices, index - (i + 1), meshes[index++]));
+						}
+
+						for (int k = 0; k < tempIndices.Count - 2; k++)
+						{
+							short v0 = tempIndices[k + 0];
+							short v1 = tempIndices[k + 1];
+							short v2 = tempIndices[k + 2];
+
+							flip = !flip;
+							if (!flip)
+							{
+								indices.Add(v2);
+								indices.Add(v1);
+								indices.Add(v0);
+							}
+							else
+							{
+								indices.Add(v2);
+								indices.Add(v0);
+								indices.Add(v1);
+							}
+						}
+					}
+
+					break;
+				}
+
+				default:
+					throw new ArgumentOutOfRangeException();
+			}
+
+			// This is used for transparent sorting.
+			List<Vector3> refPoints = indices.Distinct().Select(i => (Vector3)vertices[i].position).ToList();
+
+			if (refPoints.Count > 0)
+			{
+				Center = refPoints.Aggregate((a, b) => a + b) / refPoints.Count;
+				Radius = refPoints.Select(point => point - Center).Select(distance => distance.Length()).Concat(new[] { 0.0f }).Max();
+			}
+
+			IndexCount = indices.Count;
+			IndexBuffer = device.CreateIndexBuffer(indices, IndexCount * sizeof(short));
 		}
 
 		public void Dispose()
