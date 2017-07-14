@@ -306,7 +306,7 @@ namespace sadx_model_view
 				RawMatrix m = a.Transform;
 				SetTransform(TransformState.World, ref m);
 
-				DrawSet(camera, a.Parent, a.Set);
+				DrawSet(camera, a.Model, a.Set);
 			}
 
 			alphaList.Clear();

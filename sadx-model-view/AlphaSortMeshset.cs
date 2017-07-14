@@ -5,15 +5,15 @@ namespace sadx_model_view
 {
 	internal class AlphaSortMeshset
 	{
-		public NJS_MODEL Parent { get; }
+		public NJS_MODEL Model { get; }
 		public NJS_MESHSET Set { get; }
 		public Matrix Transform { get; }
 		public readonly float Depth;
 		public readonly FlowControl FlowControl;
 
-		public AlphaSortMeshset(Renderer renderer, Camera camera, NJS_MODEL parent, NJS_MESHSET set)
+		public AlphaSortMeshset(Renderer renderer, Camera camera, NJS_MODEL model, NJS_MESHSET set)
 		{
-			Parent      = parent;
+			Model       = model;
 			Set         = set;
 			FlowControl = renderer.FlowControl;
 			Transform   = MatrixStack.Peek();
