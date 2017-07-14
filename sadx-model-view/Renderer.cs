@@ -297,7 +297,7 @@ namespace sadx_model_view
 
 		public void Present(Camera camera)
 		{
-			alphaList.Sort((a, b) => a.Depth > b.Depth ? 1 : -1);
+			alphaList.Sort((a, b) => a.Depth > b.Depth ? -1 : 1);
 
 			foreach (AlphaSortMeshset a in alphaList)
 			{
@@ -821,7 +821,7 @@ namespace sadx_model_view
 				node?.PushTransform();
 
 				Vector3 center = MatrixStack.Peek().TranslationVector;
-				Depth = (center - camera.Position).LengthSquared() - set.Radius;
+				Depth = (center - camera.Position).Length() + set.Radius;
 			}
 			MatrixStack.Pop();
 
