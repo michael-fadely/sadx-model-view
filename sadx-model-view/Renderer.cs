@@ -56,6 +56,7 @@ namespace sadx_model_view
 		private MatrixBuffer matrixData;
 
 		private readonly List<AlphaSortMeshset> alphaList = new List<AlphaSortMeshset>();
+		private readonly Dictionary<NJD_FLAG, DisplayState> displayStates = new Dictionary<NJD_FLAG, DisplayState>();
 
 		public Renderer(int w, int h, IntPtr sceneHandle)
 		{
@@ -228,16 +229,7 @@ namespace sadx_model_view
 			ShaderMaterial shaderMat = parent.GetSADXMaterial(this, njMat);
 			SetShaderMaterial(ref shaderMat, camera);
 
-			DisplayState state;
-			if (set.DisplayState == null)
-			{
-				state = CreateSADXDisplayState(njMat);
-				set.DisplayState = state;
-			}
-			else
-			{
-				state = set.DisplayState;
-			}
+			DisplayState state = GetSADXDisplayState(njMat);
 
 			if (state.Blend.Description.RenderTarget[0].IsBlendEnabled)
 			{
@@ -649,12 +641,17 @@ namespace sadx_model_view
 		};
 
 		// TODO: generate in bulk
-		public DisplayState CreateSADXDisplayState(NJS_MATERIAL material)
+		public DisplayState GetSADXDisplayState(NJS_MATERIAL material)
 		{
 			// Not implemented in SADX:
 			// - NJD_FLAG.Pick
 			// - NJD_FLAG.UseAnisotropic
 			// - NJD_FLAG.UseFlat
+
+			if (displayStates.TryGetValue(material.attrflags, out DisplayState _state))
+			{
+				return _state;
+			}
 
 			NJD_FLAG flags = material.attrflags;
 
@@ -725,7 +722,10 @@ namespace sadx_model_view
 
 			var blend = new BlendState(device, blendDesc);
 
-			return new DisplayState(sampler, raster, blend);
+			var result = new DisplayState(sampler, raster, blend);
+			displayStates[material.attrflags] = result;
+
+			return result;
 		}
 
 		private ShaderMaterial lastMaterial;
@@ -774,6 +774,13 @@ namespace sadx_model_view
 			inputLayout?.Dispose();
 
 			ClearTexturePool();
+
+			foreach (var i in displayStates)
+			{
+				i.Value.Dispose();
+			}
+
+			displayStates.Clear();
 
 			device?.ImmediateContext.Dispose();
 			device?.Dispose();

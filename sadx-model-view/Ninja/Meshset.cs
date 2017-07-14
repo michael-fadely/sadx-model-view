@@ -136,9 +136,6 @@ namespace sadx_model_view.Ninja
 		public Buffer IndexBuffer;
 		public int IndexCount;
 
-		// TODO: Manage this in Renderer
-		public DisplayState DisplayState { get; set; }
-
 		public ushort type_matId;          /* meshset type and attr index
 											14-15 : meshset type bits
 											0-13 : material id(0-4095)     */
@@ -495,7 +492,6 @@ namespace sadx_model_view.Ninja
 
 		public void Dispose()
 		{
-			DisplayState?.Dispose();
 			IndexBuffer?.Dispose();
 		}
 	}
