@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using sadx_model_view.Extensions;
 using sadx_model_view.Ninja;
 
 namespace sadx_model_view.SA1

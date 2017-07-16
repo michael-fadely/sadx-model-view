@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using sadx_model_view.Extensions;
 using SharpDX.Direct3D11;
 
 namespace sadx_model_view.Ninja

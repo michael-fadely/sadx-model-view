@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
+using sadx_model_view.Extensions;
 using sadx_model_view.Ninja;
 using sadx_model_view.SA1;
 using SharpDX;
@@ -291,12 +292,12 @@ namespace sadx_model_view
 		{
 			alphaList.Sort((a, b) =>
 			{
-				if (Math.Abs(a.Depth - b.Depth) < float.Epsilon)
+				if (a.Distance.NearEqual(b.Distance))
 				{
 					return 0;
 				}
 
-				return a.Depth > b.Depth ? -1 : 1;
+				return a.Distance > b.Distance ? -1 : 1;
 			});
 
 			foreach (AlphaSortMeshset a in alphaList)

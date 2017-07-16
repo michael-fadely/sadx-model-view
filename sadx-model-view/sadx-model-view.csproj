@@ -74,7 +74,9 @@
     <Compile Include="DefaultIncludeHandler.cs" />
     <Compile Include="DeltaTime.cs" />
     <Compile Include="DisplayState.cs" />
-    <Compile Include="Extensions.cs" />
+    <Compile Include="Extensions\MathExtensions.cs" />
+    <Compile Include="Extensions\StreamExtensions.cs" />
+    <Compile Include="Extensions\QuaternionExtensions.cs" />
     <Compile Include="Interfaces\IInvalidatable.cs" />
     <Compile Include="MatrixBuffer.cs" />
     <Compile Include="Ninja\FlowControl.cs" />

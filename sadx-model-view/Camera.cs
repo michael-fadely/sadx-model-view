@@ -1,4 +1,5 @@
-﻿using SharpDX;
+﻿using sadx_model_view.Extensions;
+using SharpDX;
 
 namespace sadx_model_view
 {
@@ -84,8 +85,8 @@ namespace sadx_model_view
 
 			FieldOfView     = fov;
 			AspectRatio     = ratio;
-			MinDrawDistance = MathUtil.Clamp(near, -65535.0f, -1.0f);
-			MaxDrawDistance = MathUtil.Clamp(far, -65535.0f, -1.0f);
+			MinDrawDistance = near.Clamp(-65535.0f, -1.0f);
+			MaxDrawDistance = far.Clamp(-65535.0f, -1.0f);
 		}
 
 		private void UpdateProjectionMatrix()

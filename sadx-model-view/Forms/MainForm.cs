@@ -6,6 +6,7 @@ using System.Text;
 using System.Windows.Forms;
 using PuyoTools.Modules.Archive;
 using PuyoTools.Modules.Compression;
+using sadx_model_view.Extensions;
 using sadx_model_view.Ninja;
 using sadx_model_view.SA1;
 using SharpDX;
