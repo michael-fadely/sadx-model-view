@@ -24,7 +24,7 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 
 	result = result * input.diffuse + input.specular;
 
-	if (result.a < 16.0f / 255.0f)
+	if (material.useAlpha && result.a < 16.0f / 255.0f)
 	{
 		discard;
 	}
