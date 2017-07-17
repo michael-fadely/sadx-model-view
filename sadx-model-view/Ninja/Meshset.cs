@@ -119,6 +119,7 @@ namespace sadx_model_view.Ninja
 		public BoundingSphere LocalBoundingSphere;
 		public BoundingBox LocalBoundingBox;
 		private Vector3[] refPoints;
+		public Vector3[] Points => refPoints;
 
 		/// <summary>
 		/// Constructs a <see cref="NJS_MESHSET"/> from a file.
