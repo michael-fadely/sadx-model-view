@@ -18,6 +18,8 @@ using Device = SharpDX.Direct3D11.Device;
 using MapFlags = SharpDX.Direct3D11.MapFlags;
 using Resource = SharpDX.Direct3D11.Resource;
 
+// TODO: Sort meshset by material flags
+
 namespace sadx_model_view
 {
 	public class Renderer : IDisposable
@@ -56,7 +58,7 @@ namespace sadx_model_view
 		private MatrixBuffer lastMatrixData;
 		private MatrixBuffer matrixData;
 
-		private readonly List<AlphaSortMeshset> alphaList = new List<AlphaSortMeshset>();
+		private readonly List<MeshsetQueueElement> alphaList = new List<MeshsetQueueElement>();
 		private readonly Dictionary<NJD_FLAG, DisplayState> displayStates = new Dictionary<NJD_FLAG, DisplayState>();
 
 		public Renderer(int w, int h, IntPtr sceneHandle)
@@ -116,6 +118,7 @@ namespace sadx_model_view
 			device.ImmediateContext.VertexShader.SetConstantBuffer(0, matrixBuffer);
 			device.ImmediateContext.VertexShader.SetConstantBuffer(1, materialBuffer);
 			device.ImmediateContext.PixelShader.SetConstantBuffer(1, materialBuffer);
+			device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
 
 			RefreshDevice(w, h);
 		}
@@ -212,7 +215,7 @@ namespace sadx_model_view
 
 				if (matId < mats.Count && (mats[matId].attrflags & NJD_FLAG.UseAlpha) != 0)
 				{
-					alphaList.Add(new AlphaSortMeshset(this, camera, model, set));
+					alphaList.Add(new MeshsetQueueElement(this, camera, model, set));
 				}
 				else
 				{
@@ -221,6 +224,10 @@ namespace sadx_model_view
 			}
 		}
 
+		private Buffer lastVertexBuffer;
+		private BlendState lastBlend;
+		private RasterizerState lastRasterizerState;
+		private SamplerState lastSamplerState;
 		private void DrawSet(Camera camera, NJS_MODEL parent, NJS_MESHSET set)
 		{
 			ushort matId = set.MaterialId;
@@ -232,26 +239,40 @@ namespace sadx_model_view
 
 			DisplayState state = GetSADXDisplayState(njMat);
 
-			if (state.Blend.Description.RenderTarget[0].IsBlendEnabled)
+			if (state.Blend != lastBlend)
 			{
-				if (zwrite)
+				if (state.Blend.Description.RenderTarget[0].IsBlendEnabled)
 				{
-					zwrite = false;
-					device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRO);
+					if (zwrite)
+					{
+						zwrite = false;
+						device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRO);
+					}
 				}
-			}
-			else
-			{
-				if (!zwrite)
+				else
 				{
-					zwrite = true;
-					device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
+					if (!zwrite)
+					{
+						zwrite = true;
+						device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
+					}
 				}
+
+				device.ImmediateContext.OutputMerger.SetBlendState(state.Blend);
+				lastBlend = state.Blend;
 			}
 
-			device.ImmediateContext.PixelShader.SetSampler(0, state.Sampler);
-			device.ImmediateContext.Rasterizer.State = state.Raster;
-			device.ImmediateContext.OutputMerger.SetBlendState(state.Blend);
+			if (state.Sampler != lastSamplerState)
+			{
+				device.ImmediateContext.PixelShader.SetSampler(0, state.Sampler);
+				lastSamplerState = state.Sampler;
+			}
+
+			if (state.Raster != lastRasterizerState)
+			{
+				device.ImmediateContext.Rasterizer.State = state.Raster;
+				lastRasterizerState = state.Raster;
+			}
 
 			if (matrixDataChanged && lastMatrixData != matrixData)
 			{
@@ -282,8 +303,12 @@ namespace sadx_model_view
 				lastMatrixData = matrixData;
 			}
 
-			device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
-			device.ImmediateContext.InputAssembler.SetVertexBuffers(0, new Buffer[] { parent.VertexBuffer }, new[] { Vertex.SizeInBytes }, new[] { 0 });
+			if (parent.VertexBuffer != lastVertexBuffer)
+			{
+				device.ImmediateContext.InputAssembler.SetVertexBuffers(0, new Buffer[] { parent.VertexBuffer }, new[] { Vertex.SizeInBytes }, new[] { 0 });
+				lastVertexBuffer = parent.VertexBuffer;
+			}
+
 			device.ImmediateContext.InputAssembler.SetIndexBuffer(set.IndexBuffer, Format.R16_UInt, 0);
 			device.ImmediateContext.DrawIndexed(set.IndexCount, 0, 0);
 		}
@@ -300,7 +325,7 @@ namespace sadx_model_view
 				return a.Distance > b.Distance ? -1 : 1;
 			});
 
-			foreach (AlphaSortMeshset a in alphaList)
+			foreach (MeshsetQueueElement a in alphaList)
 			{
 				FlowControl = a.FlowControl;
 
@@ -622,16 +647,21 @@ namespace sadx_model_view
 			matrixDataChanged = true;
 		}
 
+		private SceneTexture lastTexture;
 		public void SetTexture(int sampler, int textureIndex)
 		{
 			if (textureIndex >= 0 && textureIndex < texturePool.Count)
 			{
 				SceneTexture texture = texturePool[textureIndex];
-				device.ImmediateContext.PixelShader.SetShaderResource(sampler, texture.ShaderResource);
+				if (!ReferenceEquals(texture, lastTexture))
+				{
+					device.ImmediateContext.PixelShader.SetShaderResource(sampler, texture.ShaderResource);
+					lastTexture = texture;
+				}
 			}
 			else
 			{
-				device.ImmediateContext.PixelShader.SetShaderResource(sampler, null);
+				//device.ImmediateContext.PixelShader.SetShaderResource(sampler, null);
 			}
 		}
 

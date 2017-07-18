@@ -3,7 +3,7 @@ using SharpDX;
 
 namespace sadx_model_view
 {
-	internal class AlphaSortMeshset
+	internal class MeshsetQueueElement
 	{
 		public NJS_MODEL Model { get; }
 		public NJS_MESHSET Set { get; }
@@ -12,7 +12,7 @@ namespace sadx_model_view
 		public readonly float Distance;
 		public readonly FlowControl FlowControl;
 
-		public AlphaSortMeshset(Renderer renderer, Camera camera, NJS_MODEL model, NJS_MESHSET set)
+		public MeshsetQueueElement(Renderer renderer, Camera camera, NJS_MODEL model, NJS_MESHSET set)
 		{
 			Model       = model;
 			Set         = set;
