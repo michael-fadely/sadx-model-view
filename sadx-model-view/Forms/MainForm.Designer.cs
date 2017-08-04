@@ -38,7 +38,8 @@ namespace sadx_model_view.Forms
 			this.recompileShadersToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.openModelDialog = new System.Windows.Forms.OpenFileDialog();
 			this.openTexturesDialog = new System.Windows.Forms.OpenFileDialog();
-			this.scene = new Scene();
+			this.scene = new sadx_model_view.Controls.Scene();
+			this.enableAlphaToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.menuStrip1.SuspendLayout();
 			this.SuspendLayout();
 			// 
@@ -81,7 +82,8 @@ namespace sadx_model_view.Forms
 			// editToolStripMenuItem
 			// 
 			this.editToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.recompileShadersToolStripMenuItem});
+            this.recompileShadersToolStripMenuItem,
+            this.enableAlphaToolStripMenuItem});
 			this.editToolStripMenuItem.Name = "editToolStripMenuItem";
 			this.editToolStripMenuItem.Size = new System.Drawing.Size(39, 20);
 			this.editToolStripMenuItem.Text = "&Edit";
@@ -120,6 +122,16 @@ namespace sadx_model_view.Forms
 			this.scene.KeyUp += new System.Windows.Forms.KeyEventHandler(this.scene_KeyUp);
 			this.scene.MouseMove += new System.Windows.Forms.MouseEventHandler(this.scene_MouseMove);
 			// 
+			// enableAlphaToolStripMenuItem
+			// 
+			this.enableAlphaToolStripMenuItem.Checked = true;
+			this.enableAlphaToolStripMenuItem.CheckOnClick = true;
+			this.enableAlphaToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
+			this.enableAlphaToolStripMenuItem.Name = "enableAlphaToolStripMenuItem";
+			this.enableAlphaToolStripMenuItem.Size = new System.Drawing.Size(174, 22);
+			this.enableAlphaToolStripMenuItem.Text = "Enable Alpha";
+			this.enableAlphaToolStripMenuItem.CheckedChanged += new System.EventHandler(this.enableAlphaToolStripMenuItem_CheckedChanged);
+			// 
 			// MainForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -154,6 +166,7 @@ namespace sadx_model_view.Forms
 		private System.Windows.Forms.ToolStripMenuItem openTexturesToolStripMenuItem;
 		private Scene scene;
 		private System.Windows.Forms.ToolStripMenuItem recompileShadersToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem enableAlphaToolStripMenuItem;
 	}
 }
 

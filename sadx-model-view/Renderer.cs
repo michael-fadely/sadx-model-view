@@ -35,8 +35,20 @@ namespace sadx_model_view
 		);
 
 		public FlowControl FlowControl;
+		public bool EnableAlpha = true;
 
-		public CullMode DefaultCullMode = CullMode.None;
+		private CullMode defaultCullMode = CullMode.None;
+
+		public CullMode DefaultCullMode
+		{
+			get => defaultCullMode;
+			set
+			{
+				defaultCullMode = value;
+				ClearDisplayStates();
+			}
+		}
+
 		private readonly List<SceneTexture> texturePool = new List<SceneTexture>();
 
 		private readonly Device device;
@@ -234,10 +246,25 @@ namespace sadx_model_view
 			List<NJS_MATERIAL> mats = parent.mats;
 			NJS_MATERIAL njMat = mats.Count > 0 && matId < mats.Count ? mats[matId] : nullMaterial;
 
+			var flowControl = FlowControl;
+
+			if (texturePool.Count < 1)
+			{
+				if (!FlowControl.UseMaterialFlags)
+				{
+					FlowControl.Reset();
+					FlowControl.UseMaterialFlags = true;
+				}
+
+				FlowControl.Set(FlowControl.AndFlags & ~NJD_FLAG.UseTexture, FlowControl.OrFlags);
+			}
+
 			ShaderMaterial shaderMat = parent.GetSADXMaterial(this, njMat);
 			SetShaderMaterial(ref shaderMat, camera);
 
 			DisplayState state = GetSADXDisplayState(njMat);
+
+			FlowControl = flowControl;
 
 			if (state.Blend != lastBlend)
 			{
@@ -315,24 +342,27 @@ namespace sadx_model_view
 
 		public void Present(Camera camera)
 		{
-			alphaList.Sort((a, b) =>
+			if (EnableAlpha)
 			{
-				if (a.Distance.NearEqual(b.Distance))
+				alphaList.Sort((a, b) =>
 				{
-					return 0;
+					if (a.Distance.NearEqual(b.Distance))
+					{
+						return 0;
+					}
+
+					return a.Distance > b.Distance ? -1 : 1;
+				});
+
+				foreach (MeshsetQueueElement a in alphaList)
+				{
+					FlowControl = a.FlowControl;
+
+					RawMatrix m = a.Transform;
+					SetTransform(TransformState.World, ref m);
+
+					DrawSet(camera, a.Model, a.Set);
 				}
-
-				return a.Distance > b.Distance ? -1 : 1;
-			});
-
-			foreach (MeshsetQueueElement a in alphaList)
-			{
-				FlowControl = a.FlowControl;
-
-				RawMatrix m = a.Transform;
-				SetTransform(TransformState.World, ref m);
-
-				DrawSet(camera, a.Model, a.Set);
 			}
 
 			alphaList.Clear();
@@ -411,24 +441,22 @@ namespace sadx_model_view
 
 			depthDesc = new DepthStencilStateDescription
 			{
-				IsDepthEnabled   = true,
-				DepthWriteMask   = DepthWriteMask.All,
-				DepthComparison  = Comparison.Less,
+				IsDepthEnabled  = true,
+				DepthWriteMask  = DepthWriteMask.All,
+				DepthComparison = Comparison.Less,
 				
 				FrontFace = new DepthStencilOperationDescription
 				{
-					FailOperation      = StencilOperation.Keep,
-					DepthFailOperation = StencilOperation.Increment,
-					PassOperation      = StencilOperation.Keep,
-					Comparison         = Comparison.Never
+					FailOperation = StencilOperation.Keep,
+					PassOperation = StencilOperation.Keep,
+					Comparison    = Comparison.Always
 				},
 
 				BackFace = new DepthStencilOperationDescription
 				{
-					FailOperation      = StencilOperation.Keep,
-					DepthFailOperation = StencilOperation.Decrement,
-					PassOperation      = StencilOperation.Keep,
-					Comparison         = Comparison.Never
+					FailOperation = StencilOperation.Keep,
+					PassOperation = StencilOperation.Keep,
+					Comparison    = Comparison.Always
 				}
 			};
 
@@ -547,6 +575,7 @@ namespace sadx_model_view
 			}
 
 			texturePool.Clear();
+			SetTexture(0, -1);
 		}
 
 		public Buffer CreateVertexBuffer(IReadOnlyCollection<Vertex> vertices)
@@ -661,7 +690,7 @@ namespace sadx_model_view
 			}
 			else
 			{
-				//device.ImmediateContext.PixelShader.SetShaderResource(sampler, null);
+				device.ImmediateContext.PixelShader.SetShaderResource(sampler, null);
 			}
 		}
 
@@ -687,12 +716,15 @@ namespace sadx_model_view
 			// - NJD_FLAG.UseAnisotropic
 			// - NJD_FLAG.UseFlat
 
-			if (displayStates.TryGetValue(material.attrflags, out DisplayState _state))
+			const NJD_FLAG state_mask = NJD_FLAG.ClampU | NJD_FLAG.ClampV | NJD_FLAG.FlipU | NJD_FLAG.FlipV
+			                            | NJD_FLAG.DoubleSide | NJD_FLAG.UseAlpha;
+
+			NJD_FLAG flags = FlowControl.Apply(material.attrflags) & state_mask;
+
+			if (displayStates.TryGetValue(flags, out DisplayState _state))
 			{
 				return _state;
 			}
-
-			NJD_FLAG flags = material.attrflags;
 
 			var samplerDesc = new SamplerStateDescription
 			{
@@ -750,7 +782,7 @@ namespace sadx_model_view
 			var blendDesc = new BlendStateDescription();
 			ref RenderTargetBlendDescription rt = ref blendDesc.RenderTarget[0];
 
-			rt.IsBlendEnabled        = (material.attrflags & NJD_FLAG.UseAlpha) != 0;
+			rt.IsBlendEnabled        = (flags & NJD_FLAG.UseAlpha) != 0;
 			rt.SourceBlend           = blendModes[material.SourceBlend];
 			rt.DestinationBlend      = blendModes[material.DestinationBlend];
 			rt.BlendOperation        = BlendOperation.Add;
@@ -762,7 +794,7 @@ namespace sadx_model_view
 			var blend = new BlendState(device, blendDesc);
 
 			var result = new DisplayState(sampler, raster, blend);
-			displayStates[material.attrflags] = result;
+			displayStates[flags] = result;
 
 			return result;
 		}
@@ -813,16 +845,19 @@ namespace sadx_model_view
 			inputLayout?.Dispose();
 
 			ClearTexturePool();
+			ClearDisplayStates();
+			device?.ImmediateContext.Dispose();
+			device?.Dispose();
+		}
 
+		private void ClearDisplayStates()
+		{
 			foreach (var i in displayStates)
 			{
 				i.Value.Dispose();
 			}
 
 			displayStates.Clear();
-
-			device?.ImmediateContext.Dispose();
-			device?.Dispose();
 		}
 	}
 

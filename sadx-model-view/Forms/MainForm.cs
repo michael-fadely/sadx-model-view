@@ -49,7 +49,7 @@ namespace sadx_model_view.Forms
 			End         = 0x444E45
 		}
 
-		private Camera camera = new Camera();
+		private readonly Camera camera = new Camera();
 
 		public MainForm()
 		{
@@ -662,6 +662,14 @@ namespace sadx_model_view.Forms
 				{
 					MessageBox.Show(this, ex.Message, "Shader Compilation Failure", MessageBoxButtons.OK, MessageBoxIcon.Error);
 				}
+			}
+		}
+
+		private void enableAlphaToolStripMenuItem_CheckedChanged(object sender, EventArgs e)
+		{
+			if (renderer != null)
+			{
+				renderer.EnableAlpha = enableAlphaToolStripMenuItem.Checked;
 			}
 		}
 	}
