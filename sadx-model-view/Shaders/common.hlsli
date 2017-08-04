@@ -30,5 +30,6 @@ struct VS_OUTPUT
 cbuffer MaterialBuffer : register(b1)
 {
 	Material material;
+	bool writeDepth;
 	float3 cameraPos;
 };

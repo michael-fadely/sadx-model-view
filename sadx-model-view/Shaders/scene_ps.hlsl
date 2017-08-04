@@ -23,10 +23,25 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 	}
 
 	result = result * input.diffuse + input.specular;
+	const float THRESHOLD = 0.9;
 
-	if (material.useAlpha && result.a < 16.0f / 255.0f)
+	if (material.useAlpha)
 	{
-		discard;
+		if (writeDepth == true)
+		{
+			if (result.a >= THRESHOLD)
+			{
+				result.a = 1.0;
+			}
+			else
+			{
+				discard;
+			}
+		}
+		else if (result.a >= THRESHOLD)
+		{
+			discard;
+		}
 	}
 
 	return result;

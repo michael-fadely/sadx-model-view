@@ -65,7 +65,7 @@ namespace sadx_model_view
 		private readonly Buffer matrixBuffer;
 		private readonly Buffer materialBuffer;
 
-		private bool zwrite;
+		private bool zWrite = true;
 		private bool matrixDataChanged;
 		private MatrixBuffer lastMatrixData;
 		private MatrixBuffer matrixData;
@@ -118,7 +118,7 @@ namespace sadx_model_view
 
 			// Size must be divisible by 16, so this is just padding.
 			int size = Math.Max(ShaderMaterial.SizeInBytes, 80);
-			int stride = ShaderMaterial.SizeInBytes + Vector3.SizeInBytes;
+			int stride = ShaderMaterial.SizeInBytes + Vector3.SizeInBytes + sizeof(uint);
 
 			bufferDesc = new BufferDescription(size,
 				ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write, ResourceOptionFlags.None, stride);
@@ -229,10 +229,9 @@ namespace sadx_model_view
 				{
 					alphaList.Add(new MeshsetQueueElement(this, camera, model, set));
 				}
-				else
-				{
-					DrawSet(camera, model, set);
-				}
+
+				zWrite = true;
+				DrawSet(camera, model, set);
 			}
 		}
 
@@ -240,13 +239,14 @@ namespace sadx_model_view
 		private BlendState lastBlend;
 		private RasterizerState lastRasterizerState;
 		private SamplerState lastSamplerState;
+
 		private void DrawSet(Camera camera, NJS_MODEL parent, NJS_MESHSET set)
 		{
 			ushort matId = set.MaterialId;
 			List<NJS_MATERIAL> mats = parent.mats;
 			NJS_MATERIAL njMat = mats.Count > 0 && matId < mats.Count ? mats[matId] : nullMaterial;
 
-			var flowControl = FlowControl;
+			FlowControl flowControl = FlowControl;
 
 			if (texturePool.Count < 1)
 			{
@@ -268,23 +268,6 @@ namespace sadx_model_view
 
 			if (state.Blend != lastBlend)
 			{
-				if (state.Blend.Description.RenderTarget[0].IsBlendEnabled)
-				{
-					if (zwrite)
-					{
-						zwrite = false;
-						device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRO);
-					}
-				}
-				else
-				{
-					if (!zwrite)
-					{
-						zwrite = true;
-						device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
-					}
-				}
-
 				device.ImmediateContext.OutputMerger.SetBlendState(state.Blend);
 				lastBlend = state.Blend;
 			}
@@ -344,6 +327,9 @@ namespace sadx_model_view
 		{
 			if (EnableAlpha)
 			{
+				device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRO);
+				zWrite = false;
+
 				alphaList.Sort((a, b) =>
 				{
 					if (a.Distance.NearEqual(b.Distance))
@@ -363,6 +349,9 @@ namespace sadx_model_view
 
 					DrawSet(camera, a.Model, a.Set);
 				}
+
+				device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
+				zWrite = true;
 			}
 
 			alphaList.Clear();
@@ -682,14 +671,18 @@ namespace sadx_model_view
 			if (textureIndex >= 0 && textureIndex < texturePool.Count)
 			{
 				SceneTexture texture = texturePool[textureIndex];
-				if (!ReferenceEquals(texture, lastTexture))
+
+				if (ReferenceEquals(texture, lastTexture))
 				{
-					device.ImmediateContext.PixelShader.SetShaderResource(sampler, texture.ShaderResource);
-					lastTexture = texture;
+					return;
 				}
+
+				device.ImmediateContext.PixelShader.SetShaderResource(sampler, texture.ShaderResource);
+				lastTexture = texture;
 			}
-			else
+			else if (lastTexture != null)
 			{
+				lastTexture = null;
 				device.ImmediateContext.PixelShader.SetShaderResource(sampler, null);
 			}
 		}
@@ -804,14 +797,16 @@ namespace sadx_model_view
 		private PixelShader pixelShader;
 		private InputLayout inputLayout;
 
+		private bool lastZwrite;
 		public void SetShaderMaterial(ref ShaderMaterial material, Camera camera)
 		{
-			if (material == lastMaterial)
+			if (material == lastMaterial && zWrite == lastZwrite)
 			{
 				return;
 			}
 
 			lastMaterial = material;
+			lastZwrite = zWrite;
 
 			device.ImmediateContext.MapSubresource(materialBuffer, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
 			using (stream)
@@ -824,6 +819,7 @@ namespace sadx_model_view
 				stream.Write(material.UseEnv ? 1 : 0);
 				stream.Write(material.UseTexture ? 1 : 0);
 				stream.Write(material.UseSpecular ? 1 : 0);
+				stream.Write(zWrite ? 1 : 0);
 				stream.Write(camera.Position);
 			}
 			device.ImmediateContext.UnmapSubresource(materialBuffer, 0);
