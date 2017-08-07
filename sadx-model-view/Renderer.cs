@@ -289,24 +289,14 @@ namespace sadx_model_view
 				device.ImmediateContext.MapSubresource(matrixBuffer, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
 				using (stream)
 				{
-					Matrix world = matrixData.World;
-					Matrix view = matrixData.View;
-					Matrix projection = matrixData.Projection;
-					Matrix texture = matrixData.Texture;
-
-					Matrix wvMatrixInvT = world * view;
+					Matrix wvMatrixInvT = matrixData.World * matrixData.View;
 					Matrix.Invert(ref wvMatrixInvT, out wvMatrixInvT);
 
-					world.Transpose();
-					view.Transpose();
-					projection.Transpose();
-					texture.Transpose();
-
-					stream.Write(world);
-					stream.Write(view);
-					stream.Write(projection);
+					stream.Write(matrixData.World);
+					stream.Write(matrixData.View);
+					stream.Write(matrixData.Projection);
 					stream.Write(wvMatrixInvT);
-					stream.Write(texture);
+					stream.Write(matrixData.Texture);
 				}
 				device.ImmediateContext.UnmapSubresource(matrixBuffer, 0);
 

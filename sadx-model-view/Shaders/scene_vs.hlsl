@@ -15,12 +15,12 @@ VS_OUTPUT main(VS_INPUT input)
 	float4 viewPos;
 
 	result.position = float4(input.position, 1.0f);
-	result.position = mul(result.position, worldMatrix);
-	result.position = mul(result.position, viewMatrix);
+	result.position = mul(worldMatrix, result.position);
+	result.position = mul(viewMatrix, result.position);
 
 	viewPos = result.position;
 
-	result.position = mul(result.position, projectionMatrix);
+	result.position = mul(projectionMatrix, result.position);
 
 	result.normal = input.normal;
 
