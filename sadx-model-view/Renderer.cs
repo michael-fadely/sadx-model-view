@@ -561,16 +561,9 @@ namespace sadx_model_view
 		{
 			int vertexSize = vertices.Count * Vertex.SizeInBytes;
 
-			var desc = new BufferDescription(vertexSize, BindFlags.VertexBuffer, ResourceUsage.Dynamic)
-			{
-				CpuAccessFlags = CpuAccessFlags.Write
-			};
+			var desc = new BufferDescription(vertexSize, BindFlags.VertexBuffer, ResourceUsage.Immutable);
 
-			var result = new Buffer(device, desc);
-
-			device.ImmediateContext.MapSubresource(result, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
-
-			using (stream)
+			using (var stream = new DataStream(vertexSize, true, true))
 			{
 				foreach (Vertex v in vertices)
 				{
@@ -599,23 +592,17 @@ namespace sadx_model_view
 				{
 					throw new Exception("Failed to fill vertex buffer.");
 				}
-			}
 
-			device.ImmediateContext.UnmapSubresource(result, 0);
-			return result;
+				stream.Position = 0;
+				return new Buffer(device, stream, desc);
+			}
 		}
 
 		public Buffer CreateIndexBuffer(IEnumerable<short> indices, int sizeInBytes)
 		{
-			var desc = new BufferDescription(sizeInBytes, BindFlags.IndexBuffer, ResourceUsage.Dynamic)
-			{
-				CpuAccessFlags = CpuAccessFlags.Write
-			};
+			var desc = new BufferDescription(sizeInBytes, BindFlags.IndexBuffer, ResourceUsage.Immutable);
 
-			var result = new Buffer(device, desc);
-			device.ImmediateContext.MapSubresource(result, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
-
-			using (stream)
+			using (var stream = new DataStream(sizeInBytes, true, true))
 			{
 				foreach (short i in indices)
 				{
@@ -626,10 +613,10 @@ namespace sadx_model_view
 				{
 					throw new Exception("Failed to fill index buffer.");
 				}
-			}
 
-			device.ImmediateContext.UnmapSubresource(result, 0);
-			return result;
+				stream.Position = 0;
+				return new Buffer(device, stream, desc);
+			}
 		}
 
 		public void SetTransform(TransformState state, ref RawMatrix rawMatrix)
