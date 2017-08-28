@@ -70,8 +70,6 @@ namespace sadx_model_view.Ninja
 			}
 		}
 
-		public int PrimitiveCount { get; private set; }
-
 		/// <summary>
 		/// The material ID for this meshset defined in bits 0-13 of <seealso cref="NJS_MESHSET.type_matId"/>.
 		/// </summary>
@@ -152,7 +150,6 @@ namespace sadx_model_view.Ninja
 			long position = stream.Position;
 
 			VertexCount = 0;
-			PrimitiveCount = 0;
 
 			if (meshes_ptr != 0)
 			{
@@ -165,7 +162,6 @@ namespace sadx_model_view.Ninja
 				{
 					case NJD_MESHSET.Tri:
 						VertexCount = nbMesh * 3;
-						PrimitiveCount = VertexCount;
 
 						for (int i = 0; i < VertexCount; i++)
 						{
@@ -176,9 +172,6 @@ namespace sadx_model_view.Ninja
 
 					case NJD_MESHSET.Quad:
 						VertexCount = nbMesh * 4;
-						// This formula is used because these quads will later
-						// be converted to tris.
-						PrimitiveCount = nbMesh * 6 / 3;
 
 						for (int i = 0; i < VertexCount; i++)
 						{
@@ -208,8 +201,6 @@ namespace sadx_model_view.Ninja
 							VertexCount += n;
 						}
 
-						CalculateStripPrimitiveCount();
-
 						if (VertexCount != meshes.Count - nbMesh)
 						{
 							throw new Exception("Recorded vertex count is incorrect.");
@@ -233,6 +224,7 @@ namespace sadx_model_view.Ninja
 				}
 			}
 
+			// HACK: This is wrong.
 			if (normals_ptr != 0)
 			{
 				stream.Position = normals_ptr;
@@ -300,22 +292,6 @@ namespace sadx_model_view.Ninja
 			normals     = new List<Vector3>();
 			vertcolor   = new List<NJS_COLOR>();
 			vertuv      = new List<NJS_TEX>();
-		}
-
-		private void CalculateStripPrimitiveCount()
-		{
-			PrimitiveCount = 0;
-			ushort count = nbMesh;
-			int i = 0;
-
-			do
-			{
-				int n = meshes[i] & 0x3FFF;
-				PrimitiveCount += n + 2;
-				i += n + 1;
-			} while (--count > 0);
-
-			PrimitiveCount -= 2;
 		}
 
 		/// <summary>
