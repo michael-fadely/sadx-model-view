@@ -503,13 +503,11 @@ namespace sadx_model_view
 
 		private void CopyToTexture(Texture2D texture, Bitmap bitmap, int level)
 		{
-			// Copy the bitmap into system memory
 			BitmapData bmpData = bitmap.LockBits(new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
 			var buffer = new byte[bmpData.Stride * bitmap.Height];
 			Marshal.Copy(bmpData.Scan0, buffer, 0, buffer.Length);
 			bitmap.UnlockBits(bmpData);
 
-			// Update the texture sub-resource (where 0 is full size and [n] is mipmap)
 			device.ImmediateContext.UpdateSubresource(buffer, texture, level, 4 * bitmap.Width, 4 * bitmap.Height);
 		}
 
