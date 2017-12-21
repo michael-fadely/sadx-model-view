@@ -147,7 +147,7 @@ namespace sadx_model_view.Ninja
 				throw new Exception("texaddr was not null! NJS_TEXMEMLIST should always be dynamically allocated!");
 			}
 
-			if ((uint)attr != 0)
+			if (attr != 0)
 			{
 				throw new Exception("attr was not 0! Flags are for runtime only!");
 			}

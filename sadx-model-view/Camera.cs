@@ -132,9 +132,7 @@ namespace sadx_model_view
 
 			View = Matrix.LookAtRH(position == Vector3.Zero ? Vector3.BackwardRH : position, point, Vector3.Up);
 
-			Quaternion q;
-			Vector3 dummy;
-			View.Decompose(out dummy, out q, out dummy);
+			View.Decompose(out Vector3 dummy, out Quaternion q, out dummy);
 
 			rotation = q.GetYawPitchRollVector();
 			LimitRotation(ref rotation);

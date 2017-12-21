@@ -29,9 +29,9 @@ namespace sadx_model_view
 
 		public override bool Equals(object obj)
 		{
-			if (ReferenceEquals(null, obj))
+			if (obj is null)
 				return false;
-			return obj is ShaderMaterial && Equals((ShaderMaterial)obj);
+			return obj is ShaderMaterial material && Equals(material);
 		}
 
 		public static bool operator==(ShaderMaterial lhs, ShaderMaterial rhs)

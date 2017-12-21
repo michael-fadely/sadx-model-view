@@ -11,11 +11,12 @@ namespace sadx_model_view.Ninja
 		{
 			lock (modelCache)
 			{
-				NJS_MODEL result;
-				modelCache.TryGetValue(offset, out result);
+				modelCache.TryGetValue(offset, out NJS_MODEL result);
 
 				if (result != null)
+				{
 					return result;
+				}
 
 				stream.Position = offset;
 				result = new NJS_MODEL(stream);
@@ -36,9 +37,9 @@ namespace sadx_model_view.Ninja
 		{
 			lock (modelCache)
 			{
-				foreach (var pair in modelCache)
+				foreach (NJS_MODEL model in modelCache.Values)
 				{
-					pair.Value.Dispose();
+					model.Dispose();
 				}
 
 				modelCache.Clear();

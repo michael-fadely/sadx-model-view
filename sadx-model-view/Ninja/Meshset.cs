@@ -94,7 +94,8 @@ namespace sadx_model_view.Ninja
 		/// <para>The actual number of vertices referenced by this meshset.</para>
 		/// <para>
 		/// The number of vertcies varies from <see cref="nbMesh"/> to different degrees
-		/// depending on the type of polygon managed by this meshset. (see <seealso cref="Type"/>, <seealso cref="NJD_MESHSET"/>)
+		/// depending on the type of polygon managed by this meshset.
+		/// (see <seealso cref="Type"/>, <seealso cref="NJD_MESHSET"/>)
 		/// </para>
 		/// </summary>
 		public int VertexCount { get; }
