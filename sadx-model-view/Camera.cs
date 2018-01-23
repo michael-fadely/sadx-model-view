@@ -1,6 +1,8 @@
 ﻿using sadx_model_view.Extensions;
 using SharpDX;
 
+// TODO: view frustum
+
 namespace sadx_model_view
 {
 	public class Camera
