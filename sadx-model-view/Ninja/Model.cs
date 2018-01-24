@@ -203,9 +203,9 @@ namespace sadx_model_view.Ninja
 			MatrixStack.Push();
 
 			Matrix inverse = camera.InverseView;
-			MatrixStack.Multiply(ref inverse);
+			MatrixStack.Multiply(in inverse);
 
-			MatrixStack.CalcPoint(ref center, out Vector3 v);
+			MatrixStack.CalcPoint(in center, out Vector3 v);
 
 			MatrixStack.Pop();
 

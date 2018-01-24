@@ -72,7 +72,7 @@ namespace sadx_model_view.SA1
 			stream.Read(buffer, 0, buffer.Length);
 			var position = stream.Position;
 
-			Center = Util.VectorFromStream(ref buffer, 0x00);
+			Center = Util.VectorFromStream(in buffer, 0x00);
 			Radius = BitConverter.ToSingle(buffer, 0x04);
 			pad_a  = BitConverter.ToInt32(buffer, 0x10);
 			pad_b  = BitConverter.ToInt32(buffer, 0x14);

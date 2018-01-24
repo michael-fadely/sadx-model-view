@@ -265,7 +265,7 @@ namespace sadx_model_view
 			}
 
 			ShaderMaterial shaderMat = parent.GetSADXMaterial(this, njMat);
-			SetShaderMaterial(ref shaderMat, camera);
+			SetShaderMaterial(in shaderMat, camera);
 
 			DisplayState state = GetSADXDisplayState(njMat);
 
@@ -793,7 +793,7 @@ namespace sadx_model_view
 		private InputLayout inputLayout;
 
 		private bool lastZwrite;
-		public void SetShaderMaterial(ref ShaderMaterial material, Camera camera)
+		public void SetShaderMaterial(in ShaderMaterial material, Camera camera)
 		{
 			if (material == lastMaterial && zWrite == lastZwrite)
 			{

@@ -27,7 +27,7 @@ namespace sadx_model_view.Ninja
 		private const int M33 = 0xF;
 
 
-		public static void Push(ref Matrix m)
+		public static void Push(in Matrix m)
 		{
 			stack.Push(m);
 		}
@@ -41,14 +41,14 @@ namespace sadx_model_view.Ninja
 			else
 			{
 				Matrix m = stack.Peek();
-				Push(ref m);
+				Push(in m);
 			}
 		}
 
 		public static void PushIdentity()
 		{
 			Matrix m = Matrix.Identity;
-			Push(ref m);
+			Push(in m);
 		}
 
 		public static void Pop(int n)
@@ -84,7 +84,7 @@ namespace sadx_model_view.Ninja
 			return stack.Peek();
 		}
 
-		public static void Translate(ref Vector3 v)
+		public static void Translate(in Vector3 v)
 		{
 			Matrix m = Pop();
 
@@ -97,10 +97,10 @@ namespace sadx_model_view.Ninja
 			m[M32] = z * m[M22] + y * m[M12] + x * m[M02] + m[M32];
 			m[M33] = z * m[M23] + y * m[M13] + x * m[M03] + m[M33];
 
-			Push(ref m);
+			Push(in m);
 		}
 
-		public static void Rotate(ref Vector3 v, bool useZXY = false)
+		public static void Rotate(in Vector3 v, bool useZXY = false)
 		{
 			Matrix m = Pop();
 
@@ -223,21 +223,21 @@ namespace sadx_model_view.Ninja
 				}
 			}
 
-			Push(ref m);
+			Push(in m);
 		}
 
-		public static void Rotate(ref Rotation3 r, bool useZXY = false)
+		public static void Rotate(in Rotation3 r, bool useZXY = false)
 		{
 			if (r.X == 0 && r.Y == 0 && r.Z == 0)
 			{
 				return;
 			}
 
-			Vector3 v = Util.AngleToRadian(ref r);
-			Rotate(ref v, useZXY);
+			Vector3 v = Util.AngleToRadian(in r);
+			Rotate(in v, useZXY);
 		}
 
-		public static void Scale(ref Vector3 v)
+		public static void Scale(in Vector3 v)
 		{
 			Matrix m = Pop();
 
@@ -254,10 +254,10 @@ namespace sadx_model_view.Ninja
 			m[M22] = v.Z * m[M22];
 			m[M23] = v.Z * m[M23];
 
-			Push(ref m);
+			Push(in m);
 		}
 		
-		public static void CalcPoint(ref Vector3 vs, out Vector3 vd)
+		public static void CalcPoint(in Vector3 vs, out Vector3 vd)
 		{
 			Matrix m = Peek();
 			float x = vs.X;
@@ -269,7 +269,7 @@ namespace sadx_model_view.Ninja
 			vd.Z = z * m[M22] + y * m[M12] + x * m[M02] + m[M32];
 		}
 
-		public static void CalcVector(ref Vector3 vs, out Vector3 vd)
+		public static void CalcVector(in Vector3 vs, out Vector3 vd)
 		{
 			Matrix m = Peek();
 			float x = vs.X;
@@ -281,10 +281,10 @@ namespace sadx_model_view.Ninja
 			vd.Z = z * m[M22] + y * m[M12] + x * m[M02];
 		}
 
-		public static void Multiply(ref Matrix m)
+		public static void Multiply(in Matrix m)
 		{
 			Matrix top = Pop() * m;
-			Push(ref top);
+			Push(in top);
 		}
 	}
 }

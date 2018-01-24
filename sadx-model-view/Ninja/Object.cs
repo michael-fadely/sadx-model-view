@@ -244,17 +244,17 @@ namespace sadx_model_view.Ninja
 		{
 			if (!IgnoreTranslation)
 			{
-				MatrixStack.Translate(ref Position);
+				MatrixStack.Translate(in Position);
 			}
 
 			if (!IgnoreRotation)
 			{
-				MatrixStack.Rotate(ref Angle, UseZXYRotation);
+				MatrixStack.Rotate(in Angle, UseZXYRotation);
 			}
 
 			if (!IgnoreScale)
 			{
-				MatrixStack.Scale(ref Scale);
+				MatrixStack.Scale(in Scale);
 			}
 		}
 

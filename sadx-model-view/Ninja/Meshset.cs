@@ -234,7 +234,7 @@ namespace sadx_model_view.Ninja
 
 				for (int i = 0; i < VertexCount; i++)
 				{
-					Vector3 vector = Util.VectorFromStream(ref normalsBuffer, i * Vector3.SizeInBytes);
+					Vector3 vector = Util.VectorFromStream(in normalsBuffer, i * Vector3.SizeInBytes);
 					normals.Add(vector);
 				}
 			}

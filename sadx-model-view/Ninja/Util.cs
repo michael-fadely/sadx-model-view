@@ -34,7 +34,7 @@ namespace sadx_model_view.Ninja
 		/// <param name="buffer">Buffer containing data.</param>
 		/// <param name="offset">Offset in buffer to read from.</param>
 		/// <returns>The new vector.</returns>
-		public static Vector3 VectorFromStream(ref byte[] buffer, int offset)
+		public static Vector3 VectorFromStream(in byte[] buffer, int offset)
 		{
 			return new Vector3(BitConverter.ToSingle(buffer, offset + 0), BitConverter.ToSingle(buffer, offset + 4), BitConverter.ToSingle(buffer, offset + 8));
 		}
@@ -66,11 +66,11 @@ namespace sadx_model_view.Ninja
 			return (float)(n * (2 * Math.PI) / 65536.0);
 		}
 
-		public static Vector3 AngleToRadian(ref Rotation3 n)
+		public static Vector3 AngleToRadian(in Rotation3 n)
 		{
 			return new Vector3(AngleToRadian(n.X), AngleToRadian(n.Y), AngleToRadian(n.Z));
 		}
-		public static Vector3 AngleToDegree(ref Rotation3 n)
+		public static Vector3 AngleToDegree(in Rotation3 n)
 		{
 			return new Vector3(AngleToDegree(n.X), AngleToDegree(n.Y), AngleToDegree(n.Z));
 		}
