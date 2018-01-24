@@ -27,7 +27,7 @@ namespace sadx_model_view
 		/// <summary>
 		/// This is the texture transformation matrix that SADX uses for anything with an environment map.
 		/// </summary>
-		private static RawMatrix environmentMapTransform = new Matrix(
+		private static readonly RawMatrix environmentMapTransform = new Matrix(
 			-0.5f, 0.0f, 0.0f, 0.0f,
 			0.0f, 0.5f, 0.0f, 0.0f,
 			0.0f, 0.0f, 1.0f, 0.0f,
@@ -77,7 +77,7 @@ namespace sadx_model_view
 		{
 			FlowControl.Reset();
 
-			SetTransform(TransformState.Texture, ref environmentMapTransform);
+			SetTransform(TransformState.Texture, in environmentMapTransform);
 
 			var desc = new SwapChainDescription
 			{
@@ -188,7 +188,12 @@ namespace sadx_model_view
 
 			device.ImmediateContext.Rasterizer.State = rasterizerState;
 			device.ImmediateContext.ClearRenderTargetView(backBuffer, new RawColor4(0.0f, 1.0f, 1.0f, 1.0f));
+
+#if REVERSE_Z
+			device.ImmediateContext.ClearDepthStencilView(depthView, DepthStencilClearFlags.Depth, 0.0f, 0);
+#else
 			device.ImmediateContext.ClearDepthStencilView(depthView, DepthStencilClearFlags.Depth, 1.0f, 0);
+#endif
 		}
 
 		public void Draw(NJS_OBJECT obj, Camera camera)
@@ -198,7 +203,7 @@ namespace sadx_model_view
 				MatrixStack.Push();
 				obj.PushTransform();
 				RawMatrix m = MatrixStack.Peek();
-				SetTransform(TransformState.World, ref m);
+				SetTransform(TransformState.World, in m);
 
 				if (!obj.SkipDraw && obj.Model?.IsVisible(camera) == true)
 				{
@@ -335,7 +340,7 @@ namespace sadx_model_view
 					FlowControl = a.FlowControl;
 
 					RawMatrix m = a.Transform;
-					SetTransform(TransformState.World, ref m);
+					SetTransform(TransformState.World, in m);
 
 					DrawSet(camera, a.Model, a.Set);
 				}
@@ -422,8 +427,12 @@ namespace sadx_model_view
 			{
 				IsDepthEnabled  = true,
 				DepthWriteMask  = DepthWriteMask.All,
+#if REVERSE_Z
+				DepthComparison = Comparison.Greater,
+#else
 				DepthComparison = Comparison.Less,
-				
+#endif
+
 				FrontFace = new DepthStencilOperationDescription
 				{
 					FailOperation = StencilOperation.Keep,
@@ -617,7 +626,7 @@ namespace sadx_model_view
 			}
 		}
 
-		public void SetTransform(TransformState state, ref RawMatrix rawMatrix)
+		public void SetTransform(TransformState state, in RawMatrix rawMatrix)
 		{
 			switch (state)
 			{
@@ -628,7 +637,18 @@ namespace sadx_model_view
 					matrixData.View = rawMatrix;
 					break;
 				case TransformState.Projection:
+#if REVERSE_Z
+					var a = new Matrix(
+						1f, 0f,  0f, 0f,
+						0f, 1f,  0f, 0f,
+						0f, 0f, -1f, 0f,
+						0f, 0f,  1f, 1f
+					);
+
+					matrixData.Projection = rawMatrix * a;
+#else
 					matrixData.Projection = rawMatrix;
+#endif
 					break;
 				case TransformState.Texture:
 					matrixData.Texture = rawMatrix;
