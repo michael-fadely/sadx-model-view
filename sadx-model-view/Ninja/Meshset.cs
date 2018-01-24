@@ -430,6 +430,8 @@ namespace sadx_model_view.Ninja
 			}
 
 			IndexCount = indices.Count;
+
+			IndexBuffer?.Dispose();
 			IndexBuffer = device.CreateIndexBuffer(indices, IndexCount * sizeof(short));
 		}
 

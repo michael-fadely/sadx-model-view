@@ -114,7 +114,6 @@ namespace sadx_model_view.SA1
 
 			ColList.Clear();
 
-
 			foreach (GeoAnimData anim in AnimData)
 			{
 				anim?.Dispose();

@@ -190,6 +190,7 @@ namespace sadx_model_view.Ninja
 				set.CommitIndexBuffer(device, vertices);
 			}
 
+			VertexBuffer?.Dispose();
 			VertexBuffer = device.CreateVertexBuffer(vertices);
 		}
 

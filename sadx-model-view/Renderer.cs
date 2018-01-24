@@ -709,9 +709,9 @@ namespace sadx_model_view
 
 			NJD_FLAG flags = FlowControl.Apply(material.attrflags) & state_mask;
 
-			if (displayStates.TryGetValue(flags, out DisplayState _state))
+			if (displayStates.TryGetValue(flags, out DisplayState state))
 			{
-				return _state;
+				return state;
 			}
 
 			var samplerDesc = new SamplerStateDescription
@@ -831,19 +831,31 @@ namespace sadx_model_view
 			rasterizerState?.Dispose();
 			matrixBuffer?.Dispose();
 			materialBuffer?.Dispose();
+			lastVertexBuffer?.Dispose();
+			lastBlend?.Dispose();
+			lastRasterizerState?.Dispose();
+			lastSamplerState?.Dispose();
+			lastTexture?.Dispose();
 			vertexShader?.Dispose();
 			pixelShader?.Dispose();
 			inputLayout?.Dispose();
 
 			ClearTexturePool();
 			ClearDisplayStates();
-			device?.ImmediateContext.Dispose();
+
+#if DEBUG
+			using (var debug = new DeviceDebug(device))
+			{
+				debug.ReportLiveDeviceObjects(ReportingLevel.Summary);
+			}
+#endif
+
 			device?.Dispose();
 		}
 
 		private void ClearDisplayStates()
 		{
-			foreach (var i in displayStates)
+			foreach (KeyValuePair<NJD_FLAG, DisplayState> i in displayStates)
 			{
 				i.Value.Dispose();
 			}
