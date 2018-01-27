@@ -435,7 +435,6 @@ namespace sadx_model_view.Ninja
 			IndexBuffer = device.CreateIndexBuffer(indices, IndexCount * sizeof(short));
 		}
 
-		// TODO: Matrix3x3?
 		private readonly Dictionary<Matrix, BoundingBox> bounds = new Dictionary<Matrix, BoundingBox>();
 
 		private BoundingBox worldBox;
