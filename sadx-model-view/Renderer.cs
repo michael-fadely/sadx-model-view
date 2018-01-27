@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
@@ -24,6 +25,8 @@ namespace sadx_model_view
 {
 	public class Renderer : IDisposable
 	{
+		private int visibleCount, lastVisibleCount;
+
 		/// <summary>
 		/// This is the texture transformation matrix that SADX uses for anything with an environment map.
 		/// </summary>
@@ -179,6 +182,9 @@ namespace sadx_model_view
 
 		public void Clear()
 		{
+			lastVisibleCount = visibleCount;
+			visibleCount = 0;
+
 			if (device == null)
 			{
 				return;
@@ -196,7 +202,7 @@ namespace sadx_model_view
 #endif
 		}
 
-		public void Draw(NJS_OBJECT obj, Camera camera)
+		public void Draw(Camera camera, NJS_OBJECT obj)
 		{
 			while (!(obj is null))
 			{
@@ -205,14 +211,14 @@ namespace sadx_model_view
 				RawMatrix m = MatrixStack.Peek();
 				SetTransform(TransformState.World, in m);
 
-				if (!obj.SkipDraw && obj.Model?.IsVisible(camera) == true)
+				if (!obj.SkipDraw && obj.Model != null)
 				{
 					Draw(camera, obj.Model);
 				}
 
 				if (!obj.SkipChildren)
 				{
-					Draw(obj.Child, camera);
+					Draw(camera, obj.Child);
 				}
 
 				MatrixStack.Pop();
@@ -228,6 +234,14 @@ namespace sadx_model_view
 
 			foreach (NJS_MESHSET set in model.meshsets)
 			{
+				var bounds = set.GetWorldSpaceBoundingBox();
+
+				if (camera.Frustum.Contains(ref bounds) == ContainmentType.Disjoint)
+				{
+					continue;
+				}
+
+				++visibleCount;
 				ushort matId = set.MaterialId;
 
 				if (matId < mats.Count && (mats[matId].attrflags & NJD_FLAG.UseAlpha) != 0)
@@ -247,9 +261,9 @@ namespace sadx_model_view
 
 		private void DrawSet(Camera camera, NJS_MODEL parent, NJS_MESHSET set)
 		{
-			ushort matId = set.MaterialId;
+			ushort materialId = set.MaterialId;
 			List<NJS_MATERIAL> mats = parent.mats;
-			NJS_MATERIAL njMat = mats.Count > 0 && matId < mats.Count ? mats[matId] : nullMaterial;
+			NJS_MATERIAL njMaterial = mats.Count > 0 && materialId < mats.Count ? mats[materialId] : nullMaterial;
 
 			FlowControl flowControl = FlowControl;
 
@@ -264,10 +278,10 @@ namespace sadx_model_view
 				FlowControl.Set(FlowControl.AndFlags & ~NJD_FLAG.UseTexture, FlowControl.OrFlags);
 			}
 
-			ShaderMaterial shaderMat = parent.GetSADXMaterial(this, njMat);
-			SetShaderMaterial(in shaderMat, camera);
+			ShaderMaterial shaderMaterial = parent.GetSADXMaterial(this, njMaterial);
+			SetShaderMaterial(in shaderMaterial, camera);
 
-			DisplayState state = GetSADXDisplayState(njMat);
+			DisplayState state = GetSADXDisplayState(njMaterial);
 
 			FlowControl = flowControl;
 
@@ -291,7 +305,9 @@ namespace sadx_model_view
 
 			if (matrixDataChanged && lastMatrixData != matrixData)
 			{
-				device.ImmediateContext.MapSubresource(matrixBuffer, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
+				device.ImmediateContext.MapSubresource(matrixBuffer, MapMode.WriteDiscard,
+					MapFlags.None, out DataStream stream);
+
 				using (stream)
 				{
 					Matrix wvMatrixInvT = matrixData.World * matrixData.View;
@@ -303,14 +319,15 @@ namespace sadx_model_view
 					stream.Write(wvMatrixInvT);
 					stream.Write(matrixData.Texture);
 				}
-				device.ImmediateContext.UnmapSubresource(matrixBuffer, 0);
 
+				device.ImmediateContext.UnmapSubresource(matrixBuffer, 0);
 				lastMatrixData = matrixData;
 			}
 
 			if (parent.VertexBuffer != lastVertexBuffer)
 			{
-				device.ImmediateContext.InputAssembler.SetVertexBuffers(0, new Buffer[] { parent.VertexBuffer }, new[] { Vertex.SizeInBytes }, new[] { 0 });
+				var binding = new VertexBufferBinding(parent.VertexBuffer, Vertex.SizeInBytes, 0);
+				device.ImmediateContext.InputAssembler.SetVertexBuffers(0, binding);
 				lastVertexBuffer = parent.VertexBuffer;
 			}
 
@@ -356,6 +373,11 @@ namespace sadx_model_view
 			if (!MatrixStack.Empty)
 			{
 				throw new Exception("Matrix stack still contains data");
+			}
+
+			if (visibleCount != lastVisibleCount)
+			{
+				Debug.WriteLine(visibleCount);
 			}
 		}
 
@@ -483,7 +505,7 @@ namespace sadx_model_view
 			{
 				if ((col.Flags & ColFlags.Visible) != 0)
 				{
-					Draw(col.Object, camera);
+					Draw(camera, col.Object);
 				}
 			}
 		}
@@ -758,14 +780,14 @@ namespace sadx_model_view
 				samplerDesc.AddressV = TextureAddressMode.Wrap;
 			}
 
-			var sampler = new SamplerState(device, samplerDesc);
+			var sampler = new SamplerState(device, samplerDesc) { DebugName = $"Sampler: {flags.ToString()}" };
 
 			// Base it off of the default rasterizer state.
 			RasterizerStateDescription rasterDesc = rasterizerDescription;
 
 			rasterDesc.CullMode = (flags & NJD_FLAG.DoubleSide) != 0 ? CullMode.None : DefaultCullMode;
 
-			var raster = new RasterizerState(device, rasterDesc);
+			var raster = new RasterizerState(device, rasterDesc) { DebugName = $"Rasterizer: {flags.ToString()}" };
 
 			var blendDesc = new BlendStateDescription();
 			ref RenderTargetBlendDescription rt = ref blendDesc.RenderTarget[0];
@@ -779,7 +801,7 @@ namespace sadx_model_view
 			rt.AlphaBlendOperation   = BlendOperation.Add;
 			rt.RenderTargetWriteMask = ColorWriteMaskFlags.All;
 
-			var blend = new BlendState(device, blendDesc);
+			var blend = new BlendState(device, blendDesc) { DebugName = $"Blend: {flags.ToString()}" };
 
 			var result = new DisplayState(sampler, raster, blend);
 			displayStates[flags] = result;

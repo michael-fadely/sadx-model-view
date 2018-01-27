@@ -1,9 +1,9 @@
-﻿using System;
+﻿using sadx_model_view.Interfaces;
+using SharpDX;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using sadx_model_view.Interfaces;
-using SharpDX;
 using Buffer = SharpDX.Direct3D11.Buffer;
 
 namespace sadx_model_view.Ninja
@@ -435,40 +435,44 @@ namespace sadx_model_view.Ninja
 			IndexBuffer = device.CreateIndexBuffer(indices, IndexCount * sizeof(short));
 		}
 
-		private bool boxInvalid = true;
-		private bool sphereInvalid = true;
+		// TODO: Matrix3x3?
+		private readonly Dictionary<Matrix, BoundingBox> bounds = new Dictionary<Matrix, BoundingBox>();
 
 		private BoundingBox worldBox;
 		private BoundingSphere worldSphere;
 
-		public BoundingBox GetWorldSpaceBoundingBox()
+		private Vector3[] TransformedPoints(ref Matrix m)
 		{
-			if (!boxInvalid)
+			if (m.IsIdentity)
 			{
-				return worldBox;
+				return refPoints;
 			}
 
-			boxInvalid = false;
-			Matrix m = MatrixStack.Peek();
 			var points = new Vector3[refPoints.Length];
 
 			for (int i = 0; i < points.Length; i++)
 			{
-				points[i] = (Vector3)Vector3.Transform(refPoints[i], m);
+				Vector3.Transform(ref refPoints[i], ref m, out points[i]);
 			}
 
-			worldBox = BoundingBox.FromPoints(points);
+			return points;
+		}
+
+		public BoundingBox GetWorldSpaceBoundingBox()
+		{
+			Matrix m = MatrixStack.Peek();
+
+			if (!bounds.TryGetValue(m, out worldBox))
+			{
+				worldBox = BoundingBox.FromPoints(TransformedPoints(ref m));
+				bounds[m] = worldBox;
+			}
+
 			return worldBox;
 		}
 
 		public BoundingSphere GetWorldSpaceBoundingSphere()
 		{
-			if (!sphereInvalid)
-			{
-				return worldSphere;
-			}
-
-			sphereInvalid = false;
 			worldSphere = BoundingSphere.FromBox(GetWorldSpaceBoundingBox());
 			return worldSphere;
 		}
@@ -480,11 +484,13 @@ namespace sadx_model_view.Ninja
 
 		public bool IsInvalid
 		{
-			get => boxInvalid || sphereInvalid;
+			get => bounds.Count < 1;
 			set
 			{
-				boxInvalid = value;
-				sphereInvalid = value;
+				if (value)
+				{
+					bounds.Clear();
+				}
 			}
 		}
 	}

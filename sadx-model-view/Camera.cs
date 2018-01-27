@@ -1,8 +1,6 @@
 ﻿using sadx_model_view.Extensions;
 using SharpDX;
 
-// TODO: view frustum
-
 namespace sadx_model_view
 {
 	public class Camera
@@ -13,8 +11,6 @@ namespace sadx_model_view
 		private Vector3 position;
 		private Vector3 rotation;
 		private Matrix rotationMatrix = Matrix.Identity;
-		private Matrix _view;
-		private Matrix _projection;
 
 		// ReSharper disable once UnusedMember.Global
 		public Vector3 Position
@@ -39,20 +35,15 @@ namespace sadx_model_view
 			}
 		}
 
-		public Matrix View
-		{
-			get => _view;
-			private set { _view = value; InverseView = -value; }
-		}
+		public Matrix View { get; private set; }
 
-		public Matrix InverseView { get; private set; }
-
-		public Matrix Projection => _projection;
+		public Matrix Projection { get; private set; }
 
 		public float FieldOfView { get; private set; }
 		public float AspectRatio { get; private set; }
 		public float MinDrawDistance { get; private set; }
 		public float MaxDrawDistance { get; private set; }
+		public BoundingFrustum Frustum { get; private set; }
 
 		public Camera()
 		{
@@ -73,6 +64,9 @@ namespace sadx_model_view
 			View = Matrix.LookAtRH(position, position + (Vector3)Vector3.Transform(Vector3.ForwardRH, rotationMatrix), Vector3.Up);
 			UpdateRotationMatrix();
 			UpdateProjectionMatrix();
+
+			Frustum = new BoundingFrustum(View * Projection);
+
 			Invalid = false;
 		}
 
@@ -87,8 +81,8 @@ namespace sadx_model_view
 
 			FieldOfView     = fov;
 			AspectRatio     = ratio;
-			MinDrawDistance = near.Clamp(-65535.0f, -1.0f);
-			MaxDrawDistance = far.Clamp(-65535.0f, -1.0f);
+			MinDrawDistance = near;
+			MaxDrawDistance = far;
 		}
 
 		private void UpdateProjectionMatrix()
@@ -98,7 +92,7 @@ namespace sadx_model_view
 				return;
 			}
 
-			Matrix.PerspectiveFovRH(FieldOfView, AspectRatio, -MinDrawDistance, -MaxDrawDistance, out _projection);
+			Projection = Matrix.PerspectiveFovRH(FieldOfView, AspectRatio, MinDrawDistance, MaxDrawDistance);
 		}
 
 		/// <summary>

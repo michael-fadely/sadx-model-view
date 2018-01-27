@@ -425,7 +425,7 @@ namespace sadx_model_view.Forms
 			Screen.cx = width / 2.0f;
 			Screen.cy = height / 2.0f;
 
-			camera.SetProjection(fov, ratio, -1.0f, -2300.0f);
+			camera.SetProjection(fov, ratio, 1.0f, 100000.0f);
 		}
 
 		private void UpdateCamera()
@@ -498,7 +498,7 @@ namespace sadx_model_view.Forms
 
 			if (obj != null)
 			{
-				renderer.Draw(obj, camera);
+				renderer.Draw(camera, obj);
 			}
 
 			if (landTable != null)

@@ -1,12 +1,10 @@
-﻿using System;
+﻿using sadx_model_view.Interfaces;
+using SharpDX;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using sadx_model_view.Forms;
-using sadx_model_view.Interfaces;
-using SharpDX;
 using Buffer = SharpDX.Direct3D11.Buffer;
-using Matrix = SharpDX.Matrix;
 
 namespace sadx_model_view.Ninja
 {
@@ -192,44 +190,6 @@ namespace sadx_model_view.Ninja
 
 			VertexBuffer?.Dispose();
 			VertexBuffer = device.CreateVertexBuffer(vertices);
-		}
-
-		// TODO: Generate a view frustum and do culling that way.
-		public bool IsVisible(Camera camera)
-		{
-			NJS_SCREEN screen = MainForm.Screen;
-			float radius = r * 1.2f;
-
-			MatrixStack.Push();
-
-			Matrix inverse = camera.InverseView;
-			MatrixStack.Multiply(in inverse);
-
-			MatrixStack.CalcPoint(in center, out Vector3 v);
-
-			MatrixStack.Pop();
-
-			if (radius - v.Z < camera.MaxDrawDistance)
-			{
-				return false;
-			}
-
-			float v2 = -v.Z - radius;
-			if (v2 > camera.MinDrawDistance)
-			{
-				return false;
-			}
-
-			float v6 = -1.0f / v2;
-			float v3 = screen.dist;
-			if ((v.X + radius) * v3 * v6 + screen.cx < 0.0 || screen.w < (v.X - radius) * v3 * v6 + screen.cx)
-			{
-				return false;
-			}
-
-			float v4 = -(0.85000002f * screen.dist);
-			return (v.Y - radius) * v4 * v6 + screen.cy >= 0.0
-			       && screen.h >= (v.Y + radius) * v4 * v6 + screen.cy;
 		}
 
 		public IEnumerable<Vector3> GetPoints(IEnumerable<short> indices)
