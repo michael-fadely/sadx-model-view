@@ -1,9 +1,9 @@
-﻿using sadx_model_view.Interfaces;
-using SharpDX;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using sadx_model_view.Interfaces;
+using SharpDX;
 using Buffer = SharpDX.Direct3D11.Buffer;
 
 namespace sadx_model_view.Ninja

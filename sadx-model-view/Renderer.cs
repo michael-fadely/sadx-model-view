@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
-using sadx_model_view.Extensions;
 using sadx_model_view.Ninja;
 using sadx_model_view.SA1;
 using SharpDX;
@@ -25,7 +24,7 @@ namespace sadx_model_view
 {
 	public class Renderer : IDisposable
 	{
-		private int visibleCount, lastVisibleCount;
+		private int lastVisibleCount;
 
 		/// <summary>
 		/// This is the texture transformation matrix that SADX uses for anything with an environment map.
@@ -73,7 +72,7 @@ namespace sadx_model_view
 		private MatrixBuffer lastMatrixData;
 		private MatrixBuffer matrixData;
 
-		private readonly List<MeshsetQueueElement> alphaList = new List<MeshsetQueueElement>();
+		private readonly MeshsetTree meshTree = new MeshsetTree();
 		private readonly Dictionary<NJD_FLAG, DisplayState> displayStates = new Dictionary<NJD_FLAG, DisplayState>();
 
 		public Renderer(int w, int h, IntPtr sceneHandle)
@@ -182,15 +181,12 @@ namespace sadx_model_view
 
 		public void Clear()
 		{
-			lastVisibleCount = visibleCount;
-			visibleCount = 0;
-
 			if (device == null)
 			{
 				return;
 			}
 
-			alphaList.Clear();
+			meshTree.Clear();
 
 			device.ImmediateContext.Rasterizer.State = rasterizerState;
 			device.ImmediateContext.ClearRenderTargetView(backBuffer, new RawColor4(0.0f, 1.0f, 1.0f, 1.0f));
@@ -230,27 +226,9 @@ namespace sadx_model_view
 
 		public void Draw(Camera camera, NJS_MODEL model)
 		{
-			List<NJS_MATERIAL> mats = model.mats;
-
 			foreach (NJS_MESHSET set in model.meshsets)
 			{
-				var bounds = set.GetWorldSpaceBoundingBox();
-
-				if (camera.Frustum.Contains(ref bounds) == ContainmentType.Disjoint)
-				{
-					continue;
-				}
-
-				++visibleCount;
-				ushort matId = set.MaterialId;
-
-				if (matId < mats.Count && (mats[matId].attrflags & NJD_FLAG.UseAlpha) != 0)
-				{
-					alphaList.Add(new MeshsetQueueElement(this, camera, model, set));
-				}
-
-				zWrite = true;
-				DrawSet(camera, model, set);
+				meshTree.Enqueue(this, camera, model, set);
 			}
 		}
 
@@ -337,36 +315,38 @@ namespace sadx_model_view
 
 		public void Present(Camera camera)
 		{
+			int visibleCount = 0;
+			zWrite = true;
+
+			foreach (var e in meshTree.OpaqueSets)
+			{
+				++visibleCount;
+				DrawMeshsetQueueElement(camera, e);
+			}
+
 			if (EnableAlpha)
 			{
+				// First draw with depth writes enabled & alpha threshold (in shader)
+				foreach (var e in meshTree.AlphaSets)
+				{
+					++visibleCount;
+					DrawMeshsetQueueElement(camera, e);
+				}
+
+				// Now draw with depth writes disabled
 				device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRO);
 				zWrite = false;
 
-				alphaList.Sort((a, b) =>
+				foreach (var e in meshTree.AlphaSets)
 				{
-					if (a.Distance.NearEqual(b.Distance))
-					{
-						return 0;
-					}
-
-					return a.Distance > b.Distance ? -1 : 1;
-				});
-
-				foreach (MeshsetQueueElement a in alphaList)
-				{
-					FlowControl = a.FlowControl;
-
-					RawMatrix m = a.Transform;
-					SetTransform(TransformState.World, in m);
-
-					DrawSet(camera, a.Model, a.Set);
+					DrawMeshsetQueueElement(camera, e);
 				}
 
 				device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
 				zWrite = true;
 			}
 
-			alphaList.Clear();
+			meshTree.Clear();
 
 			swapChain.Present(0, 0);
 
@@ -377,8 +357,19 @@ namespace sadx_model_view
 
 			if (visibleCount != lastVisibleCount)
 			{
+				lastVisibleCount = visibleCount;
 				Debug.WriteLine(visibleCount);
 			}
+		}
+
+		private void DrawMeshsetQueueElement(Camera camera, MeshsetQueueElement e)
+		{
+			FlowControl = e.FlowControl;
+
+			RawMatrix m = e.Transform;
+			SetTransform(TransformState.World, in m);
+
+			DrawSet(camera, e.Model, e.Set);
 		}
 
 		private void CreateRenderTarget()
