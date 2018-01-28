@@ -1,5 +1,5 @@
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using sadx_model_view.Ninja;
 using SharpDX;
 
@@ -7,7 +7,7 @@ namespace sadx_model_view
 {
 	class MeshsetQueueElement
 	{
-		public MeshsetQueueElement Next;
+		public MeshsetQueueElement Previous, Next;
 
 		public NJS_MODEL   Model       { get; }
 		public NJS_MESHSET Set         { get; }
@@ -40,22 +40,47 @@ namespace sadx_model_view
 				yield return e;
 			}
 		}
+
+		public void InsertNext(MeshsetQueueElement e)
+		{
+			if (!(e.Next is null && e.Previous is null))
+			{
+				throw new Exception("Element must be an orphan.");
+			}
+
+			var next = Next;
+
+			// my next element is now e
+			Next = e;
+
+			// e's previous element (presumed null) is now me
+			e.Previous = this;
+
+			// e's next element is now my next element
+			e.Next = next;
+
+			// if my next element isn't null, its previous element is now e
+			if (next != null)
+			{
+				next.Previous = e;
+			}
+		}
 	}
 
 	class MeshsetTree
 	{
-		private MeshsetQueueElement OpaqueRoot, OpaqueTop, AlphaRoot;
+		private MeshsetQueueElement opaqueRoot, opaqueTop, alphaRoot;
 
 		public IEnumerable<MeshsetQueueElement> OpaqueSets
 		{
 			get
 			{
-				if (OpaqueRoot is null)
+				if (opaqueRoot is null)
 				{
 					yield break;
 				}
 
-				foreach (var e in OpaqueRoot.Enumerate())
+				foreach (var e in opaqueRoot.Enumerate())
 				{
 					yield return e;
 				}
@@ -66,12 +91,12 @@ namespace sadx_model_view
 		{
 			get
 			{
-				if (AlphaRoot is null)
+				if (alphaRoot is null)
 				{
 					yield break;
 				}
 
-				foreach (var e in AlphaRoot.Enumerate())
+				foreach (var e in alphaRoot.Enumerate())
 				{
 					yield return e;
 				}
@@ -80,9 +105,9 @@ namespace sadx_model_view
 
 		public void Clear()
 		{
-			OpaqueRoot = null;
-			OpaqueTop = null;
-			AlphaRoot = null;
+			opaqueRoot = null;
+			opaqueTop = null;
+			alphaRoot = null;
 		}
 
 		public void Enqueue(Renderer renderer, Camera camera, NJS_MODEL model, NJS_MESHSET set)
@@ -98,44 +123,42 @@ namespace sadx_model_view
 
 			if (element.Transparent)
 			{
-				if (AlphaRoot is null)
+				if (alphaRoot is null)
 				{
-					AlphaRoot = element;
+					alphaRoot = element;
 					return;
 				}
 
-				if (element.Distance > AlphaRoot.Distance)
+				if (element.Distance > alphaRoot.Distance)
 				{
-					element.Next = AlphaRoot;
-					AlphaRoot = element;
+					element.Next = alphaRoot;
+					alphaRoot.Previous = element;
+					alphaRoot = element;
 					return;
 				}
 
-				MeshsetQueueElement last = AlphaRoot;
+				MeshsetQueueElement target = alphaRoot;
 
-				for (MeshsetQueueElement e = AlphaRoot; !(e is null) && e.Distance > element.Distance; e = e.Next)
+				for (MeshsetQueueElement e = target.Next; !(e is null) && e.Distance > element.Distance; e = e.Next)
 				{
-					last = e;
+					target = e;
 				}
 
-				var next = last.Next;
-				last.Next = element;
-				element.Next = next;
-
+				target?.InsertNext(element);
 				return;
 			}
 
 			// TODO: sort in reverse (nearest first), by texture, flags, etc
 
-			if (OpaqueRoot is null)
+			if (opaqueRoot is null)
 			{
-				OpaqueRoot = element;
-				OpaqueTop = element;
+				opaqueRoot = element;
+				opaqueTop = element;
 				return;
 			}
 
-			OpaqueTop.Next = element;
-			OpaqueTop = element;
+			opaqueTop.InsertNext(element);
+			opaqueTop = element;
 		}
 	}
 }
