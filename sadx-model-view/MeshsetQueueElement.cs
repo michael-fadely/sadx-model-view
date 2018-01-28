@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using sadx_model_view.Ninja;
 using SharpDX;
 
+// TODO: opaque instancing
+
 namespace sadx_model_view
 {
 	class MeshsetQueueElement
@@ -70,6 +72,7 @@ namespace sadx_model_view
 	class MeshsetTree
 	{
 		private MeshsetQueueElement opaqueRoot, opaqueTop, alphaRoot;
+		private readonly Dictionary<NJS_MODEL, MeshsetQueueElement> opaqueLookup = new Dictionary<NJS_MODEL, MeshsetQueueElement>();
 
 		public IEnumerable<MeshsetQueueElement> OpaqueSets
 		{
@@ -106,8 +109,9 @@ namespace sadx_model_view
 		public void Clear()
 		{
 			opaqueRoot = null;
-			opaqueTop = null;
-			alphaRoot = null;
+			opaqueTop  = null;
+			alphaRoot  = null;
+			opaqueLookup.Clear();
 		}
 
 		public void Enqueue(Renderer renderer, Camera camera, NJS_MODEL model, NJS_MESHSET set)
@@ -123,42 +127,117 @@ namespace sadx_model_view
 
 			if (element.Transparent)
 			{
-				if (alphaRoot is null)
+				InsertTransparent(element);
+			}
+			else
+			{
+				InsertOpaque(model, element);
+			}
+		}
+
+		private void InsertOpaque(NJS_MODEL model, MeshsetQueueElement element)
+		{
+			// If there is no root, we are now the root
+			if (opaqueRoot is null)
+			{
+				opaqueLookup[model] = element;
+				opaqueRoot          = element;
+				opaqueTop           = element;
+				return;
+			}
+
+#if true
+
+			if (opaqueLookup.TryGetValue(model, out MeshsetQueueElement temp))
+			{
+				MeshsetQueueElement target = temp;
+
+				for (MeshsetQueueElement e = target; !(e is null) && e.Model == model; e = e.Next)
 				{
-					alphaRoot = element;
+					if (e.Distance > element.Distance && e.Set.MaterialId == element.Set.MaterialId)
+					{
+						// if this is the root for this model, replace it
+						if (e == temp)
+						{
+							opaqueLookup[model] = element;
+						}
+
+						break;
+					}
+
+					target = e;
+				}
+
+				if (target == opaqueRoot && target.Distance > element.Distance)
+				{
+					ReplaceOpaqueRoot(element);
+				}
+				else
+				{
+					target.InsertNext(element);
+				}
+			}
+			else
+			{
+				// add this model to the cache since it's not there already
+				opaqueLookup[model] = element;
+
+				// if the current root has a further depth, replace it
+				if (opaqueRoot.Distance > element.Distance)
+				{
+					ReplaceOpaqueRoot(element);
 					return;
 				}
 
-				if (element.Distance > alphaRoot.Distance)
-				{
-					element.Next = alphaRoot;
-					alphaRoot.Previous = element;
-					alphaRoot = element;
-					return;
-				}
+				MeshsetQueueElement target = opaqueRoot;
 
-				MeshsetQueueElement target = alphaRoot;
-
-				for (MeshsetQueueElement e = target.Next; !(e is null) && e.Distance > element.Distance; e = e.Next)
+				for (MeshsetQueueElement e = target.Next; !(e is null) && e.Distance < element.Distance; e = e.Next)
 				{
 					target = e;
 				}
 
-				target?.InsertNext(element);
-				return;
+				target.InsertNext(element);
 			}
 
-			// TODO: sort in reverse (nearest first), by texture, flags, etc
-
-			if (opaqueRoot is null)
-			{
-				opaqueRoot = element;
-				opaqueTop = element;
-				return;
-			}
-
+#else// no sorting
 			opaqueTop.InsertNext(element);
 			opaqueTop = element;
+#endif
+		}
+
+		private void ReplaceOpaqueRoot(MeshsetQueueElement element)
+		{
+			opaqueLookup[element.Model] = element;
+
+			element.Next        = opaqueRoot;
+			opaqueRoot.Previous = element;
+			opaqueRoot          = element;
+		}
+
+		private void InsertTransparent(MeshsetQueueElement element)
+		{
+			if (alphaRoot is null)
+			{
+				alphaRoot = element;
+				return;
+			}
+
+			if (element.Distance > alphaRoot.Distance)
+			{
+				element.Next       = alphaRoot;
+				alphaRoot.Previous = element;
+				alphaRoot          = element;
+				return;
+			}
+
+			MeshsetQueueElement target = alphaRoot;
+
+			for (MeshsetQueueElement e = target.Next; !(e is null) && e.Distance > element.Distance; e = e.Next)
+			{
+				target = e;
+			}
+
+			target.InsertNext(element);
 		}
 	}
 }

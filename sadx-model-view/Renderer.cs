@@ -680,7 +680,7 @@ namespace sadx_model_view
 			{
 				SceneTexture texture = texturePool[textureIndex];
 
-				if (ReferenceEquals(texture, lastTexture))
+				if (texture == lastTexture)
 				{
 					return;
 				}
