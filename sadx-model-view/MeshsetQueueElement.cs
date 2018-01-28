@@ -104,6 +104,13 @@ namespace sadx_model_view
 					return;
 				}
 
+				if (element.Distance > AlphaRoot.Distance)
+				{
+					element.Next = AlphaRoot;
+					AlphaRoot = element;
+					return;
+				}
+
 				MeshsetQueueElement last = AlphaRoot;
 
 				for (MeshsetQueueElement e = AlphaRoot; !(e is null) && e.Distance > element.Distance; e = e.Next)
