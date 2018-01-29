@@ -71,6 +71,7 @@ namespace sadx_model_view
 
 	class MeshsetTree
 	{
+		// ReSharper disable once NotAccessedField.Local
 		private MeshsetQueueElement opaqueRoot, opaqueTop, alphaRoot;
 		private readonly Dictionary<NJS_MODEL, MeshsetQueueElement> opaqueLookup = new Dictionary<NJS_MODEL, MeshsetQueueElement>();
 

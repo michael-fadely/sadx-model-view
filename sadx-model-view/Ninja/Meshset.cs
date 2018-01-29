@@ -88,8 +88,6 @@ namespace sadx_model_view.Ninja
 			}
 		}
 
-		public NJS_MODEL Parent { get; }
-
 		/// <summary>
 		/// <para>The actual number of vertices referenced by this meshset.</para>
 		/// <para>
@@ -115,19 +113,14 @@ namespace sadx_model_view.Ninja
 		public readonly List<NJS_COLOR> vertcolor;  /* polygon vertex color list    */
 		public readonly List<NJS_TEX> vertuv;       /* polygon vertex uv list       */
 
-		public BoundingSphere LocalBoundingSphere;
-		public BoundingBox LocalBoundingBox;
-		private Vector3[] refPoints;
-		public Vector3[] Points => refPoints;
+		private Vector3[] points;
 
 		/// <summary>
 		/// Constructs a <see cref="NJS_MESHSET"/> from a file.
 		/// </summary>
 		/// <param name="stream">A stream containing the data.</param>
-		/// <param name="parent">Parent model.</param>
-		public NJS_MESHSET(Stream stream, NJS_MODEL parent)
+		public NJS_MESHSET(Stream stream)
 		{
-			Parent = parent;
 			var buffer = new byte[SizeInBytes];
 			stream.Read(buffer, 0, buffer.Length);
 
@@ -420,14 +413,7 @@ namespace sadx_model_view.Ninja
 					throw new ArgumentOutOfRangeException();
 			}
 
-			// This is used for transparent sorting.
-			refPoints = indices.Distinct().Select(i => (Vector3)vertices[i].position).ToArray();
-
-			if (refPoints.Length > 0)
-			{
-				BoundingBox.FromPoints(refPoints, out LocalBoundingBox);
-				BoundingSphere.FromBox(ref LocalBoundingBox, out LocalBoundingSphere);
-			}
+			points = indices.Distinct().Select(i => (Vector3)vertices[i].position).ToArray();
 
 			IndexCount = indices.Count;
 
@@ -444,17 +430,17 @@ namespace sadx_model_view.Ninja
 		{
 			if (m.IsIdentity)
 			{
-				return refPoints;
+				return points;
 			}
 
-			var points = new Vector3[refPoints.Length];
+			var transformed = new Vector3[points.Length];
 
-			for (int i = 0; i < points.Length; i++)
+			for (int i = 0; i < transformed.Length; i++)
 			{
-				Vector3.Transform(ref refPoints[i], ref m, out points[i]);
+				Vector3.Transform(ref points[i], ref m, out transformed[i]);
 			}
 
-			return points;
+			return transformed;
 		}
 
 		public BoundingBox GetWorldSpaceBoundingBox()

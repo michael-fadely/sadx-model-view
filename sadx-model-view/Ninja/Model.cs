@@ -76,7 +76,7 @@ namespace sadx_model_view.Ninja
 				stream.Position = meshsets_ptr;
 				for (int i = 0; i < nbMeshset; i++)
 				{
-					meshsets.Add(new NJS_MESHSET(stream, this));
+					meshsets.Add(new NJS_MESHSET(stream));
 				}
 			}
 
