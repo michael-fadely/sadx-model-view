@@ -318,6 +318,8 @@ namespace sadx_model_view
 			int visibleCount = 0;
 			zWrite = true;
 
+			meshTree.SortOpaque();
+
 			foreach (var e in meshTree.OpaqueSets)
 			{
 				++visibleCount;
@@ -326,6 +328,8 @@ namespace sadx_model_view
 
 			if (EnableAlpha)
 			{
+				meshTree.SortAlpha();
+
 				// First draw with depth writes enabled & alpha threshold (in shader)
 				foreach (var e in meshTree.AlphaSets)
 				{
