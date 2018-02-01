@@ -318,7 +318,7 @@ namespace sadx_model_view
 			int visibleCount = 0;
 			zWrite = true;
 
-			meshTree.SortOpaque();
+			//meshTree.SortOpaque();
 
 			foreach (var e in meshTree.OpaqueSets)
 			{
@@ -331,11 +331,10 @@ namespace sadx_model_view
 				meshTree.SortAlpha();
 
 				// First draw with depth writes enabled & alpha threshold (in shader)
-				foreach (var e in meshTree.AlphaSets)
-				{
-					++visibleCount;
-					DrawMeshsetQueueElement(camera, e);
-				}
+				//foreach (var e in meshTree.AlphaSets)
+				//{
+				//	DrawMeshsetQueueElement(camera, e);
+				//}
 
 				// Now draw with depth writes disabled
 				device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRO);
@@ -343,6 +342,7 @@ namespace sadx_model_view
 
 				foreach (var e in meshTree.AlphaSets)
 				{
+					++visibleCount;
 					DrawMeshsetQueueElement(camera, e);
 				}
 

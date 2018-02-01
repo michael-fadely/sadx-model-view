@@ -50,47 +50,43 @@ namespace sadx_model_view
 
 		public void SortOpaque()
 		{
-			opaqueSets.Sort(OpaqueCompare);
+			opaqueSets.Sort((a, b) =>
+			{
+				if (a.Set == b.Set)
+				{
+					return 0;
+				}
+
+				if (a.Distance > b.Distance)
+				{
+					return 1;
+				}
+
+				if (a.Distance < b.Distance)
+				{
+					return -1;
+				}
+
+				return 0;
+			});
 		}
 
 		public void SortAlpha()
 		{
-			alphaSets.Sort(AlphaCompare);
-		}
-
-		private static int OpaqueCompare(MeshsetQueueElement a, MeshsetQueueElement b)
-		{
-			if (a.Set == b.Set)
+			alphaSets.Sort((a, b) =>
 			{
+				if (a.Distance > b.Distance)
+				{
+					return -1;
+				}
+
+				if (a.Distance < b.Distance)
+				{
+					return 1;
+				}
+
 				return 0;
-			}
-
-			if (a.Distance > b.Distance)
-			{
-				return 1;
-			}
-
-			if (a.Distance < b.Distance)
-			{
-				return -1;
-			}
-
-			return 0;
-		}
-
-		private static int AlphaCompare(MeshsetQueueElement a, MeshsetQueueElement b)
-		{
-			if (a.Distance > b.Distance)
-			{
-				return -1;
-			}
-
-			if (a.Distance < b.Distance)
-			{
-				return 1;
-			}
-
-			return 0;
+			});
 		}
 
 		public void Enqueue(Renderer renderer, Camera camera, NJS_MODEL model, NJS_MESHSET set)

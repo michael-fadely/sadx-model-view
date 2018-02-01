@@ -23,7 +23,7 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 	}
 
 	result = result * input.diffuse + input.specular;
-	const float THRESHOLD = 0.9;
+	/*const float THRESHOLD = 0.9;
 
 	if (material.useAlpha)
 	{
@@ -42,7 +42,7 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 		{
 			discard;
 		}
-	}
+	}*/
 
 	return result;
 }
