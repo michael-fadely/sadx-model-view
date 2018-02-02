@@ -72,7 +72,7 @@ namespace sadx_model_view
 		private MatrixBuffer lastMatrixData;
 		private MatrixBuffer matrixData;
 
-		private readonly MeshsetTree meshTree = new MeshsetTree();
+		private readonly MeshsetQueue meshQueue = new MeshsetQueue();
 		private readonly Dictionary<NJD_FLAG, DisplayState> displayStates = new Dictionary<NJD_FLAG, DisplayState>();
 
 		public Renderer(int w, int h, IntPtr sceneHandle)
@@ -112,15 +112,15 @@ namespace sadx_model_view
 				throw new InsufficientFeatureLevelException(device.FeatureLevel, FeatureLevel.Level_10_0);
 			}
 
-			int mtx_size = Matrix.SizeInBytes * 5;
-			var bufferDesc = new BufferDescription(mtx_size,
-				ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write, ResourceOptionFlags.None, mtx_size);
+			int matrixSize = Matrix.SizeInBytes * 5 + Vector4.SizeInBytes;
+			var bufferDesc = new BufferDescription(matrixSize,
+				ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write, ResourceOptionFlags.None, matrixSize);
 
 			matrixBuffer = new Buffer(device, bufferDesc);
 
 			// Size must be divisible by 16, so this is just padding.
 			int size = Math.Max(ShaderMaterial.SizeInBytes, 80);
-			int stride = ShaderMaterial.SizeInBytes + Vector3.SizeInBytes + sizeof(uint);
+			int stride = ShaderMaterial.SizeInBytes + sizeof(uint);
 
 			bufferDesc = new BufferDescription(size,
 				ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write, ResourceOptionFlags.None, stride);
@@ -186,7 +186,7 @@ namespace sadx_model_view
 				return;
 			}
 
-			meshTree.Clear();
+			meshQueue.Clear();
 
 			device.ImmediateContext.Rasterizer.State = rasterizerState;
 			device.ImmediateContext.ClearRenderTargetView(backBuffer, new RawColor4(0.0f, 1.0f, 1.0f, 1.0f));
@@ -228,7 +228,7 @@ namespace sadx_model_view
 		{
 			foreach (NJS_MESHSET set in model.meshsets)
 			{
-				meshTree.Enqueue(this, camera, model, set);
+				meshQueue.Enqueue(this, camera, model, set);
 			}
 		}
 
@@ -237,7 +237,7 @@ namespace sadx_model_view
 		private RasterizerState lastRasterizerState;
 		private SamplerState lastSamplerState;
 
-		private void DrawSet(Camera camera, NJS_MODEL parent, NJS_MESHSET set)
+		private void DrawSet(NJS_MODEL parent, NJS_MESHSET set)
 		{
 			ushort materialId = set.MaterialId;
 			List<NJS_MATERIAL> mats = parent.mats;
@@ -257,7 +257,7 @@ namespace sadx_model_view
 			}
 
 			ShaderMaterial shaderMaterial = parent.GetSADXMaterial(this, njMaterial);
-			SetShaderMaterial(in shaderMaterial, camera);
+			SetShaderMaterial(in shaderMaterial);
 
 			DisplayState state = GetSADXDisplayState(njMaterial);
 
@@ -296,10 +296,12 @@ namespace sadx_model_view
 					stream.Write(matrixData.Projection);
 					stream.Write(wvMatrixInvT);
 					stream.Write(matrixData.Texture);
+					stream.Write(matrixData.CameraPosition);
 				}
 
 				device.ImmediateContext.UnmapSubresource(matrixBuffer, 0);
 				lastMatrixData = matrixData;
+				matrixDataChanged = false;
 			}
 
 			if (parent.VertexBuffer != lastVertexBuffer)
@@ -318,17 +320,20 @@ namespace sadx_model_view
 			int visibleCount = 0;
 			zWrite = true;
 
+			matrixDataChanged = true;
+			matrixData.CameraPosition = camera.Position;
+
 			//meshTree.SortOpaque();
 
-			foreach (var e in meshTree.OpaqueSets)
+			foreach (var e in meshQueue.OpaqueSets)
 			{
 				++visibleCount;
-				DrawMeshsetQueueElement(camera, e);
+				DrawMeshsetQueueElement(e);
 			}
 
 			if (EnableAlpha)
 			{
-				meshTree.SortAlpha();
+				meshQueue.SortAlpha();
 
 				// First draw with depth writes enabled & alpha threshold (in shader)
 				//foreach (var e in meshTree.AlphaSets)
@@ -340,17 +345,17 @@ namespace sadx_model_view
 				device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRO);
 				zWrite = false;
 
-				foreach (var e in meshTree.AlphaSets)
+				foreach (var e in meshQueue.AlphaSets)
 				{
 					++visibleCount;
-					DrawMeshsetQueueElement(camera, e);
+					DrawMeshsetQueueElement(e);
 				}
 
 				device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
 				zWrite = true;
 			}
 
-			meshTree.Clear();
+			meshQueue.Clear();
 
 			swapChain.Present(0, 0);
 
@@ -366,14 +371,14 @@ namespace sadx_model_view
 			}
 		}
 
-		private void DrawMeshsetQueueElement(Camera camera, MeshsetQueueElement e)
+		private void DrawMeshsetQueueElement(MeshsetQueueElement e)
 		{
 			FlowControl = e.FlowControl;
 
 			RawMatrix m = e.Transform;
 			SetTransform(TransformState.World, in m);
 
-			DrawSet(camera, e.Model, e.Set);
+			DrawSet(e.Model, e.Set);
 		}
 
 		private void CreateRenderTarget()
@@ -810,7 +815,7 @@ namespace sadx_model_view
 		private InputLayout inputLayout;
 
 		private bool lastZwrite;
-		public void SetShaderMaterial(in ShaderMaterial material, Camera camera)
+		public void SetShaderMaterial(in ShaderMaterial material)
 		{
 			if (material == lastMaterial && zWrite == lastZwrite)
 			{
@@ -832,7 +837,6 @@ namespace sadx_model_view
 				stream.Write(material.UseTexture ? 1 : 0);
 				stream.Write(material.UseSpecular ? 1 : 0);
 				stream.Write(zWrite ? 1 : 0);
-				stream.Write(camera.Position);
 			}
 			device.ImmediateContext.UnmapSubresource(materialBuffer, 0);
 		}

@@ -8,6 +8,7 @@ namespace sadx_model_view
 		public Matrix View;
 		public Matrix Projection;
 		public Matrix Texture;
+		public Vector3 CameraPosition;
 
 		public override bool Equals(object obj)
 		{
@@ -19,7 +20,8 @@ namespace sadx_model_view
 			return World.Equals(other.World)
 			       && View.Equals(other.View)
 			       && Projection.Equals(other.Projection)
-			       && Texture.Equals(other.Texture);
+			       && Texture.Equals(other.Texture)
+			       && CameraPosition.Equals(other.CameraPosition);
 		}
 
 		public override int GetHashCode() => 1;

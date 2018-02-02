@@ -34,7 +34,7 @@ namespace sadx_model_view
 		}
 	}
 
-	class MeshsetTree
+	class MeshsetQueue
 	{
 		private readonly List<MeshsetQueueElement> opaqueSets = new List<MeshsetQueueElement>();
 		private readonly List<MeshsetQueueElement> alphaSets = new List<MeshsetQueueElement>();

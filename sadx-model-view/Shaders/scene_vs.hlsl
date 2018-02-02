@@ -7,22 +7,20 @@ cbuffer MatrixBuffer : register(b0)
 	matrix projectionMatrix;
 	matrix wvMatrixInvT;
 	matrix textureTransform;
+	float3 cameraPos;
 };
 
 VS_OUTPUT main(VS_INPUT input)
 {
 	VS_OUTPUT result;
-	float4 viewPos;
 
 	result.position = float4(input.position, 1.0f);
 	result.position = mul(worldMatrix, result.position);
+	
+	float3 worldPos = result.position.xyz;
+
 	result.position = mul(viewMatrix, result.position);
-
-	viewPos = result.position;
-
 	result.position = mul(projectionMatrix, result.position);
-
-	result.normal = input.normal;
 
 	if (material.useEnv)
 	{
@@ -38,20 +36,20 @@ VS_OUTPUT main(VS_INPUT input)
 
 	if (material.useLight)
 	{
-		float3 lightDir = normalize(float3(-1, 1, -1));
+		float3 lightDir = normalize(-float3(1, -1, 1));
 
-		float3 worldNormal = mul(input.normal, (float3x3)worldMatrix);
-		float _dot = dot(lightDir, worldNormal);
-		float3 halfAngle = normalize(normalize(viewPos.xyz - cameraPos) + lightDir);
+		float3 n = normalize(mul((float3x3)worldMatrix, input.normal));
+		float d = saturate(dot(n, lightDir));
 
 		const float ambient = 0.25f;
 
-		result.diffuse.rgb = max(0, idiffuse * _dot).rgb + float3(ambient, ambient, ambient);
+		result.diffuse.rgb = max(0, idiffuse * d).rgb + ambient;
 		result.diffuse.a = idiffuse.a;
 
-		if (material.useSpecular)
+		if (material.useSpecular && d >= 0.0)
 		{
-			result.specular = max(0, pow(max(0, dot(halfAngle, worldNormal)), material.exponent) * material.specular);
+			float3 h = normalize(normalize(cameraPos - worldPos) + lightDir);
+			result.specular = max(0, pow(saturate(dot(h, n)), material.exponent) * material.specular);
 		}
 		else
 		{
