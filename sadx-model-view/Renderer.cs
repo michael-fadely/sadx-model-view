@@ -582,6 +582,7 @@ namespace sadx_model_view
 			using (var buffer = new DataStream(bitmapSource.Size.Height * stride, true, true))
 			{
 				bitmapSource.CopyPixels(stride, buffer);
+
 				var texture = new Texture2D(device, new Texture2DDescription
 				{
 					Width             = bitmapSource.Size.Width,
@@ -752,7 +753,8 @@ namespace sadx_model_view
 			// - NJD_FLAG.UseFlat
 
 			const NJD_FLAG state_mask = NJD_FLAG.ClampU | NJD_FLAG.ClampV | NJD_FLAG.FlipU | NJD_FLAG.FlipV
-			                            | NJD_FLAG.DoubleSide | NJD_FLAG.UseAlpha;
+										| NJD_FLAG.DoubleSide | NJD_FLAG.UseAlpha
+										| (NJD_FLAG)0xFC000000 /* blend modes */;
 
 			NJD_FLAG flags = FlowControl.Apply(material.attrflags) & state_mask;
 

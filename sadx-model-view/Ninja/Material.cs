@@ -3,6 +3,7 @@ using System.IO;
 
 namespace sadx_model_view.Ninja
 {
+	// TODO: blend modes
 	/// <summary>
 	/// Flags used for materials.
 	/// </summary>
