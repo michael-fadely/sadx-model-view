@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Text;
 using System.Windows.Forms;
@@ -11,8 +10,11 @@ using sadx_model_view.Ninja;
 using sadx_model_view.SA1;
 using SharpDX;
 using SharpDX.Direct3D11;
+using SharpDX.DXGI;
 using SharpDX.Mathematics.Interop;
+using SharpDX.WIC;
 using VrSharp.PvrTexture;
+using Bitmap = System.Drawing.Bitmap;
 
 // TODO: Mipmap mode (From Texture, Always On, Always Off, Generate)
 
@@ -270,26 +272,7 @@ namespace sadx_model_view.Forms
 
 			if (extension.Equals(".txt", StringComparison.OrdinalIgnoreCase))
 			{
-				MessageBox.Show(this, "Not yet implemented", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-				/*
-				var directory = Path.GetDirectoryName(dialog.FileName) ?? string.Empty;
-				string[] index = File.ReadAllLines(dialog.FileName);
-
-				foreach (var line in index)
-				{
-					int i = line.LastIndexOf(",", StringComparison.Ordinal);
-
-					string filename = Path.Combine(directory, line.Substring(++i));
-
-					if (!File.Exists(filename))
-					{
-						continue;
-					}
-
-					var texture = Texture.FromFile(device, filename, Usage.None, Pool.Managed);
-					TexturePool.Add(texture);
-				}
-				*/
+				LoadTextureIndex(dialog.FileName);
 			}
 			else if (extension.Equals(".prs", StringComparison.OrdinalIgnoreCase))
 			{
@@ -298,6 +281,39 @@ namespace sadx_model_view.Forms
 			else if (extension.Equals(".pvm", StringComparison.OrdinalIgnoreCase))
 			{
 				LoadPVM(dialog.FileName);
+			}
+		}
+
+		private void LoadTextureIndex(string fileName)
+		{
+			using (var factory = new ImagingFactory2())
+			{
+				string   directory = Path.GetDirectoryName(fileName) ?? string.Empty;
+				string[] index     = File.ReadAllLines(fileName);
+
+				int lineNumber = 0;
+				foreach (string line in index)
+				{
+					++lineNumber;
+
+					int i = line.LastIndexOf(",", StringComparison.Ordinal);
+
+					string texturePath = Path.Combine(directory, line.Substring(++i));
+
+					if (!File.Exists(texturePath))
+					{
+						MessageBox.Show($"Missing texture on line {lineNumber}: {texturePath}");
+						renderer.ClearTexturePool();
+						break;
+					}
+
+					using (var decoder = new BitmapDecoder(factory, texturePath, DecodeOptions.CacheOnDemand))
+					using (var converter = new FormatConverter(factory))
+					{
+						converter.Initialize(decoder.GetFrame(0), PixelFormat.Format32bppPRGBA, BitmapDitherType.None, null, 0.0, BitmapPaletteType.Custom);
+						renderer.CreateTextureFromBitmapSource(converter);
+					}
+				}
 			}
 		}
 
@@ -565,7 +581,6 @@ namespace sadx_model_view.Forms
 
 				case Keys.C:
 					renderer.DefaultCullMode = renderer.DefaultCullMode == CullMode.Back ? CullMode.None : CullMode.Back;
-					// TODO device.SetRenderState(RenderState.CullMode, CullMode);
 					break;
 
 				case Keys.W:

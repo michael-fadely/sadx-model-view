@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using sadx_model_view.Ninja;
@@ -12,13 +11,14 @@ using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
 using SharpDX.Mathematics.Interop;
+using SharpDX.WIC;
+using Bitmap = System.Drawing.Bitmap;
 using Buffer = SharpDX.Direct3D11.Buffer;
 using Color = SharpDX.Color;
 using Device = SharpDX.Direct3D11.Device;
 using MapFlags = SharpDX.Direct3D11.MapFlags;
+using PixelFormat = System.Drawing.Imaging.PixelFormat;
 using Resource = SharpDX.Direct3D11.Resource;
-
-// TODO: Sort meshset by material flags
 
 namespace sadx_model_view
 {
@@ -573,6 +573,31 @@ namespace sadx_model_view
 
 			var pair = new SceneTexture(texture, new ShaderResourceView(device, texture));
 			texturePool.Add(pair);
+		}
+
+		// TODO: generate mipmaps mod loader style
+		public void CreateTextureFromBitmapSource(BitmapSource bitmapSource)
+		{
+			int stride = bitmapSource.Size.Width * 4;
+			using (var buffer = new DataStream(bitmapSource.Size.Height * stride, true, true))
+			{
+				bitmapSource.CopyPixels(stride, buffer);
+				var texture = new Texture2D(device, new Texture2DDescription
+				{
+					Width             = bitmapSource.Size.Width,
+					Height            = bitmapSource.Size.Height,
+					ArraySize         = 1,
+					BindFlags         = BindFlags.ShaderResource,
+					Usage             = ResourceUsage.Immutable,
+					CpuAccessFlags    = CpuAccessFlags.None,
+					Format            = Format.R8G8B8A8_UNorm,
+					MipLevels         = 1,
+					OptionFlags       = ResourceOptionFlags.None,
+					SampleDescription = new SampleDescription(1, 0)
+				}, new DataRectangle(buffer.DataPointer, stride));
+
+				texturePool.Add(new SceneTexture(texture, new ShaderResourceView(device, texture)));
+			}
 		}
 
 		public void ClearTexturePool()
