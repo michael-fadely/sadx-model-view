@@ -12,11 +12,11 @@ namespace sadx_model_view.SA1
 		public static int SizeInBytes => 0x18;
 
 		// ReSharper disable once NotAccessedField.Local
-		private float anonymous_0;
+		float anonymous_0;
 		// ReSharper disable once NotAccessedField.Local
-		private float anonymous_1;
+		float anonymous_1;
 		// ReSharper disable once NotAccessedField.Local
-		private float anonymous_2;
+		float anonymous_2;
 		public NJS_OBJECT Model;
 		public NJS_ACTION Animation;
 		// ReSharper disable once NotAccessedField.Local
@@ -26,15 +26,15 @@ namespace sadx_model_view.SA1
 		{
 			var buffer = new byte[SizeInBytes];
 			stream.Read(buffer, 0, buffer.Length);
-			var position = stream.Position;
+			long position = stream.Position;
 
 			anonymous_0 = BitConverter.ToSingle(buffer, 0x00);
 			anonymous_1 = BitConverter.ToSingle(buffer, 0x04);
 			anonymous_2 = BitConverter.ToSingle(buffer, 0x08);
 
-			var object_ptr  = BitConverter.ToUInt32(buffer, 0x0C);
-			var anim_ptr    = BitConverter.ToUInt32(buffer, 0x10);
-			var texlist_ptr = BitConverter.ToUInt32(buffer, 0x14);
+			uint object_ptr  = BitConverter.ToUInt32(buffer, 0x0C);
+			uint anim_ptr    = BitConverter.ToUInt32(buffer, 0x10);
+			uint texlist_ptr = BitConverter.ToUInt32(buffer, 0x14);
 
 			if (object_ptr > 0)
 			{

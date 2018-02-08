@@ -99,21 +99,21 @@ namespace sadx_model_view.Ninja
 		public int VertexCount { get; }
 
 		public Buffer IndexBuffer;
-		public int IndexCount;
+		public int    IndexCount;
 
-		public ushort type_matId;          /* meshset type and attr index
-											14-15 : meshset type bits
-											0-13 : material id(0-4095)     */
-		public ushort nbMesh;              /* mesh count                   */
-		public readonly List<short> meshes;         /* mesh array                   */
+		public ushort type_matId;			/* meshset type and attr index
+											   14-15 : meshset type bits
+											   0-13 : material id(0-4095)     */
+		public ushort nbMesh;				/* mesh count                   */
+		public readonly List<short> meshes; /* mesh array                   */
 		// TODO: unused (and unimplemented)
 		// ReSharper disable once CollectionNeverQueried.Global
-		public readonly List<uint> attrs;           /* attribure                    */
-		public readonly List<Vector3> normals;      /* mesh normal list             */
-		public readonly List<NJS_COLOR> vertcolor;  /* polygon vertex color list    */
-		public readonly List<NJS_TEX> vertuv;       /* polygon vertex uv list       */
+		public readonly List<uint>      attrs;     /* attribure                    */
+		public readonly List<Vector3>   normals;   /* mesh normal list             */
+		public readonly List<NJS_COLOR> vertcolor; /* polygon vertex color list    */
+		public readonly List<NJS_TEX>   vertuv;    /* polygon vertex uv list       */
 
-		private Vector3[] points;
+		Vector3[] points;
 
 		/// <summary>
 		/// Constructs a <see cref="NJS_MESHSET"/> from a file.
@@ -129,11 +129,11 @@ namespace sadx_model_view.Ninja
 			type_matId = BitConverter.ToUInt16(buffer, 0x00);
 			nbMesh     = BitConverter.ToUInt16(buffer, 0x02);
 
-			var meshes_ptr    = BitConverter.ToUInt32(buffer, 0x04);
-			var attrs_ptr     = BitConverter.ToUInt32(buffer, 0x08);
-			var normals_ptr   = BitConverter.ToUInt32(buffer, 0x0C);
-			var vertcolor_ptr = BitConverter.ToUInt32(buffer, 0x10);
-			var vertuv_ptr    = BitConverter.ToUInt32(buffer, 0x14);
+			uint meshes_ptr    = BitConverter.ToUInt32(buffer, 0x04);
+			uint attrs_ptr     = BitConverter.ToUInt32(buffer, 0x08);
+			uint normals_ptr   = BitConverter.ToUInt32(buffer, 0x0C);
+			uint vertcolor_ptr = BitConverter.ToUInt32(buffer, 0x10);
+			uint vertuv_ptr    = BitConverter.ToUInt32(buffer, 0x14);
 
 			meshes    = new List<short>();
 			attrs     = new List<uint>();
@@ -162,6 +162,7 @@ namespace sadx_model_view.Ninja
 							stream.Read(meshesBuffer, 0, sizeof(short));
 							meshes.Add(BitConverter.ToInt16(meshesBuffer, 0));
 						}
+
 						break;
 
 					case NJD_MESHSET.Quad:
@@ -172,6 +173,7 @@ namespace sadx_model_view.Ninja
 							stream.Read(meshesBuffer, 0, sizeof(short));
 							meshes.Add(BitConverter.ToInt16(meshesBuffer, 0));
 						}
+
 						break;
 
 					case NJD_MESHSET.NSided:
@@ -186,7 +188,7 @@ namespace sadx_model_view.Ninja
 							// whether or not the polygon to follow is reversed.
 							n &= 0x3FFF;
 
-							for (int j = 0; j < n; j++)
+							for (var j = 0; j < n; j++)
 							{
 								stream.Read(meshesBuffer, 0, sizeof(short));
 								meshes.Add(BitConverter.ToInt16(meshesBuffer, 0));
@@ -199,6 +201,7 @@ namespace sadx_model_view.Ninja
 						{
 							throw new Exception("Recorded vertex count is incorrect.");
 						}
+
 						break;
 
 					default:
@@ -296,16 +299,16 @@ namespace sadx_model_view.Ninja
 		/// <param name="localIndex">Index of the current UV cooridnates and/or color to use.</param>
 		/// <param name="vertexIndex">Index of the vertex in <paramref name="vertices"/>.</param>
 		/// <returns><paramref name="localIndex"/> if the vertex was updated, or a new index if a new vertex was added.</returns>
-		private short UpdateVertex(IList<Vertex> vertices, int localIndex, int vertexIndex)
+		short UpdateVertex(IList<Vertex> vertices, int localIndex, int vertexIndex)
 		{
-			bool added = false;
+			var added  = false;
 			int result = vertexIndex;
 
 			Vertex vertex = vertices[vertexIndex];
 
 			if (vertcolor.Count != 0)
 			{
-				if (vertex.diffuse.HasValue)
+				if (vertex.Diffuse.HasValue)
 				{
 					result = (short)vertices.Count;
 					vertices.Add(vertex);
@@ -313,20 +316,20 @@ namespace sadx_model_view.Ninja
 				}
 
 				NJS_BGRA vcolor = vertcolor[localIndex].argb;
-				vertex.diffuse = new ColorBGRA(vcolor.b, vcolor.g, vcolor.r, vcolor.a);
+				vertex.Diffuse = new ColorBGRA(vcolor.b, vcolor.g, vcolor.r, vcolor.a);
 			}
 
 			if (vertuv.Count != 0)
 			{
 				var uv = new Vector2(vertuv[localIndex].u / 255.0f, vertuv[localIndex].v / 255.0f);
 
-				if (!added && vertex.uv.HasValue)
+				if (!added && vertex.UV.HasValue)
 				{
 					result = (short)vertices.Count;
 					vertices.Add(vertex);
 				}
 
-				vertex.uv = uv;
+				vertex.UV = uv;
 			}
 
 			vertices[result] = vertex;
@@ -346,6 +349,7 @@ namespace sadx_model_view.Ninja
 						UpdateVertex(vertices, i, n);
 						indices.Add(n);
 					}
+
 					break;
 
 				case NJD_MESHSET.Quad:
@@ -369,22 +373,22 @@ namespace sadx_model_view.Ninja
 				case NJD_MESHSET.NSided:
 				case NJD_MESHSET.Strip:
 				{
-					int index = 0;
+					var index = 0;
 					for (int i = 0; i < nbMesh; i++)
 					{
-						short n = meshes[index++];
-						bool flip = (n & 0x8000) == 0;
+						short n    = meshes[index++];
+						bool  flip = (n & 0x8000) == 0;
 						n &= 0x3FFF;
 
 						var tempIndices = new List<short>();
 
-						for (int j = 0; j < n; j++)
+						for (var j = 0; j < n; j++)
 						{
 							// i - (k + 1), where i = index and k = mesh number
 							tempIndices.Add(UpdateVertex(vertices, index - (i + 1), meshes[index++]));
 						}
 
-						for (int k = 0; k < tempIndices.Count - 2; k++)
+						for (var k = 0; k < tempIndices.Count - 2; k++)
 						{
 							short v0 = tempIndices[k + 0];
 							short v1 = tempIndices[k + 1];
@@ -413,7 +417,7 @@ namespace sadx_model_view.Ninja
 					throw new ArgumentOutOfRangeException();
 			}
 
-			points = indices.Distinct().Select(i => (Vector3)vertices[i].position).ToArray();
+			points = indices.Distinct().Select(i => (Vector3)vertices[i].Position).ToArray();
 
 			IndexCount = indices.Count;
 
@@ -421,12 +425,12 @@ namespace sadx_model_view.Ninja
 			IndexBuffer = device.CreateIndexBuffer(indices, IndexCount * sizeof(short));
 		}
 
-		private readonly Dictionary<Matrix, BoundingBox> bounds = new Dictionary<Matrix, BoundingBox>();
+		readonly Dictionary<Matrix, BoundingBox> bounds = new Dictionary<Matrix, BoundingBox>();
 
-		private BoundingBox worldBox;
-		private BoundingSphere worldSphere;
+		BoundingBox    worldBox;
+		BoundingSphere worldSphere;
 
-		private Vector3[] TransformedPoints(ref Matrix m)
+		Vector3[] TransformedPoints(ref Matrix m)
 		{
 			if (m.IsIdentity)
 			{
@@ -449,7 +453,7 @@ namespace sadx_model_view.Ninja
 
 			if (!bounds.TryGetValue(m, out worldBox))
 			{
-				worldBox = BoundingBox.FromPoints(TransformedPoints(ref m));
+				worldBox  = BoundingBox.FromPoints(TransformedPoints(ref m));
 				bounds[m] = worldBox;
 			}
 

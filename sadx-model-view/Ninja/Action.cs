@@ -5,8 +5,8 @@ namespace sadx_model_view.Ninja
 {
 	public class NJS_MOTION
 	{
-		public int mdata; // TODO: void*
-		public uint nbFrame;
+		public int    mdata; // TODO: void*
+		public uint   nbFrame;
 		public ushort type;
 		/// <summary>
 		/// Interpolation function index.
@@ -33,10 +33,10 @@ namespace sadx_model_view.Ninja
 		{
 			var buffer = new byte[SizeInBytes];
 			stream.Read(buffer, 0, buffer.Length);
-			var position = stream.Position;
+			long position = stream.Position;
 
-			var object_ptr = BitConverter.ToUInt32(buffer, 0);
-			var motion_ptr = BitConverter.ToUInt32(buffer, 4);
+			uint object_ptr = BitConverter.ToUInt32(buffer, 0);
+			uint motion_ptr = BitConverter.ToUInt32(buffer, 4);
 
 			if (object_ptr > 0)
 			{

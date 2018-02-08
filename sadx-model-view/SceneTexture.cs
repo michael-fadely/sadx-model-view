@@ -5,12 +5,12 @@ namespace sadx_model_view
 {
 	public class SceneTexture : IDisposable
 	{
-		public readonly Texture2D Texture;
+		public readonly Texture2D          Texture;
 		public readonly ShaderResourceView ShaderResource;
 
 		public SceneTexture(Texture2D texture, ShaderResourceView shaderResource)
 		{
-			Texture = texture;
+			Texture        = texture;
 			ShaderResource = shaderResource;
 		}
 

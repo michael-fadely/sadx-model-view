@@ -21,24 +21,21 @@ namespace sadx_model_view.Forms
 {
 	public partial class MainForm : Form
 	{
-		private float speed = 0.5f;
-		private System.Drawing.Point last_mouse = System.Drawing.Point.Empty;
-		private CamControls camcontrols = CamControls.None;
+		float speed = 0.5f;
+		System.Drawing.Point last_mouse = System.Drawing.Point.Empty;
+		CamControls camcontrols = CamControls.None;
 
-		private Renderer renderer;
-
-		// TODO: not this
-		public static NJS_SCREEN Screen;
+		Renderer renderer;
 
 		// SADX's default horizontal field of view.
-		private static readonly float fov_h = MathUtil.DegreesToRadians(70);
+		static readonly float fov_h = MathUtil.DegreesToRadians(70);
 		// SADX's default vertical field of view (55.412927352596554 degrees)
-		private static readonly float fov_v = 2.0f * (float)Math.Atan(Math.Tan(fov_h / 2.0f) * (3.0f / 4.0f));
+		static readonly float fov_v = 2.0f * (float)Math.Atan(Math.Tan(fov_h / 2.0f) * (3.0f / 4.0f));
 
-		private NJS_OBJECT obj;
-		private LandTable landTable;
+		NJS_OBJECT obj;
+		LandTable landTable;
 
-		private enum ChunkTypes : uint
+		enum ChunkTypes : uint
 		{
 			Label       = 0x4C42414C,
 			Animations  = 0x4D494E41,
@@ -50,14 +47,14 @@ namespace sadx_model_view.Forms
 			End         = 0x444E45
 		}
 
-		private readonly Camera camera = new Camera();
+		readonly Camera camera = new Camera();
 
 		public MainForm()
 		{
 			InitializeComponent();
 		}
 
-		private void openToolStripMenuItem_Click(object sender, EventArgs e)
+		void openToolStripMenuItem_Click(object sender, EventArgs e)
 		{
 			OpenFileDialog dialog = openModelDialog;
 			if (dialog.ShowDialog(this) != DialogResult.OK)
@@ -130,7 +127,7 @@ namespace sadx_model_view.Forms
 				}
 
 				file.Position = metadata_ptr;
-				bool done = false;
+				var done = false;
 
 				// ReSharper disable once CollectionNeverQueried.Local
 				var labels = new List<KeyValuePair<uint, string>>();
@@ -146,7 +143,7 @@ namespace sadx_model_view.Forms
 				while (!done)
 				{
 					file.Read(buffer, 0, 8);
-					var offset = file.Position;
+					long offset = file.Position;
 					var type = (ChunkTypes)BitConverter.ToUInt32(buffer, 0);
 					int size = BitConverter.ToInt32(buffer, 4);
 
@@ -170,7 +167,7 @@ namespace sadx_model_view.Forms
 									break;
 								}
 
-								var pos = file.Position;
+								long pos = file.Position;
 								file.Position = offset + name_addr;
 
 								int i = file.ReadString(ref buffer);
@@ -251,7 +248,7 @@ namespace sadx_model_view.Forms
 			}
 		}
 
-		private void openTexturesToolStripMenuItem_Click(object sender, EventArgs e)
+		void openTexturesToolStripMenuItem_Click(object sender, EventArgs e)
 		{
 			OpenFileDialog dialog = openTexturesDialog;
 			if (dialog.ShowDialog(this) != DialogResult.OK)
@@ -283,14 +280,14 @@ namespace sadx_model_view.Forms
 			}
 		}
 
-		private void LoadTextureIndex(string fileName)
+		void LoadTextureIndex(string fileName)
 		{
 			using (var factory = new ImagingFactory2())
 			{
 				string   directory = Path.GetDirectoryName(fileName) ?? string.Empty;
 				string[] index     = File.ReadAllLines(fileName);
 
-				int lineNumber = 0;
+				var lineNumber = 0;
 				foreach (string line in index)
 				{
 					++lineNumber;
@@ -316,7 +313,7 @@ namespace sadx_model_view.Forms
 			}
 		}
 
-		private void LoadPRS(string fileName)
+		void LoadPRS(string fileName)
 		{
 			var prs = new PrsCompression();
 
@@ -332,7 +329,7 @@ namespace sadx_model_view.Forms
 			}
 		}
 
-		private void LoadPVM(string fileName)
+		void LoadPVM(string fileName)
 		{
 			using (var file = new FileStream(fileName, FileMode.Open))
 			{
@@ -340,7 +337,7 @@ namespace sadx_model_view.Forms
 			}
 		}
 
-		private void LoadPVM(Stream stream)
+		void LoadPVM(Stream stream)
 		{
 			var pvm = new PvmArchive();
 
@@ -355,7 +352,7 @@ namespace sadx_model_view.Forms
 				Bitmap[] mipmaps = null;
 				Bitmap bitmap;
 
-				int levels = 1;
+				var levels = 1;
 
 				if (pvr.HasMipmaps)
 				{
@@ -372,7 +369,7 @@ namespace sadx_model_view.Forms
 			}
 		}
 
-		private void OnShown(object sender, EventArgs e)
+		void OnShown(object sender, EventArgs e)
 		{
 			int w = scene.ClientRectangle.Width;
 			int h = scene.ClientRectangle.Height;
@@ -408,7 +405,7 @@ namespace sadx_model_view.Forms
 			scene.SizeChanged += OnSizeChanged;
 		}
 
-		private void UpdateProjection()
+		void UpdateProjection()
 		{
 			float width = scene.ClientRectangle.Width;
 			float height = scene.ClientRectangle.Height;
@@ -422,28 +419,10 @@ namespace sadx_model_view.Forms
 				fov = 2 * (float)Math.Atan(Math.Tan(fov_h / 2.0f) * (height / width));
 			}
 
-			const float defaultRatio = 4.0f / 3.0f;
-
-			if (height * defaultRatio == width || height * defaultRatio > width)
-			{
-				float tan = 2.0f * (float)Math.Tan(h / 2.0f);
-				Screen.dist = width / tan;
-			}
-			else
-			{
-				float tan = 2.0f * (float)Math.Tan(fov / 2.0f);
-				Screen.dist = height / tan;
-			}
-
-			Screen.w = width;
-			Screen.h = height;
-			Screen.cx = width / 2.0f;
-			Screen.cy = height / 2.0f;
-
 			camera.SetProjection(fov, ratio, 1.0f, 100000.0f);
 		}
 
-		private void UpdateCamera()
+		void UpdateCamera()
 		{
 			if (camcontrols != CamControls.None)
 			{
@@ -527,7 +506,7 @@ namespace sadx_model_view.Forms
 			renderer.Present(camera);
 		}
 
-		private void OnSizeChanged(object sender, EventArgs e)
+		void OnSizeChanged(object sender, EventArgs e)
 		{
 			if (WindowState == FormWindowState.Minimized)
 			{
@@ -539,7 +518,7 @@ namespace sadx_model_view.Forms
 			UpdateCamera();
 		}
 
-		private void OnClosed(object sender, FormClosedEventArgs e)
+		void OnClosed(object sender, FormClosedEventArgs e)
 		{
 			obj?.Dispose();
 			landTable?.Dispose();
@@ -547,7 +526,7 @@ namespace sadx_model_view.Forms
 		}
 
 		[Flags]
-		private enum CamControls
+		enum CamControls
 		{
 			None,
 			Forward  = 1 << 0,
@@ -559,7 +538,7 @@ namespace sadx_model_view.Forms
 			Look     = 1 << 6
 		}
 
-		private void scene_KeyDown(object sender, KeyEventArgs e)
+		void scene_KeyDown(object sender, KeyEventArgs e)
 		{
 			switch (e.KeyCode)
 			{
@@ -612,7 +591,7 @@ namespace sadx_model_view.Forms
 			}
 		}
 
-		private void scene_KeyUp(object sender, KeyEventArgs e)
+		void scene_KeyUp(object sender, KeyEventArgs e)
 		{
 			switch (e.KeyCode)
 			{
@@ -646,7 +625,7 @@ namespace sadx_model_view.Forms
 			}
 		}
 
-		private void scene_MouseMove(object sender, MouseEventArgs e)
+		void scene_MouseMove(object sender, MouseEventArgs e)
 		{
 			var delta = new System.Drawing.Point(e.Location.X - last_mouse.X, e.Location.Y - last_mouse.Y);
 			last_mouse = e.Location;
@@ -663,7 +642,7 @@ namespace sadx_model_view.Forms
 			camera.Rotate(rotation);
 		}
 
-		private void recompileShadersToolStripMenuItem_Click(object sender, EventArgs e)
+		void recompileShadersToolStripMenuItem_Click(object sender, EventArgs e)
 		{
 			while (true)
 			{
@@ -679,7 +658,7 @@ namespace sadx_model_view.Forms
 			}
 		}
 
-		private void enableAlphaToolStripMenuItem_CheckedChanged(object sender, EventArgs e)
+		void enableAlphaToolStripMenuItem_CheckedChanged(object sender, EventArgs e)
 		{
 			if (renderer != null)
 			{

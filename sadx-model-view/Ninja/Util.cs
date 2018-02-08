@@ -43,6 +43,7 @@ namespace sadx_model_view.Ninja
 		{
 			return (float)(n * Math.PI / 180.0f);
 		}
+
 		public static int DegreeToAngle(float n)
 		{
 			return (int)(n * 65536.0 / 360.0);
@@ -52,6 +53,7 @@ namespace sadx_model_view.Ninja
 		{
 			return (int)(n * 65536.0 / (2 * Math.PI));
 		}
+
 		public static float RadToDegree(float n)
 		{
 			return (float)(n * 180.0 / Math.PI);
@@ -61,6 +63,7 @@ namespace sadx_model_view.Ninja
 		{
 			return (float)(n * 360.0 / 65536.0);
 		}
+
 		public static float AngleToRadian(int n)
 		{
 			return (float)(n * (2 * Math.PI) / 65536.0);
@@ -70,6 +73,7 @@ namespace sadx_model_view.Ninja
 		{
 			return new Vector3(AngleToRadian(n.X), AngleToRadian(n.Y), AngleToRadian(n.Z));
 		}
+
 		public static Vector3 AngleToDegree(in Rotation3 n)
 		{
 			return new Vector3(AngleToDegree(n.X), AngleToDegree(n.Y), AngleToDegree(n.Z));

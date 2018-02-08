@@ -25,7 +25,7 @@ namespace sadx_model_view
 			Transform   = MatrixStack.Peek();
 
 			ushort matId = set.MaterialId;
-			var    mats  = model.mats;
+			List<NJS_MATERIAL> mats  = model.mats;
 
 			Transparent = matId < mats.Count && (mats[matId].attrflags & NJD_FLAG.UseAlpha) != 0;
 
@@ -36,8 +36,8 @@ namespace sadx_model_view
 
 	class MeshsetQueue
 	{
-		private readonly List<MeshsetQueueElement> opaqueSets = new List<MeshsetQueueElement>();
-		private readonly List<MeshsetQueueElement> alphaSets = new List<MeshsetQueueElement>();
+		readonly List<MeshsetQueueElement> opaqueSets = new List<MeshsetQueueElement>();
+		readonly List<MeshsetQueueElement> alphaSets = new List<MeshsetQueueElement>();
 
 		public IEnumerable<MeshsetQueueElement> OpaqueSets => opaqueSets;
 		public IEnumerable<MeshsetQueueElement> AlphaSets => alphaSets;

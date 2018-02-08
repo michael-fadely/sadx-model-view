@@ -4,11 +4,12 @@ using SharpDX.D3DCompiler;
 
 namespace sadx_model_view
 {
-	internal class DefaultIncludeHandler : Include
+	class DefaultIncludeHandler : Include
 	{
-		private Stream fileStream;
+		Stream fileStream;
 
 		public IDisposable Shadow { get; set; }
+
 		public void Dispose()
 		{
 			fileStream?.Dispose();

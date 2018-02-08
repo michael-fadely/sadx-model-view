@@ -24,7 +24,10 @@ namespace sadx_model_view
 			       && CameraPosition.Equals(other.CameraPosition);
 		}
 
-		public override int GetHashCode() => 1;
+		public override int GetHashCode()
+		{
+			return 1;
+		}
 
 		public static bool operator ==(MatrixBuffer lhs, MatrixBuffer rhs)
 		{

@@ -39,11 +39,11 @@ namespace sadx_model_view.Ninja
 			meshsets  = new List<NJS_MESHSET>();
 			mats      = new List<NJS_MATERIAL>();
 
-			var position = stream.Position;
+			long position = stream.Position;
 
 			if (nbPoint > 0)
 			{
-				var points_ptr = BitConverter.ToUInt32(buffer, 0x00);
+				uint points_ptr = BitConverter.ToUInt32(buffer, 0x00);
 
 				if (points_ptr > 0)
 				{
@@ -101,7 +101,7 @@ namespace sadx_model_view.Ninja
 		/// <param name="model">The model to copy from.</param>
 		public NJS_MODEL(NJS_MODEL model)
 		{
-			points = new List<Vector3>(model.points);
+			points  = new List<Vector3>(model.points);
 			normals = new List<Vector3>(model.normals);
 			nbPoint = points.Count;
 
@@ -156,15 +156,15 @@ namespace sadx_model_view.Ninja
 			VertexBuffer?.Dispose();
 		}
 
-		public readonly List<Vector3> points;    // vertex list
-		public readonly List<Vector3> normals;   // vertex normal list
-		public readonly int nbPoint;             // vertex count
-		public List<NJS_MESHSET> meshsets;       // meshset list
-		public readonly List<NJS_MATERIAL> mats; // material list
-		public ushort nbMeshset;                 // meshset count
-		public readonly ushort nbMat;            // material count
-		public Vector3 center;                   // model center
-		public float r;                          // radius
+		public readonly List<Vector3>      points;    // vertex list
+		public readonly List<Vector3>      normals;   // vertex normal list
+		public readonly int                nbPoint;   // vertex count
+		public          List<NJS_MESHSET>  meshsets;  // meshset list
+		public readonly List<NJS_MATERIAL> mats;      // material list
+		public          ushort             nbMeshset; // meshset count
+		public readonly ushort             nbMat;     // material count
+		public          Vector3            center;    // model center
+		public          float              r;         // radius
 
 		public Buffer VertexBuffer;
 
@@ -177,10 +177,10 @@ namespace sadx_model_view.Ninja
 
 			List<Vertex> vertices = points.Select((point, i) => new Vertex
 			{
-				position = point,
-				normal   = normals.Count > 0 ? normals[i] : Vector3.Up,
-				diffuse  = null,
-				uv       = null
+				Position = point,
+				Normal   = normals.Count > 0 ? normals[i] : Vector3.Up,
+				Diffuse  = null,
+				UV       = null
 			}).ToList();
 
 			foreach (NJS_MESHSET set in meshsets)
@@ -213,16 +213,16 @@ namespace sadx_model_view.Ninja
 			}
 			else
 			{
-				int n = (int)material.attr_texId;
+				var n = (int)material.attr_texId;
 				device.SetTexture(0, n);
 			}
 
-			var diffuse = material.diffuse.argb;
-			var specular = material.specular.argb;
+			NJS_BGRA diffuse  = material.diffuse.argb;
+			NJS_BGRA specular = material.specular.argb;
 
 			var m = new ShaderMaterial
 			{
-				Diffuse     = new Color4(new Color3(diffuse.r / 255.0f, diffuse.g / 255.0f, diffuse.b / 255.0f), diffuse.a / 255.0f),
+				Diffuse     = new Color4(new Color3(diffuse.r / 255.0f,  diffuse.g / 255.0f,  diffuse.b / 255.0f),  diffuse.a / 255.0f),
 				Specular    = new Color4(new Color3(specular.r / 255.0f, specular.g / 255.0f, specular.b / 255.0f), specular.a / 255.0f),
 				Exponent    = material.exponent,
 				UseAlpha    = (flags & NJD_FLAG.UseAlpha) != 0,
@@ -235,7 +235,7 @@ namespace sadx_model_view.Ninja
 			return m;
 		}
 
-		private bool isInvalid;
+		bool isInvalid;
 
 		public bool IsInvalid
 		{

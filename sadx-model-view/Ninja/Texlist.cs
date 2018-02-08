@@ -9,11 +9,11 @@ namespace sadx_model_view.Ninja
 {
 	public class NJS_TEXPALETTE
 	{
-		public int palette; // TODO: void*
+		public int    palette; // TODO: void*
 		public ushort mode;
-		public short bank;
-		public short offset;
-		public short count;
+		public short  bank;
+		public short  offset;
+		public short  count;
 
 		public NJS_TEXPALETTE()
 		{
@@ -27,16 +27,16 @@ namespace sadx_model_view.Ninja
 
 	public class NJS_TEXSURFACE : IDisposable
 	{
-		public uint Type;
-		public uint BitDepth;
-		public uint PixelFormat;
-		public uint nWidth;
-		public uint nHeight;
-		public uint TextureSize;
-		public uint fSurfaceFlags;
+		public uint      Type;
+		public uint      BitDepth;
+		public uint      PixelFormat;
+		public uint      nWidth;
+		public uint      nHeight;
+		public uint      TextureSize;
+		public uint      fSurfaceFlags;
 		public Texture2D pSurface;
-		public int pVirtual; // TODO: Uint32*
-		public int pPhysical; // TODO: Uint32*
+		public int       pVirtual;  // TODO: Uint32*
+		public int       pPhysical; // TODO: Uint32*
 
 		public NJS_TEXSURFACE()
 		{
@@ -65,7 +65,7 @@ namespace sadx_model_view.Ninja
 
 		public NJS_TEXINFO()
 		{
-			texaddr = 0;
+			texaddr    = 0;
 			texsurface = new NJS_TEXSURFACE();
 		}
 
@@ -77,14 +77,14 @@ namespace sadx_model_view.Ninja
 
 	public class NJS_TEXMEMLIST : IDisposable
 	{
-		public uint globalIndex;
+		public uint           globalIndex;
 		public NJS_TEXPALETTE bank;
-		public uint tspparambuffer;
-		public uint texparambuffer;
-		public uint texaddr;
-		public NJS_TEXINFO texinfo;
-		public ushort count;
-		public ushort dummy;
+		public uint           tspparambuffer;
+		public uint           texparambuffer;
+		public uint           texaddr;
+		public NJS_TEXINFO    texinfo;
+		public ushort         count;
+		public ushort         dummy;
 
 		public NJS_TEXMEMLIST()
 		{
@@ -115,7 +115,7 @@ namespace sadx_model_view.Ninja
 		GLOBALINDEX      = 1 << 23,
 		AUTOMIPMAP       = 1 << 22,
 		AUTODITHER       = 1 << 21,
-		TEXCONTINUE      = 1 << 16 
+		TEXCONTINUE      = 1 << 16
 	}
 
 	public class NJS_TEXNAME
@@ -126,21 +126,21 @@ namespace sadx_model_view.Ninja
 		// Otherwise, use filename.
 		// In the original structure, filename is a void* that points
 		// to one or the other depending on that flag.
-		public string filename = string.Empty;
-		public NJS_TEXINFO texinfo = null;
+		public string      filename = string.Empty;
+		public NJS_TEXINFO texinfo  = null;
 
-		public NJD_TEXATTR attr;
+		public NJD_TEXATTR    attr;
 		public NJS_TEXMEMLIST texaddr = null;
 
 		public NJS_TEXNAME(Stream stream)
 		{
 			var buffer = new byte[SizeInBytes];
 			stream.Read(buffer, 0, buffer.Length);
-			var position = stream.Position;
+			long position = stream.Position;
 
-			var data_ptr = BitConverter.ToUInt32(buffer, 0);
+			uint data_ptr = BitConverter.ToUInt32(buffer, 0);
 			attr = (NJD_TEXATTR)BitConverter.ToUInt32(buffer, 0x04);
-			var tex_ptr = BitConverter.ToUInt32(buffer, 0x08);
+			uint tex_ptr = BitConverter.ToUInt32(buffer, 0x08);
 
 			if (tex_ptr > 0)
 			{
@@ -174,10 +174,10 @@ namespace sadx_model_view.Ninja
 		{
 			var buffer = new byte[SizeInBytes];
 			stream.Read(buffer, 0, buffer.Length);
-			var position = stream.Position;
+			long position = stream.Position;
 
-			var textures_ptr = BitConverter.ToUInt32(buffer, 0);
-			var count = BitConverter.ToUInt32(buffer, 4);
+			uint textures_ptr = BitConverter.ToUInt32(buffer, 0);
+			uint count = BitConverter.ToUInt32(buffer, 4);
 
 			if (count > 0 && textures_ptr > 0)
 			{

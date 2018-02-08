@@ -23,6 +23,7 @@
 		{
 			return new Rotation3(lhs.X + rhs.X, lhs.Y + rhs.Y, lhs.Z + rhs.Z);
 		}
+
 		public static Rotation3 operator -(Rotation3 lhs, Rotation3 rhs)
 		{
 			return new Rotation3(lhs.X - rhs.X, lhs.Y - rhs.Y, lhs.Z - rhs.Z);

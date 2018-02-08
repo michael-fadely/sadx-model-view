@@ -16,23 +16,19 @@ namespace sadx_model_view.Ninja
 		/// <summary>
 		/// Blue component.
 		/// </summary>
-		[FieldOffset(0)]
-		public byte b;
+		[FieldOffset(0)] public byte b;
 		/// <summary>
 		/// Green component.
 		/// </summary>
-		[FieldOffset(1)]
-		public byte g;
+		[FieldOffset(1)] public byte g;
 		/// <summary>
 		/// Red component.
 		/// </summary>
-		[FieldOffset(2)]
-		public byte r;
+		[FieldOffset(2)] public byte r;
 		/// <summary>
 		/// Alpha component.
 		/// </summary>
-		[FieldOffset(3)]
-		public byte a;
+		[FieldOffset(3)] public byte a;
 
 		/// <summary>
 		/// Constructs <see cref="NJS_BGRA"/> from a 32-bit integer.
@@ -87,6 +83,16 @@ namespace sadx_model_view.Ninja
 		public static int SizeInBytes => sizeof(int);
 
 		/// <summary>
+		/// The 32-bit integer representation of the color.
+		/// </summary>
+		[FieldOffset(0)] public int color;
+
+		/// <summary>
+		/// The ARGB representation of the color.
+		/// </summary>
+		[FieldOffset(0)] public NJS_BGRA argb;
+
+		/// <summary>
 		/// Constructs <see cref="NJS_COLOR"/> from a 32-bit integer.
 		/// </summary>
 		/// <param name="color">An integer containing an ARGB color.</param>
@@ -124,19 +130,7 @@ namespace sadx_model_view.Ninja
 		public NJS_COLOR(byte b, byte g, byte r, byte a)
 		{
 			color = -1;
-			argb = new NJS_BGRA(b, g, r, a);
+			argb  = new NJS_BGRA(b, g, r, a);
 		}
-
-		/// <summary>
-		/// The 32-bit integer representation of the color.
-		/// </summary>
-		[FieldOffset(0)]
-		public int color;
-
-		/// <summary>
-		/// The ARGB representation of the color.
-		/// </summary>
-		[FieldOffset(0)]
-		public NJS_BGRA argb;
 	}
 }

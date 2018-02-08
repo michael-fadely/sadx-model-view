@@ -50,16 +50,16 @@ namespace sadx_model_view.SA1
 		public static int SizeInBytes => 0x24;
 
 		public Vector3 Center;
-		public float Radius;
+		public float   Radius;
 
 		// ReSharper disable once NotAccessedField.Local
-		private int pad_a;
+		int pad_a;
 		// ReSharper disable once NotAccessedField.Local
-		private int pad_b;
+		int pad_b;
 
 		public NJS_OBJECT Object;
 		// ReSharper disable once NotAccessedField.Local
-		private int anonymous_6;
+		int anonymous_6;
 		public ColFlags Flags;
 
 		/// <summary>
@@ -70,7 +70,7 @@ namespace sadx_model_view.SA1
 		{
 			var buffer = new byte[SizeInBytes];
 			stream.Read(buffer, 0, buffer.Length);
-			var position = stream.Position;
+			long position = stream.Position;
 
 			Center = Util.VectorFromStream(in buffer, 0x00);
 			Radius = BitConverter.ToSingle(buffer, 0x04);
@@ -85,7 +85,7 @@ namespace sadx_model_view.SA1
 			}
 
 			anonymous_6 = BitConverter.ToInt32(buffer, 0x1C);
-			Flags = (ColFlags)BitConverter.ToUInt32(buffer, 0x20);
+			Flags       = (ColFlags)BitConverter.ToUInt32(buffer, 0x20);
 
 			stream.Position = position;
 		}

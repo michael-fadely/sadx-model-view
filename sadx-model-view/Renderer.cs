@@ -24,12 +24,12 @@ namespace sadx_model_view
 {
 	public class Renderer : IDisposable
 	{
-		private int lastVisibleCount;
+		int lastVisibleCount;
 
 		/// <summary>
 		/// This is the texture transformation matrix that SADX uses for anything with an environment map.
 		/// </summary>
-		private static readonly RawMatrix environmentMapTransform = new Matrix(
+		static readonly RawMatrix environmentMapTransform = new Matrix(
 			-0.5f, 0.0f, 0.0f, 0.0f,
 			0.0f, 0.5f, 0.0f, 0.0f,
 			0.0f, 0.0f, 1.0f, 0.0f,
@@ -37,9 +37,9 @@ namespace sadx_model_view
 		);
 
 		public FlowControl FlowControl;
-		public bool EnableAlpha = true;
+		public bool        EnableAlpha = true;
 
-		private CullMode defaultCullMode = CullMode.None;
+		CullMode defaultCullMode = CullMode.None;
 
 		public CullMode DefaultCullMode
 		{
@@ -51,29 +51,29 @@ namespace sadx_model_view
 			}
 		}
 
-		private readonly List<SceneTexture> texturePool = new List<SceneTexture>();
+		readonly List<SceneTexture> texturePool = new List<SceneTexture>();
 
-		private readonly Device device;
-		private readonly SwapChain swapChain;
-		private RenderTargetView backBuffer;
-		private Viewport viewPort;
-		private Texture2D depthTexture;
-		private DepthStencilStateDescription depthDesc;
-		private DepthStencilState depthStateRW;
-		private DepthStencilState depthStateRO;
-		private DepthStencilView depthView;
-		private RasterizerState rasterizerState;
-		private RasterizerStateDescription rasterizerDescription;
-		private readonly Buffer matrixBuffer;
-		private readonly Buffer materialBuffer;
+		readonly Device              device;
+		readonly SwapChain           swapChain;
+		RenderTargetView             backBuffer;
+		Viewport                     viewPort;
+		Texture2D                    depthTexture;
+		DepthStencilStateDescription depthDesc;
+		DepthStencilState            depthStateRW;
+		DepthStencilState            depthStateRO;
+		DepthStencilView             depthView;
+		RasterizerState              rasterizerState;
+		RasterizerStateDescription   rasterizerDescription;
+		readonly Buffer              matrixBuffer;
+		readonly Buffer              materialBuffer;
 
-		private bool zWrite = true;
-		private bool matrixDataChanged;
-		private MatrixBuffer lastMatrixData;
-		private MatrixBuffer matrixData;
+		bool         zWrite = true;
+		bool         matrixDataChanged;
+		MatrixBuffer lastMatrixData;
+		MatrixBuffer matrixData;
 
-		private readonly MeshsetQueue meshQueue = new MeshsetQueue();
-		private readonly Dictionary<NJD_FLAG, DisplayState> displayStates = new Dictionary<NJD_FLAG, DisplayState>();
+		readonly MeshsetQueue                       meshQueue     = new MeshsetQueue();
+		readonly Dictionary<NJD_FLAG, DisplayState> displayStates = new Dictionary<NJD_FLAG, DisplayState>();
 
 		public Renderer(int w, int h, IntPtr sceneHandle)
 		{
@@ -83,11 +83,11 @@ namespace sadx_model_view
 
 			var desc = new SwapChainDescription
 			{
-				BufferCount       = 1,
-				ModeDescription   = new ModeDescription(w, h, new Rational(1000, 60), Format.R8G8B8A8_UNorm),
-				Usage             = Usage.RenderTargetOutput,
-				OutputHandle      = sceneHandle,
-				IsWindowed        = true,
+				BufferCount = 1,
+				ModeDescription = new ModeDescription(w, h, new Rational(1000, 60), Format.R8G8B8A8_UNorm),
+				Usage = Usage.RenderTargetOutput,
+				OutputHandle = sceneHandle,
+				IsWindowed = true,
 				SampleDescription = new SampleDescription(1, 0)
 			};
 
@@ -119,7 +119,7 @@ namespace sadx_model_view
 			matrixBuffer = new Buffer(device, bufferDesc);
 
 			// Size must be divisible by 16, so this is just padding.
-			int size = Math.Max(ShaderMaterial.SizeInBytes, 80);
+			int size   = Math.Max(ShaderMaterial.SizeInBytes, 80);
 			int stride = ShaderMaterial.SizeInBytes + sizeof(uint);
 
 			bufferDesc = new BufferDescription(size,
@@ -222,7 +222,7 @@ namespace sadx_model_view
 			}
 		}
 
-		private static readonly NJS_MATERIAL nullMaterial = new NJS_MATERIAL();
+		static readonly NJS_MATERIAL nullMaterial = new NJS_MATERIAL();
 
 		public void Draw(Camera camera, NJS_MODEL model)
 		{
@@ -232,15 +232,16 @@ namespace sadx_model_view
 			}
 		}
 
-		private Buffer lastVertexBuffer;
-		private BlendState lastBlend;
-		private RasterizerState lastRasterizerState;
-		private SamplerState lastSamplerState;
+		Buffer          lastVertexBuffer;
+		BlendState      lastBlend;
+		RasterizerState lastRasterizerState;
+		SamplerState    lastSamplerState;
 
-		private void DrawSet(NJS_MODEL parent, NJS_MESHSET set)
+		void DrawSet(NJS_MODEL parent, NJS_MESHSET set)
 		{
-			ushort materialId = set.MaterialId;
 			List<NJS_MATERIAL> mats = parent.mats;
+
+			ushort       materialId = set.MaterialId;
 			NJS_MATERIAL njMaterial = mats.Count > 0 && materialId < mats.Count ? mats[materialId] : nullMaterial;
 
 			FlowControl flowControl = FlowControl;
@@ -317,7 +318,7 @@ namespace sadx_model_view
 
 		public void Present(Camera camera)
 		{
-			int visibleCount = 0;
+			var visibleCount = 0;
 			zWrite = true;
 
 			matrixDataChanged = true;
@@ -325,7 +326,7 @@ namespace sadx_model_view
 
 			//meshTree.SortOpaque();
 
-			foreach (var e in meshQueue.OpaqueSets)
+			foreach (MeshsetQueueElement e in meshQueue.OpaqueSets)
 			{
 				++visibleCount;
 				DrawMeshsetQueueElement(e);
@@ -345,7 +346,7 @@ namespace sadx_model_view
 				device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRO);
 				zWrite = false;
 
-				foreach (var e in meshQueue.AlphaSets)
+				foreach (MeshsetQueueElement e in meshQueue.AlphaSets)
 				{
 					++visibleCount;
 					DrawMeshsetQueueElement(e);
@@ -371,7 +372,7 @@ namespace sadx_model_view
 			}
 		}
 
-		private void DrawMeshsetQueueElement(MeshsetQueueElement e)
+		void DrawMeshsetQueueElement(MeshsetQueueElement e)
 		{
 			FlowControl = e.FlowControl;
 
@@ -381,7 +382,7 @@ namespace sadx_model_view
 			DrawSet(e.Model, e.Set);
 		}
 
-		private void CreateRenderTarget()
+		void CreateRenderTarget()
 		{
 			using (var pBackBuffer = Resource.FromSwapChain<Texture2D>(swapChain, 0))
 			{
@@ -392,7 +393,7 @@ namespace sadx_model_view
 			device.ImmediateContext.OutputMerger.SetRenderTargets(backBuffer);
 		}
 
-		private void SetViewPort(int x, int y, int width, int height)
+		void SetViewPort(int x, int y, int width, int height)
 		{
 			viewPort.MinDepth = 0f;
 			viewPort.MaxDepth = 1f;
@@ -424,7 +425,7 @@ namespace sadx_model_view
 			CreateDepthStencil(w, h);
 		}
 
-		private void CreateDepthStencil(int w, int h)
+		void CreateDepthStencil(int w, int h)
 		{
 			// TODO: shader resource?
 
@@ -447,8 +448,8 @@ namespace sadx_model_view
 
 			depthDesc = new DepthStencilStateDescription
 			{
-				IsDepthEnabled  = true,
-				DepthWriteMask  = DepthWriteMask.All,
+				IsDepthEnabled = true,
+				DepthWriteMask = DepthWriteMask.All,
 #if REVERSE_Z
 				DepthComparison = Comparison.Greater,
 #else
@@ -472,7 +473,7 @@ namespace sadx_model_view
 
 			depthStateRW?.Dispose();
 			depthStateRW = new DepthStencilState(device, depthDesc);
-			
+
 			depthDesc.DepthWriteMask = DepthWriteMask.Zero;
 			depthStateRO?.Dispose();
 			depthStateRO = new DepthStencilState(device, depthDesc);
@@ -510,7 +511,7 @@ namespace sadx_model_view
 			}
 		}
 
-		private void CreateRasterizerState()
+		void CreateRasterizerState()
 		{
 			rasterizerDescription = new RasterizerStateDescription
 			{
@@ -532,7 +533,7 @@ namespace sadx_model_view
 			device.ImmediateContext.Rasterizer.State = rasterizerState;
 		}
 
-		private void CopyToTexture(Texture2D texture, Bitmap bitmap, int level)
+		void CopyToTexture(Texture2D texture, Bitmap bitmap, int level)
 		{
 			BitmapData bmpData = bitmap.LockBits(new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
 			var buffer = new byte[bmpData.Stride * bitmap.Height];
@@ -561,7 +562,7 @@ namespace sadx_model_view
 
 			if (mipmaps?.Length > 0)
 			{
-				for (int i = 0; i < levels; i++)
+				for (var i = 0; i < levels; i++)
 				{
 					CopyToTexture(texture, mipmaps[i], i);
 				}
@@ -622,22 +623,22 @@ namespace sadx_model_view
 			{
 				foreach (Vertex v in vertices)
 				{
-					stream.Write(v.position.X);
-					stream.Write(v.position.Y);
-					stream.Write(v.position.Z);
+					stream.Write(v.Position.X);
+					stream.Write(v.Position.Y);
+					stream.Write(v.Position.Z);
 
-					stream.Write(v.normal.X);
-					stream.Write(v.normal.Y);
-					stream.Write(v.normal.Z);
+					stream.Write(v.Normal.X);
+					stream.Write(v.Normal.Y);
+					stream.Write(v.Normal.Z);
 
-					RawColorBGRA color = v.diffuse == null ? Color.White : v.diffuse.Value;
+					RawColorBGRA color = v.Diffuse == null ? Color.White : v.Diffuse.Value;
 
 					stream.Write(color.B);
 					stream.Write(color.G);
 					stream.Write(color.R);
 					stream.Write(color.A);
 
-					RawVector2 uv = v.uv == null ? (RawVector2)Vector2.Zero : v.uv.Value;
+					RawVector2 uv = v.UV == null ? (RawVector2)Vector2.Zero : v.UV.Value;
 
 					stream.Write(uv.X);
 					stream.Write(uv.Y);
@@ -708,7 +709,8 @@ namespace sadx_model_view
 			matrixDataChanged = true;
 		}
 
-		private SceneTexture lastTexture;
+		SceneTexture lastTexture;
+
 		public void SetTexture(int sampler, int textureIndex)
 		{
 			if (textureIndex >= 0 && textureIndex < texturePool.Count)
@@ -732,7 +734,7 @@ namespace sadx_model_view
 
 		// TODO: renderer interface to handle SADX/SA1/SA2 renderers
 
-		private static readonly BlendOption[] blendModes =
+		static readonly BlendOption[] blendModes =
 		{
 			BlendOption.Zero,
 			BlendOption.One,
@@ -836,12 +838,13 @@ namespace sadx_model_view
 			return result;
 		}
 
-		private ShaderMaterial lastMaterial;
-		private VertexShader vertexShader;
-		private PixelShader pixelShader;
-		private InputLayout inputLayout;
+		ShaderMaterial lastMaterial;
+		VertexShader   vertexShader;
+		PixelShader    pixelShader;
+		InputLayout    inputLayout;
 
-		private bool lastZwrite;
+		bool lastZwrite;
+
 		public void SetShaderMaterial(in ShaderMaterial material)
 		{
 			if (material == lastMaterial && zWrite == lastZwrite)
@@ -865,6 +868,7 @@ namespace sadx_model_view
 				stream.Write(material.UseSpecular ? 1 : 0);
 				stream.Write(zWrite ? 1 : 0);
 			}
+
 			device.ImmediateContext.UnmapSubresource(materialBuffer, 0);
 		}
 
@@ -901,7 +905,7 @@ namespace sadx_model_view
 			device?.Dispose();
 		}
 
-		private void ClearDisplayStates()
+		void ClearDisplayStates()
 		{
 			foreach (KeyValuePair<NJD_FLAG, DisplayState> i in displayStates)
 			{
@@ -912,7 +916,7 @@ namespace sadx_model_view
 		}
 	}
 
-	internal class InsufficientFeatureLevelException : Exception
+	class InsufficientFeatureLevelException : Exception
 	{
 		public readonly FeatureLevel SupportedLevel;
 		public readonly FeatureLevel TargetLevel;

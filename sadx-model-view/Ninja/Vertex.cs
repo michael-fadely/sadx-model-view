@@ -8,11 +8,11 @@ namespace sadx_model_view.Ninja
 	/// </summary>
 	public struct Vertex
 	{
-		//public const VertexFormat Format = VertexFormat.Position | VertexFormat.Normal | VertexFormat.Diffuse | VertexFormat.Texture1;
 		public static int SizeInBytes => 2 * Vector3.SizeInBytes + sizeof(uint) + Vector2.SizeInBytes;
-		public RawVector3 position;
-		public RawVector3 normal;
-		public RawColorBGRA? diffuse;
-		public RawVector2? uv;
+
+		public RawVector3    Position;
+		public RawVector3    Normal;
+		public RawColorBGRA? Diffuse;
+		public RawVector2?   UV;
 	}
 }

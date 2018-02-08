@@ -83,9 +83,9 @@ namespace sadx_model_view.Ninja
 
 		public NJS_COLOR diffuse;
 		public NJS_COLOR specular;
-		public float exponent;
-		public uint attr_texId;      /* attribute and texture ID in texlist        */
-		public NJD_FLAG attrflags;   /* attribute flags                            */
+		public float     exponent;
+		public uint      attr_texId; /* attribute and texture ID in texlist        */
+		public NJD_FLAG  attrflags;  /* attribute flags                            */
 
 		public uint DestinationBlend
 		{

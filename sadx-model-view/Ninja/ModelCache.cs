@@ -3,9 +3,9 @@ using System.IO;
 
 namespace sadx_model_view.Ninja
 {
-	internal static class ModelCache
+	static class ModelCache
 	{
-		private static readonly Dictionary<long, NJS_MODEL> modelCache = new Dictionary<long, NJS_MODEL>();
+		static readonly Dictionary<long, NJS_MODEL> modelCache = new Dictionary<long, NJS_MODEL>();
 
 		public static NJS_MODEL FromStream(Stream stream, long offset)
 		{

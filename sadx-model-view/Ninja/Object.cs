@@ -85,11 +85,11 @@ namespace sadx_model_view.Ninja
 			Scale.Y = BitConverter.ToSingle(buffer, 0x20 + 4);
 			Scale.Z = BitConverter.ToSingle(buffer, 0x20 + 8);
 
-			var model_ptr = BitConverter.ToUInt32(buffer, 0x04);
-			var child_ptr = BitConverter.ToUInt32(buffer, 0x2C);
-			var sibling_ptr = BitConverter.ToUInt32(buffer, 0x30);
+			uint model_ptr   = BitConverter.ToUInt32(buffer, 0x04);
+			uint child_ptr   = BitConverter.ToUInt32(buffer, 0x2C);
+			uint sibling_ptr = BitConverter.ToUInt32(buffer, 0x30);
 
-			var position = stream.Position;
+			long position = stream.Position;
 
 			if (model_ptr != 0)
 			{
@@ -134,11 +134,11 @@ namespace sadx_model_view.Ninja
 			Sibling?.Dispose();
 		}
 
-		public uint evalflags;     /* evalation flags              */
-		public NJS_MODEL Model;    /* model data pointer           */
-		public Vector3 Position;   /* translation                  */
-		public Rotation3 Angle;    /* rotation                     */
-		public Vector3 Scale;      /* scaling                      */
+		public uint      evalflags; /* evalation flags              */
+		public NJS_MODEL Model;     /* model data pointer           */
+		public Vector3   Position;  /* translation                  */
+		public Rotation3 Angle;     /* rotation                     */
+		public Vector3   Scale;     /* scaling                      */
 
 		public NJS_OBJECT Child;
 		public NJS_OBJECT Sibling;
@@ -160,6 +160,7 @@ namespace sadx_model_view.Ninja
 				}
 			}
 		}
+
 		public bool IgnoreRotation
 		{
 			get => (evalflags & (uint)NJD_EVAL.UNIT_ANG) != 0;
@@ -175,6 +176,7 @@ namespace sadx_model_view.Ninja
 				}
 			}
 		}
+
 		public bool IgnoreScale
 		{
 			get => (evalflags & (uint)NJD_EVAL.UNIT_SCL) != 0;
@@ -190,6 +192,7 @@ namespace sadx_model_view.Ninja
 				}
 			}
 		}
+
 		public bool SkipDraw
 		{
 			get => (evalflags & (uint)NJD_EVAL.HIDE) != 0;
@@ -205,6 +208,7 @@ namespace sadx_model_view.Ninja
 				}
 			}
 		}
+
 		public bool SkipChildren
 		{
 			get => (evalflags & (uint)NJD_EVAL.BREAK) != 0;
@@ -220,6 +224,7 @@ namespace sadx_model_view.Ninja
 				}
 			}
 		}
+
 		public bool UseZXYRotation
 		{
 			get => (evalflags & (uint)NJD_EVAL.ZXY_ANG) != 0;
@@ -234,7 +239,6 @@ namespace sadx_model_view.Ninja
 					evalflags &= (uint)~NJD_EVAL.ZXY_ANG;
 				}
 			}
-
 		}
 
 		/// <summary>
@@ -304,7 +308,7 @@ namespace sadx_model_view.Ninja
 			return obj;
 		}
 
-		private bool isInvalid;
+		bool isInvalid;
 
 		public bool IsInvalid
 		{

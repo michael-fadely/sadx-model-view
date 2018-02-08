@@ -19,16 +19,18 @@ namespace sadx_model_view.SA1
 	{
 		public static int SizeInBytes => 0x24;
 
-		public short COLCount => (short)ColList.Count;
-		public short AnimCount => (short)AnimData.Count;
+		public short          COLCount  => (short)ColList.Count;
+		public short          AnimCount => (short)AnimData.Count;
 		public LandTableFlags Flags;
-		public float Unknown_1;
+		public float          Unknown_1;
+
 		public readonly List<Col> ColList;
 		public readonly List<GeoAnimData> AnimData;
-		public string TexName;
+
+		public string      TexName;
 		public NJS_TEXLIST TexList;
-		public int Unknown_2;
-		public int Unknown_3;
+		public int         Unknown_2;
+		public int         Unknown_3;
 
 		public uint TexListPointer;
 
@@ -41,21 +43,21 @@ namespace sadx_model_view.SA1
 			var buffer = new byte[SizeInBytes];
 			stream.Read(buffer, 0, buffer.Length);
 
-			var col_count = BitConverter.ToInt16(buffer, 0x00);
-			var anim_count = BitConverter.ToInt16(buffer, 0x02);
+			short col_count = BitConverter.ToInt16(buffer, 0x00);
+			short anim_count = BitConverter.ToInt16(buffer, 0x02);
 
 			Flags = (LandTableFlags)BitConverter.ToInt32(buffer, 0x04);
 			Unknown_1 = BitConverter.ToSingle(buffer, 0x08);
 
-			var col_ptr    = BitConverter.ToUInt32(buffer, 0x0C);
-			var anim_ptr   = BitConverter.ToUInt32(buffer, 0x10);
-			var name_ptr   = BitConverter.ToUInt32(buffer, 0x14);
+			uint col_ptr    = BitConverter.ToUInt32(buffer, 0x0C);
+			uint anim_ptr   = BitConverter.ToUInt32(buffer, 0x10);
+			uint name_ptr   = BitConverter.ToUInt32(buffer, 0x14);
 			TexListPointer = BitConverter.ToUInt32(buffer, 0x18);
 
 			Unknown_2 = BitConverter.ToInt32(buffer, 0x1C);
 			Unknown_3 = BitConverter.ToInt32(buffer, 0x20);
 
-			var position = stream.Position;
+			long position = stream.Position;
 
 			if (col_count > 0 && col_ptr > 0)
 			{
