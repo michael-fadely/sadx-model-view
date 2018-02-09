@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using SharpDX;
 
 // A node in a BoundsOctree
@@ -42,7 +44,7 @@ namespace sadx_model_view
 		// An object in the octree
 		class OctreeObject
 		{
-			public T           Obj;
+			public T Obj;
 			public BoundingBox BoundingBox;
 		}
 
@@ -100,8 +102,11 @@ namespace sadx_model_view
 				for (int i = 0; i < 8; i++)
 				{
 					removed = children[i].Remove(obj);
+
 					if (removed)
+					{
 						break;
+					}
 				}
 			}
 
@@ -216,19 +221,30 @@ namespace sadx_model_view
 		/// <returns>Objects that intersect with the specified bounds.</returns>
 		public void GetColliding(in BoundingBox checkBounds, List<T> result)
 		{
-			// Are the input bounds at least partially in this node?
-			if (!bounds.Intersects(checkBounds))
-			{
-				return;
-			}
+			ContainmentType containment = bounds.Contains(checkBounds);
 
-			// Check against any objects in this node
-			foreach (OctreeObject o in objects)
+			switch (containment)
 			{
-				if (o.BoundingBox.Intersects(checkBounds))
-				{
-					result.Add(o.Obj);
-				}
+				case ContainmentType.Disjoint:
+					return;
+
+				case ContainmentType.Contains:
+					result.AddRange(objects.Select(x => x.Obj));
+					break;
+
+				case ContainmentType.Intersects:
+					foreach (OctreeObject o in objects)
+					{
+						if (o.BoundingBox.Intersects(checkBounds))
+						{
+							result.Add(o.Obj);
+						}
+					}
+
+					break;
+
+				default:
+					throw new ArgumentOutOfRangeException();
 			}
 
 			// Check children
@@ -283,19 +299,31 @@ namespace sadx_model_view
 		/// <returns>Objects that intersect with the specified bounds.</returns>
 		public void GetColliding(in BoundingFrustum frustum, List<T> result)
 		{
-			// Are the input bounds at least partially in this node?
-			if (!frustum.Intersects(ref bounds))
-			{
-				return;
-			}
+			ContainmentType containment = frustum.Contains(ref bounds);
 
-			// Check against any objects in this node
-			foreach (OctreeObject o in objects)
+			switch (containment)
 			{
-				if (frustum.Intersects(ref o.BoundingBox))
-				{
-					result.Add(o.Obj);
-				}
+				case ContainmentType.Disjoint:
+					return;
+
+				case ContainmentType.Contains:
+					result.AddRange(objects.Select(x => x.Obj));
+					break;
+
+				case ContainmentType.Intersects:
+					// Check against any objects in this node
+					foreach (OctreeObject o in objects)
+					{
+						if (frustum.Intersects(ref o.BoundingBox))
+						{
+							result.Add(o.Obj);
+						}
+					}
+
+					break;
+
+				default:
+					throw new ArgumentOutOfRangeException();
 			}
 
 			// Check children
@@ -392,7 +420,7 @@ namespace sadx_model_view
 		/// <returns>The new root, or the existing one if we didn't shrink.</returns>
 		public BoundsOctreeNode<T> ShrinkIfPossible(float minLength)
 		{
-			if (BaseLength < (2 * minLength))
+			if (BaseLength < 2 * minLength)
 			{
 				return this;
 			}
@@ -533,7 +561,7 @@ namespace sadx_model_view
 		{
 			// We know it fits at this level if we've got this far
 			// Just add if few objects are here, or children would be below min size
-			if (objects.Count < numObjectsAllowed || (BaseLength / 2) < minSize)
+			if (objects.Count < numObjectsAllowed || (BaseLength / 2f) < minSize)
 			{
 				var newObj = new OctreeObject { Obj = obj, BoundingBox = objBounds };
 				//Debug.WriteLine("ADD " + obj.name + " to depth " + depth);
@@ -650,8 +678,8 @@ namespace sadx_model_view
 			// Note: We know children != null or we wouldn't be merging
 			for (int i = 0; i < 8; i++)
 			{
-				BoundsOctreeNode<T> curChild   = children[i];
-				int                 numObjects = curChild.objects.Count;
+				BoundsOctreeNode<T> curChild = children[i];
+				int numObjects = curChild.objects.Count;
 				for (int j = numObjects - 1; j >= 0; j--)
 				{
 					OctreeObject curObj = curChild.objects[j];
@@ -692,6 +720,7 @@ namespace sadx_model_view
 		bool ShouldMerge()
 		{
 			int totalObjects = objects.Count;
+
 			if (children != null)
 			{
 				foreach (BoundsOctreeNode<T> child in children)
