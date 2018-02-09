@@ -1,7 +1,9 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing.Imaging;
+using System.Linq;
 using System.Runtime.InteropServices;
 using sadx_model_view.Ninja;
 using sadx_model_view.SA1;
@@ -198,37 +200,37 @@ namespace sadx_model_view
 #endif
 		}
 
-		public void Draw(Camera camera, NJS_OBJECT obj)
+		public void Draw(Camera camera, NJS_OBJECT @object)
 		{
-			while (!(obj is null))
+			while (!(@object is null))
 			{
 				MatrixStack.Push();
-				obj.PushTransform();
+				@object.PushTransform();
 				RawMatrix m = MatrixStack.Peek();
 				SetTransform(TransformState.World, in m);
 
-				if (!obj.SkipDraw && obj.Model != null)
+				if (!@object.SkipDraw && @object.Model != null)
 				{
-					Draw(camera, obj.Model);
+					Draw(camera, @object, @object.Model);
 				}
 
-				if (!obj.SkipChildren)
+				if (!@object.SkipChildren)
 				{
-					Draw(camera, obj.Child);
+					Draw(camera, @object.Child);
 				}
 
 				MatrixStack.Pop();
-				obj = obj.Sibling;
+				@object = @object.Sibling;
 			}
 		}
 
 		static readonly NJS_MATERIAL nullMaterial = new NJS_MATERIAL();
 
-		public void Draw(Camera camera, NJS_MODEL model)
+		public void Draw(Camera camera, NJS_OBJECT @object, NJS_MODEL model)
 		{
 			foreach (NJS_MESHSET set in model.meshsets)
 			{
-				meshQueue.Enqueue(this, camera, model, set);
+				meshQueue.Enqueue(this, camera, @object, model, set);
 			}
 		}
 
@@ -379,7 +381,10 @@ namespace sadx_model_view
 			RawMatrix m = e.Transform;
 			SetTransform(TransformState.World, in m);
 
-			DrawSet(e.Model, e.Set);
+			if (!e.Object.SkipDraw)
+			{
+				DrawSet(e.Model, e.Set);
+			}
 		}
 
 		void CreateRenderTarget()
@@ -412,6 +417,14 @@ namespace sadx_model_view
 
 			viewPort = vp;
 			device.ImmediateContext.Rasterizer.SetViewport(viewPort);
+		}
+
+		public void Draw(IEnumerable<MeshsetQueueElementBase> visible, Camera camera)
+		{
+			foreach (MeshsetQueueElement e in visible.Select(x => new MeshsetQueueElement(x, camera)))
+			{
+				meshQueue.Enqueue(e);
+			}
 		}
 
 		public void RefreshDevice(int w, int h)

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.IO;
 using sadx_model_view.Interfaces;
 using SharpDX;
@@ -55,7 +56,7 @@ namespace sadx_model_view.Ninja
 	/// See also:
 	/// <seealso cref="NJS_MODEL"/>
 	/// </summary>
-	public class NJS_OBJECT : IDisposable, IInvalidatable
+	public class NJS_OBJECT : IDisposable, IInvalidatable, IEnumerable
 	{
 		/// <summary>
 		/// Native structure size in bytes.
@@ -331,6 +332,30 @@ namespace sadx_model_view.Ninja
 				{
 					Sibling.IsInvalid = value;
 				}
+			}
+		}
+
+		public IEnumerator GetEnumerator()
+		{
+			var o = this;
+
+			while (o != null)
+			{
+				MatrixStack.Push();
+				o.PushTransform();
+
+				yield return o;
+
+				if (!o.SkipChildren && o.Child != null)
+				{
+					foreach (var c in o.Child)
+					{
+						yield return c;
+					}
+				}
+
+				MatrixStack.Pop();
+				o = o.Sibling;
 			}
 		}
 	}

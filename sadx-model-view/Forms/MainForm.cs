@@ -25,6 +25,7 @@ namespace sadx_model_view.Forms
 		System.Drawing.Point last_mouse = System.Drawing.Point.Empty;
 		CamControls camcontrols = CamControls.None;
 
+		VisibilityTree objectTree, landTableTree;
 		Renderer renderer;
 
 		// SADX's default horizontal field of view.
@@ -97,6 +98,9 @@ namespace sadx_model_view.Forms
 				landTable?.Dispose();
 				landTable = null;
 
+				objectTree = null;
+				landTableTree = null;
+
 				switch (signatureStr)
 				{
 					case "SA1MDL":
@@ -107,11 +111,14 @@ namespace sadx_model_view.Forms
 						camera.Position = obj.Position;
 						camera.Translate(Vector3.BackwardRH, obj.Radius * 2.0f);
 						camera.LookAt(obj.Position);
+
+						objectTree = new VisibilityTree(obj);
 						break;
 
 					case "SA1LVL":
 						landTable = new LandTable(file);
 						landTable.CommitVertexBuffer(renderer);
+						landTableTree = new VisibilityTree(landTable);
 						break;
 
 					default:
@@ -492,14 +499,25 @@ namespace sadx_model_view.Forms
 
 			if (obj != null)
 			{
-				renderer.Draw(camera, obj);
+				if (objectTree.Empty)
+				{
+					objectTree.Add(obj, renderer);
+				}
+
+				renderer.Draw(objectTree.GetVisible(camera), camera);
 			}
 
 			if (landTable != null)
 			{
 				renderer.FlowControl.UseMaterialFlags = true;
 				renderer.FlowControl.Add(0, NJD_FLAG.IgnoreSpecular);
-				renderer.Draw(landTable, camera);
+
+				if (landTableTree.Empty)
+				{
+					landTableTree.Add(landTable, renderer);
+				}
+
+				renderer.Draw(landTableTree.GetVisible(camera), camera);
 				renderer.FlowControl.Reset();
 			}
 

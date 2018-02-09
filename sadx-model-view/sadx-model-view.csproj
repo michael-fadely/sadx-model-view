@@ -90,6 +90,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BoundsOctree.cs" />
+    <Compile Include="BoundsOctreeNode.cs" />
     <Compile Include="MeshsetQueue.cs" />
     <Compile Include="Camera.cs" />
     <Compile Include="DefaultIncludeHandler.cs" />
@@ -134,6 +136,7 @@
     <Compile Include="Controls\Scene.Designer.cs">
       <DependentUpon>Scene.cs</DependentUpon>
     </Compile>
+    <Compile Include="VisibilityTree.cs" />
     <Compile Include="SceneTexture.cs" />
     <Compile Include="ShaderMaterial.cs" />
     <Compile Include="TransformState.cs" />

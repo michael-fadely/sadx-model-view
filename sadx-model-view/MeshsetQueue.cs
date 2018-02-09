@@ -6,41 +6,67 @@ using System.Collections.Generic;
 
 namespace sadx_model_view
 {
-	class MeshsetQueueElement
+	public class MeshsetQueueElementBase
 	{
+		public NJS_OBJECT     Object         { get; }
 		public NJS_MODEL      Model          { get; }
 		public NJS_MESHSET    Set            { get; }
 		public Matrix         Transform      { get; }
 		public BoundingSphere BoundingSphere { get; }
 		public bool           Transparent    { get; }
 
-		public readonly float       Distance;
 		public readonly FlowControl FlowControl;
 
-		public MeshsetQueueElement(Renderer renderer, Camera camera, NJS_MODEL model, NJS_MESHSET set)
+		public MeshsetQueueElementBase(Renderer renderer, NJS_OBJECT @object, NJS_MODEL model, NJS_MESHSET set)
 		{
+			Object      = @object;
 			Model       = model;
 			Set         = set;
 			FlowControl = renderer.FlowControl;
 			Transform   = MatrixStack.Peek();
 
 			ushort matId = set.MaterialId;
-			List<NJS_MATERIAL> mats  = model.mats;
+			List<NJS_MATERIAL> mats = model.mats;
 
 			Transparent = matId < mats.Count && (mats[matId].attrflags & NJD_FLAG.UseAlpha) != 0;
 
 			BoundingSphere = Set.GetWorldSpaceBoundingSphere();
+		}
+
+		public MeshsetQueueElementBase(MeshsetQueueElementBase b)
+		{
+			Object         = b.Object;
+			Model          = b.Model;
+			Set            = b.Set;
+			Transform      = b.Transform;
+			BoundingSphere = b.BoundingSphere;
+			Transparent    = b.Transparent;
+			FlowControl    = b.FlowControl;
+		}
+	}
+
+	public class MeshsetQueueElement : MeshsetQueueElementBase
+	{
+		public readonly float Distance;
+
+		public MeshsetQueueElement(Renderer renderer, Camera camera, NJS_OBJECT @object, NJS_MODEL model, NJS_MESHSET set) : base(renderer, @object, model, set)
+		{
+			Distance = (BoundingSphere.Center - camera.Position).LengthSquared();
+		}
+
+		public MeshsetQueueElement(MeshsetQueueElementBase b, Camera camera) : base(b)
+		{
 			Distance = (BoundingSphere.Center - camera.Position).LengthSquared();
 		}
 	}
 
-	class MeshsetQueue
+	public class MeshsetQueue
 	{
 		readonly List<MeshsetQueueElement> opaqueSets = new List<MeshsetQueueElement>();
-		readonly List<MeshsetQueueElement> alphaSets = new List<MeshsetQueueElement>();
+		readonly List<MeshsetQueueElement> alphaSets  = new List<MeshsetQueueElement>();
 
 		public IEnumerable<MeshsetQueueElement> OpaqueSets => opaqueSets;
-		public IEnumerable<MeshsetQueueElement> AlphaSets => alphaSets;
+		public IEnumerable<MeshsetQueueElement> AlphaSets  => alphaSets;
 
 		public void Clear()
 		{
@@ -89,17 +115,13 @@ namespace sadx_model_view
 			});
 		}
 
-		public void Enqueue(Renderer renderer, Camera camera, NJS_MODEL model, NJS_MESHSET set)
+		public void Enqueue(Renderer renderer, Camera camera, NJS_OBJECT @object, NJS_MODEL model, NJS_MESHSET set)
 		{
-			BoundingBox bounds = set.GetWorldSpaceBoundingBox();
+			Enqueue(new MeshsetQueueElement(renderer, camera, @object, model, set));
+		}
 
-			if (!camera.Frustum.Intersects(ref bounds))
-			{
-				return;
-			}
-
-			var element = new MeshsetQueueElement(renderer, camera, model, set);
-
+		public void Enqueue(MeshsetQueueElement element)
+		{
 			if (element.Transparent)
 			{
 				alphaSets.Add(element);
