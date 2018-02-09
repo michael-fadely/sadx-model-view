@@ -465,7 +465,7 @@ namespace sadx_model_view.Forms
 
 			camera.Update();
 
-			RawMatrix m = camera.Projection;
+			Matrix m = camera.Projection;
 			renderer.SetTransform(TransformState.Projection, in m);
 			m = camera.View;
 			renderer.SetTransform(TransformState.View, in m);

@@ -17,11 +17,11 @@ namespace sadx_model_view
 
 		public bool Equals(MatrixBuffer other)
 		{
-			return World.Equals(other.World)
-			       && View.Equals(other.View)
-			       && Projection.Equals(other.Projection)
-			       && Texture.Equals(other.Texture)
-			       && CameraPosition.Equals(other.CameraPosition);
+			return World == other.World
+			       && View == other.View
+			       && Projection == other.Projection
+			       && Texture == other.Texture
+			       && CameraPosition == other.CameraPosition;
 		}
 
 		public override int GetHashCode()
