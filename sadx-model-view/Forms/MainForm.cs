@@ -10,7 +10,6 @@ using sadx_model_view.Ninja;
 using sadx_model_view.SA1;
 using SharpDX;
 using SharpDX.Direct3D11;
-using SharpDX.Mathematics.Interop;
 using SharpDX.WIC;
 using VrSharp.PvrTexture;
 using Bitmap = System.Drawing.Bitmap;
@@ -472,7 +471,7 @@ namespace sadx_model_view.Forms
 
 			camera.Update();
 
-			RawMatrix m = camera.Projection;
+			Matrix m = camera.Projection;
 			renderer.SetTransform(TransformState.Projection, in m);
 			m = camera.View;
 			renderer.SetTransform(TransformState.View, in m);

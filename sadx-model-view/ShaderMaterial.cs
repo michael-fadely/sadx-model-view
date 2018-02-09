@@ -1,5 +1,4 @@
 using SharpDX;
-using SharpDX.Mathematics.Interop;
 
 namespace sadx_model_view
 {
@@ -7,20 +6,20 @@ namespace sadx_model_view
 	{
 		public static int SizeInBytes => 2 * Vector4.SizeInBytes + sizeof(float) + 5 * sizeof(int);
 
-		public RawColor4 Diffuse;
-		public RawColor4 Specular;
-		public float     Exponent;
-		public bool      UseLight;
-		public bool      UseAlpha;
-		public bool      UseEnv;
-		public bool      UseTexture;
-		public bool      UseSpecular;
+		public Color4 Diffuse;
+		public Color4 Specular;
+		public float  Exponent;
+		public bool   UseLight;
+		public bool   UseAlpha;
+		public bool   UseEnv;
+		public bool   UseTexture;
+		public bool   UseSpecular;
 
 		public bool Equals(ShaderMaterial other)
 		{
-			return Diffuse.Equals(other.Diffuse)
-				   && Specular.Equals(other.Specular)
-				   && Exponent.Equals(other.Exponent)
+			return Diffuse == other.Diffuse
+				   && Specular == other.Specular
+				   && Exponent == other.Exponent
 				   && UseLight == other.UseLight
 				   && UseAlpha == other.UseAlpha
 				   && UseEnv == other.UseEnv

@@ -31,7 +31,7 @@ namespace sadx_model_view
 		/// <summary>
 		/// This is the texture transformation matrix that SADX uses for anything with an environment map.
 		/// </summary>
-		static readonly RawMatrix environmentMapTransform = new Matrix(
+		static readonly Matrix environmentMapTransform = new Matrix(
 			-0.5f, 0.0f, 0.0f, 0.0f,
 			0.0f, 0.5f, 0.0f, 0.0f,
 			0.0f, 0.0f, 1.0f, 0.0f,
@@ -206,7 +206,7 @@ namespace sadx_model_view
 			{
 				MatrixStack.Push();
 				@object.PushTransform();
-				RawMatrix m = MatrixStack.Peek();
+				Matrix m = MatrixStack.Peek();
 				SetTransform(TransformState.World, in m);
 
 				if (!@object.SkipDraw && @object.Model != null)
@@ -378,7 +378,7 @@ namespace sadx_model_view
 		{
 			FlowControl = e.FlowControl;
 
-			RawMatrix m = e.Transform;
+			Matrix m = e.Transform;
 			SetTransform(TransformState.World, in m);
 
 			if (!e.Object.SkipDraw)
@@ -688,15 +688,15 @@ namespace sadx_model_view
 			}
 		}
 
-		public void SetTransform(TransformState state, in RawMatrix rawMatrix)
+		public void SetTransform(TransformState state, in Matrix m)
 		{
 			switch (state)
 			{
 				case TransformState.World:
-					matrixData.World = rawMatrix;
+					matrixData.World = m;
 					break;
 				case TransformState.View:
-					matrixData.View = rawMatrix;
+					matrixData.View = m;
 					break;
 				case TransformState.Projection:
 #if REVERSE_Z
@@ -709,11 +709,11 @@ namespace sadx_model_view
 
 					matrixData.Projection = rawMatrix * a;
 #else
-					matrixData.Projection = rawMatrix;
+					matrixData.Projection = m;
 #endif
 					break;
 				case TransformState.Texture:
-					matrixData.Texture = rawMatrix;
+					matrixData.Texture = m;
 					break;
 				default:
 					throw new ArgumentOutOfRangeException(nameof(state), state, null);
