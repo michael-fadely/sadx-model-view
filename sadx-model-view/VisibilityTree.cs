@@ -36,7 +36,11 @@ namespace sadx_model_view
 		{
 			foreach (var col in landTable.ColList)
 			{
-				Add(col.Object, renderer);
+				// HACK:
+				if ((col.Flags & ColFlags.Visible) != 0)
+				{
+					Add(col.Object, renderer);
+				}
 			}
 		}
 

@@ -346,7 +346,7 @@ namespace sadx_model_view.Ninja
 
 				yield return o;
 
-				if (!o.SkipChildren && o.Child != null)
+				if (o.Child != null)
 				{
 					foreach (var c in o.Child)
 					{
