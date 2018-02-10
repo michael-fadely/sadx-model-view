@@ -95,6 +95,11 @@ namespace sadx_model_view
 			rootNode    = new BoundsOctreeNode<T>(initialSize, minSize, loosenessVal, initialWorldPos);
 		}
 
+		public IEnumerable<BoundingBox> GiveMeTheBounds()
+		{
+			return rootNode.GiveMeTheBounds();
+		}
+
 		/// <summary>
 		/// Add an object.
 		/// </summary>

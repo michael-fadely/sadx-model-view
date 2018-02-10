@@ -763,5 +763,26 @@ namespace sadx_model_view
 
 			return false;
 		}
+
+		public IEnumerable<BoundingBox> GiveMeTheBounds()
+		{
+			//if (objects.Count > 0)
+			{
+				yield return bounds;
+			}
+
+			if (children == null)
+			{
+				yield break;
+			}
+
+			foreach (BoundsOctreeNode<T> child in children)
+			{
+				foreach (BoundingBox b in child.GiveMeTheBounds())
+				{
+					yield return b;
+				}
+			}
+		}
 	}
 }

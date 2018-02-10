@@ -89,7 +89,9 @@ namespace sadx_model_view
 
 		void Create(in BoundingSphere bounds)
 		{
-			tree = new BoundsOctree<MeshsetQueueElementBase>(bounds, 1.0f, 1.0f);
+			tree = new BoundsOctree<MeshsetQueueElementBase>(bounds, 0.1f, 1.0f);
 		}
+
+		public IEnumerable<BoundingBox> GiveMeTheBounds() => tree.GiveMeTheBounds();
 	}
 }
