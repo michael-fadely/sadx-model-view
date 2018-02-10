@@ -962,9 +962,9 @@ namespace sadx_model_view
 		PixelShader    pixelShader;
 		InputLayout    inputLayout;
 
-		VertexShader   debugVertexShader;
-		PixelShader    debugPixelShader;
-		InputLayout    debugInputLayout;
+		VertexShader debugVertexShader;
+		PixelShader  debugPixelShader;
+		InputLayout  debugInputLayout;
 
 		bool lastZwrite;
 
@@ -1077,7 +1077,7 @@ namespace sadx_model_view
 				new DebugLine(new DebugPoint(corners[3], Color4.White), new DebugPoint(corners[7], Color4.White)),
 			};
 
-			foreach (var line in lines)
+			foreach (DebugLine line in lines)
 			{
 				DrawDebugLine(line);
 			}
