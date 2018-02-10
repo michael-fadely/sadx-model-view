@@ -503,12 +503,12 @@ namespace sadx_model_view.Forms
 					objectTree.Add(obj, renderer);
 				}
 
-				renderer.Draw(objectTree.GetVisible(camera), camera);
-
 				foreach (BoundingBox bounds in objectTree.GiveMeTheBounds())
 				{
 					renderer.DrawBounds(in bounds);
 				}
+
+				renderer.Draw(objectTree.GetVisible(camera), camera);
 			}
 
 			if (landTable != null)
@@ -521,13 +521,13 @@ namespace sadx_model_view.Forms
 					landTableTree.Add(landTable, renderer);
 				}
 
-				renderer.Draw(landTableTree.GetVisible(camera), camera);
-				renderer.FlowControl.Reset();
-
 				foreach (BoundingBox bounds in landTableTree.GiveMeTheBounds())
 				{
 					renderer.DrawBounds(in bounds);
 				}
+
+				renderer.Draw(landTableTree.GetVisible(camera), camera);
+				renderer.FlowControl.Reset();
 			}
 
 			renderer.Present(camera);
