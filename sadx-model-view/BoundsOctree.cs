@@ -320,13 +320,14 @@ namespace sadx_model_view
 		/// <param name="direction">Direction to grow.</param>
 		void Grow(Vector3 direction)
 		{
-			int                 xDirection = direction.X >= 0 ? 1 : -1;
-			int                 yDirection = direction.Y >= 0 ? 1 : -1;
-			int                 zDirection = direction.Z >= 0 ? 1 : -1;
-			BoundsOctreeNode<T> oldRoot    = rootNode;
-			float               half       = rootNode.BaseLength / 2;
-			float               newLength  = rootNode.BaseLength * 2;
-			Vector3             newCenter  = rootNode.Center + new Vector3(xDirection * half, yDirection * half, zDirection * half);
+			BoundsOctreeNode<T> oldRoot = rootNode;
+
+			int     xDirection = direction.X >= 0 ? 1 : -1;
+			int     yDirection = direction.Y >= 0 ? 1 : -1;
+			int     zDirection = direction.Z >= 0 ? 1 : -1;
+			float   half       = rootNode.BaseLength / 2;
+			float   newLength  = rootNode.BaseLength * 2;
+			Vector3 newCenter  = rootNode.Center + new Vector3(xDirection * half, yDirection * half, zDirection * half);
 
 			// Create a new, bigger octree root node
 			rootNode = new BoundsOctreeNode<T>(newLength, minSize, looseness, newCenter);
@@ -336,6 +337,7 @@ namespace sadx_model_view
 				// Create 7 new octree children to go with the old root as children of the new root
 				int rootPos = GetRootPosIndex(xDirection, yDirection, zDirection);
 				var children = new BoundsOctreeNode<T>[8];
+
 				for (int i = 0; i < 8; i++)
 				{
 					if (i == rootPos)

@@ -92,6 +92,8 @@
   <ItemGroup>
     <Compile Include="BoundsOctree.cs" />
     <Compile Include="BoundsOctreeNode.cs" />
+    <Compile Include="DebugLine.cs" />
+    <Compile Include="DebugPoint.cs" />
     <Compile Include="MeshsetQueue.cs" />
     <Compile Include="Camera.cs" />
     <Compile Include="DefaultIncludeHandler.cs" />
@@ -171,6 +173,12 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Shaders\debug_ps.hlsl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Shaders\debug_vs.hlsl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Shaders\scene_vs.hlsl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

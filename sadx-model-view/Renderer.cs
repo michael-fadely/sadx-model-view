@@ -39,7 +39,7 @@ namespace sadx_model_view
 		);
 
 		public FlowControl FlowControl;
-		public bool        EnableAlpha = true;
+		public bool EnableAlpha = true;
 
 		CullMode defaultCullMode = CullMode.None;
 
@@ -68,14 +68,17 @@ namespace sadx_model_view
 		RasterizerStateDescription   rasterizerDescription;
 		readonly Buffer              matrixBuffer;
 		readonly Buffer              materialBuffer;
+		readonly Buffer              lineVertexBuffer;
 
-		bool         zWrite = true;
-		bool         matrixDataChanged;
+		bool zWrite = true;
+		bool matrixDataChanged;
 		MatrixBuffer lastMatrixData;
 		MatrixBuffer matrixData;
 
-		readonly MeshsetQueue                       meshQueue     = new MeshsetQueue();
+		readonly MeshsetQueue meshQueue = new MeshsetQueue();
 		readonly Dictionary<NJD_FLAG, DisplayState> displayStates = new Dictionary<NJD_FLAG, DisplayState>();
+
+		readonly List<DebugLine> debugLines = new List<DebugLine>();
 
 		public Renderer(int w, int h, IntPtr sceneHandle)
 		{
@@ -85,11 +88,11 @@ namespace sadx_model_view
 
 			var desc = new SwapChainDescription
 			{
-				BufferCount = 1,
-				ModeDescription = new ModeDescription(w, h, new Rational(1000, 60), Format.R8G8B8A8_UNorm),
-				Usage = Usage.RenderTargetOutput,
-				OutputHandle = sceneHandle,
-				IsWindowed = true,
+				BufferCount       = 1,
+				ModeDescription   = new ModeDescription(w, h, new Rational(1000, 60), Format.R8G8B8A8_UNorm),
+				Usage             = Usage.RenderTargetOutput,
+				OutputHandle      = sceneHandle,
+				IsWindowed        = true,
 				SampleDescription = new SampleDescription(1, 0)
 			};
 
@@ -130,11 +133,22 @@ namespace sadx_model_view
 			materialBuffer = new Buffer(device, bufferDesc);
 
 			LoadShaders();
+			LoadDebugShaders();
 
 			device.ImmediateContext.VertexShader.SetConstantBuffer(0, matrixBuffer);
 			device.ImmediateContext.VertexShader.SetConstantBuffer(1, materialBuffer);
 			device.ImmediateContext.PixelShader.SetConstantBuffer(1, materialBuffer);
 			device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
+
+			int lineBufferSize = 2 * DebugPoint.SizeInBytes;
+
+			var lineDescription = new BufferDescription(lineBufferSize, BindFlags.VertexBuffer, ResourceUsage.Dynamic)
+			{
+				CpuAccessFlags      = CpuAccessFlags.Write,
+				StructureByteStride = DebugPoint.SizeInBytes
+			};
+
+			lineVertexBuffer = new Buffer(device, lineDescription);
 
 			RefreshDevice(w, h);
 		}
@@ -181,6 +195,42 @@ namespace sadx_model_view
 			}
 		}
 
+		public void LoadDebugShaders()
+		{
+			using (var includeMan = new DefaultIncludeHandler())
+			{
+				debugVertexShader?.Dispose();
+				debugPixelShader?.Dispose();
+				debugInputLayout?.Dispose();
+
+				CompilationResult vs_result = ShaderBytecode.CompileFromFile("Shaders\\debug_vs.hlsl", "main", "vs_4_0", include: includeMan);
+
+				if (vs_result.HasErrors || !string.IsNullOrEmpty(vs_result.Message))
+				{
+					throw new Exception(vs_result.Message);
+				}
+
+				debugVertexShader = new VertexShader(device, vs_result.Bytecode);
+
+				CompilationResult ps_result = ShaderBytecode.CompileFromFile("Shaders\\debug_ps.hlsl", "main", "ps_4_0", include: includeMan);
+
+				if (ps_result.HasErrors || !string.IsNullOrEmpty(ps_result.Message))
+				{
+					throw new Exception(ps_result.Message);
+				}
+
+				debugPixelShader = new PixelShader(device, ps_result.Bytecode);
+
+				var layout = new InputElement[]
+				{
+					new InputElement("POSITION", 0, Format.R32G32B32_Float,    InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
+					new InputElement("COLOR",    0, Format.R32G32B32A32_Float, InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0)
+				};
+
+				debugInputLayout = new InputLayout(device, vs_result.Bytecode, layout);
+			}
+		}
+
 		public void Clear()
 		{
 			if (device == null)
@@ -189,6 +239,7 @@ namespace sadx_model_view
 			}
 
 			meshQueue.Clear();
+			debugLines.Clear();
 
 			device.ImmediateContext.Rasterizer.State = rasterizerState;
 			device.ImmediateContext.ClearRenderTargetView(backBuffer, new RawColor4(0.0f, 1.0f, 1.0f, 1.0f));
@@ -358,8 +409,8 @@ namespace sadx_model_view
 				zWrite = true;
 			}
 
+			DrawDebugLines();
 			meshQueue.Clear();
-
 			swapChain.Present(0, 0);
 
 			if (!MatrixStack.Empty)
@@ -372,6 +423,61 @@ namespace sadx_model_view
 				lastVisibleCount = visibleCount;
 				Debug.WriteLine(visibleCount);
 			}
+
+			lastVertexBuffer = null;
+		}
+
+		void DrawDebugLines()
+		{
+			device.ImmediateContext.VertexShader.Set(debugVertexShader);
+			device.ImmediateContext.PixelShader.Set(debugPixelShader);
+			device.ImmediateContext.InputAssembler.InputLayout = debugInputLayout;
+
+			var binding = new VertexBufferBinding(lineVertexBuffer, DebugPoint.SizeInBytes, 0);
+
+			device.ImmediateContext.InputAssembler.SetVertexBuffers(0, binding);
+			device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.LineList;
+
+			// TODO: make debug line z-writes configurable
+			device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
+			zWrite = true;
+
+			foreach (DebugLine line in debugLines)
+			{
+				device.ImmediateContext.MapSubresource(lineVertexBuffer, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
+
+				using (stream)
+				{
+					// point a
+					stream.Write(line.PointA.Point);
+
+					Color4 color = line.PointA.Color;
+
+					stream.Write(color.Red);
+					stream.Write(color.Green);
+					stream.Write(color.Blue);
+					stream.Write(1.0f);
+
+					// point b
+					stream.Write(line.PointB.Point);
+
+					color = line.PointB.Color;
+
+					stream.Write(color.Red);
+					stream.Write(color.Green);
+					stream.Write(color.Blue);
+					stream.Write(1.0f);
+				}
+
+				device.ImmediateContext.UnmapSubresource(lineVertexBuffer, 0);
+				device.ImmediateContext.Draw(2, 0);
+			}
+
+			// restore default shaders, input layout and topology
+			device.ImmediateContext.VertexShader.Set(vertexShader);
+			device.ImmediateContext.PixelShader.Set(pixelShader);
+			device.ImmediateContext.InputAssembler.InputLayout = inputLayout;
+			device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
 		}
 
 		void DrawMeshsetQueueElement(MeshsetQueueElement e)
@@ -856,6 +962,10 @@ namespace sadx_model_view
 		PixelShader    pixelShader;
 		InputLayout    inputLayout;
 
+		VertexShader   debugVertexShader;
+		PixelShader    debugPixelShader;
+		InputLayout    debugInputLayout;
+
 		bool lastZwrite;
 
 		public void SetShaderMaterial(in ShaderMaterial material)
@@ -903,7 +1013,11 @@ namespace sadx_model_view
 			lastTexture?.Dispose();
 			vertexShader?.Dispose();
 			pixelShader?.Dispose();
+			debugVertexShader?.Dispose();
+			debugPixelShader?.Dispose();
 			inputLayout?.Dispose();
+			debugInputLayout?.Dispose();
+			lineVertexBuffer?.Dispose();
 
 			ClearTexturePool();
 			ClearDisplayStates();
@@ -926,6 +1040,16 @@ namespace sadx_model_view
 			}
 
 			displayStates.Clear();
+		}
+
+		public void DrawDebugLine(DebugPoint start, DebugPoint end)
+		{
+			DrawDebugLine(new DebugLine(start, end));
+		}
+
+		public void DrawDebugLine(DebugLine line)
+		{
+			debugLines.Add(line);
 		}
 	}
 

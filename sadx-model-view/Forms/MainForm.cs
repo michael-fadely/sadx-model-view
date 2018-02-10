@@ -496,6 +496,13 @@ namespace sadx_model_view.Forms
 
 			renderer.Clear();
 
+			var line = new DebugLine(
+				new DebugPoint(new Vector3(0.0f, 0.0f, 0.0f),  new Color4(new Vector4(1.0f, 0.0f, 1.0f, 1.0f))),
+				new DebugPoint(new Vector3(0.0f, 0.0f, 50.0f), new Color4(new Vector4(0.0f, 0.0f, 1.0f, 1.0f)))
+			);
+
+			renderer.DrawDebugLine(line);
+
 			if (obj != null)
 			{
 				if (objectTree.Empty)
@@ -666,6 +673,7 @@ namespace sadx_model_view.Forms
 				try
 				{
 					renderer?.LoadShaders();
+					renderer?.LoadDebugShaders();
 					break;
 				}
 				catch (Exception ex)
