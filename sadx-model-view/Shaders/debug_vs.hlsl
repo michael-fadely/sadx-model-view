@@ -1,13 +1,4 @@
-﻿
-cbuffer MatrixBuffer : register(b0)
-{
-	matrix worldMatrix;
-	matrix viewMatrix;
-	matrix projectionMatrix;
-	matrix wvMatrixInvT;
-	matrix textureTransform;
-	float3 cameraPos;
-};
+﻿#include "common.hlsli"
 
 void main(in float3 position : POSITION, in float4 color : COLOR,
 				out float4 o_position : SV_POSITION, out float4 o_color : COLOR)

@@ -28,16 +28,6 @@ namespace sadx_model_view
 	{
 		int lastVisibleCount;
 
-		/// <summary>
-		/// This is the texture transformation matrix that SADX uses for anything with an environment map.
-		/// </summary>
-		static readonly Matrix environmentMapTransform = new Matrix(
-			-0.5f, 0.0f, 0.0f, 0.0f,
-			0.0f, 0.5f, 0.0f, 0.0f,
-			0.0f, 0.0f, 1.0f, 0.0f,
-			0.5f, 0.5f, 0.0f, 1.0f
-		);
-
 		public FlowControl FlowControl;
 		public bool EnableAlpha = true;
 
@@ -66,14 +56,16 @@ namespace sadx_model_view
 		DepthStencilView             depthView;
 		RasterizerState              rasterizerState;
 		RasterizerStateDescription   rasterizerDescription;
-		readonly Buffer              matrixBuffer;
-		readonly Buffer              materialBuffer;
-		readonly Buffer              lineVertexBuffer;
+
+		readonly Buffer lineVertexBuffer;
+		readonly Buffer perSceneBuffer;
+		readonly Buffer perModelBuffer;
+		readonly Buffer materialBuffer;
+
+		readonly PerSceneBuffer perSceneData = new PerSceneBuffer();
+		readonly PerModelBuffer perModelData = new PerModelBuffer();
 
 		bool zWrite = true;
-		bool matrixDataChanged;
-		MatrixBuffer lastMatrixData;
-		MatrixBuffer matrixData;
 
 		readonly MeshsetQueue meshQueue = new MeshsetQueue();
 		readonly Dictionary<NJD_FLAG, DisplayState> displayStates = new Dictionary<NJD_FLAG, DisplayState>();
@@ -83,8 +75,6 @@ namespace sadx_model_view
 		public Renderer(int w, int h, IntPtr sceneHandle)
 		{
 			FlowControl.Reset();
-
-			SetTransform(TransformState.Texture, in environmentMapTransform);
 
 			var desc = new SwapChainDescription
 			{
@@ -117,11 +107,15 @@ namespace sadx_model_view
 				throw new InsufficientFeatureLevelException(device.FeatureLevel, FeatureLevel.Level_10_0);
 			}
 
-			int matrixSize = Matrix.SizeInBytes * 5 + Vector4.SizeInBytes;
-			var bufferDesc = new BufferDescription(matrixSize,
-				ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write, ResourceOptionFlags.None, matrixSize);
+			var bufferDesc = new BufferDescription(PerSceneBuffer.SizeInBytes,
+				ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write, ResourceOptionFlags.None, PerSceneBuffer.SizeInBytes);
 
-			matrixBuffer = new Buffer(device, bufferDesc);
+			perSceneBuffer = new Buffer(device, bufferDesc);
+
+			bufferDesc = new BufferDescription(PerModelBuffer.SizeInBytes,
+				ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write, ResourceOptionFlags.None, PerModelBuffer.SizeInBytes);
+
+			perModelBuffer = new Buffer(device, bufferDesc);
 
 			// Size must be divisible by 16, so this is just padding.
 			int size   = Math.Max(ShaderMaterial.SizeInBytes, 80);
@@ -135,9 +129,16 @@ namespace sadx_model_view
 			LoadShaders();
 			LoadDebugShaders();
 
-			device.ImmediateContext.VertexShader.SetConstantBuffer(0, matrixBuffer);
+			device.ImmediateContext.VertexShader.SetConstantBuffer(0, perSceneBuffer);
+			device.ImmediateContext.PixelShader.SetConstantBuffer(0, perSceneBuffer);
+
 			device.ImmediateContext.VertexShader.SetConstantBuffer(1, materialBuffer);
 			device.ImmediateContext.PixelShader.SetConstantBuffer(1, materialBuffer);
+
+			device.ImmediateContext.VertexShader.SetConstantBuffer(2, perModelBuffer);
+			device.ImmediateContext.PixelShader.SetConstantBuffer(2, perModelBuffer);
+
+
 			device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
 
 			int lineBufferSize = 2 * DebugPoint.SizeInBytes;
@@ -239,7 +240,6 @@ namespace sadx_model_view
 			}
 
 			meshQueue.Clear();
-			debugLines.Clear();
 
 			device.ImmediateContext.Rasterizer.State = rasterizerState;
 			device.ImmediateContext.ClearRenderTargetView(backBuffer, new RawColor4(0.0f, 1.0f, 1.0f, 1.0f));
@@ -294,7 +294,7 @@ namespace sadx_model_view
 		{
 			List<NJS_MATERIAL> mats = parent.mats;
 
-			ushort       materialId = set.MaterialId;
+			ushort materialId = set.MaterialId;
 			NJS_MATERIAL njMaterial = mats.Count > 0 && materialId < mats.Count ? mats[materialId] : nullMaterial;
 
 			FlowControl flowControl = FlowControl;
@@ -335,28 +335,8 @@ namespace sadx_model_view
 				lastRasterizerState = state.Raster;
 			}
 
-			if (matrixDataChanged && lastMatrixData != matrixData)
-			{
-				device.ImmediateContext.MapSubresource(matrixBuffer, MapMode.WriteDiscard,
-					MapFlags.None, out DataStream stream);
-
-				using (stream)
-				{
-					Matrix wvMatrixInvT = matrixData.World * matrixData.View;
-					Matrix.Invert(ref wvMatrixInvT, out wvMatrixInvT);
-
-					stream.Write(matrixData.World);
-					stream.Write(matrixData.View);
-					stream.Write(matrixData.Projection);
-					stream.Write(wvMatrixInvT);
-					stream.Write(matrixData.Texture);
-					stream.Write(matrixData.CameraPosition);
-				}
-
-				device.ImmediateContext.UnmapSubresource(matrixBuffer, 0);
-				lastMatrixData = matrixData;
-				matrixDataChanged = false;
-			}
+			CommitPerSceneData();
+			CommitPerModelData();
 
 			if (parent.VertexBuffer != lastVertexBuffer)
 			{
@@ -369,13 +349,63 @@ namespace sadx_model_view
 			device.ImmediateContext.DrawIndexed(set.IndexCount, 0, 0);
 		}
 
+		void CommitPerModelData()
+		{
+			if (!perModelData.Modified)
+			{
+				return;
+			}
+
+			device.ImmediateContext.MapSubresource(perModelBuffer, MapMode.WriteDiscard,
+				MapFlags.None, out DataStream stream);
+
+			using (stream)
+			{
+				Matrix wvMatrixInvT = perModelData.World.Value * perSceneData.View.Value;
+				Matrix.Invert(ref wvMatrixInvT, out wvMatrixInvT);
+
+				perModelData.wvMatrixInvT.Value = wvMatrixInvT;
+
+				stream.Write(perModelData.World.Value);
+				stream.Write(wvMatrixInvT);
+
+				Debug.Assert(stream.RemainingLength == 0);
+			}
+
+			device.ImmediateContext.UnmapSubresource(perModelBuffer, 0);
+			perModelData.Clear();
+		}
+
+		void CommitPerSceneData()
+		{
+			if (!perSceneData.Modified)
+			{
+				return;
+			}
+
+			device.ImmediateContext.MapSubresource(perSceneBuffer, MapMode.WriteDiscard,
+				MapFlags.None, out DataStream stream);
+
+			using (stream)
+			{
+				stream.Write(perSceneData.View.Value);
+				stream.Write(perSceneData.Projection.Value);
+				stream.Write(perSceneData.CameraPosition.Value);
+				stream.Write(0f);
+
+				Debug.Assert(stream.RemainingLength == 0);
+			}
+
+			perSceneData.Clear();
+			device.ImmediateContext.UnmapSubresource(perSceneBuffer, 0);
+		}
+
 		public void Present(Camera camera)
 		{
 			var visibleCount = 0;
 			zWrite = true;
 
-			matrixDataChanged = true;
-			matrixData.CameraPosition = camera.Position;
+			perSceneData.CameraPosition.Value = camera.Position;
 
 			//meshTree.SortOpaque();
 
@@ -429,6 +459,8 @@ namespace sadx_model_view
 
 		void DrawDebugLines()
 		{
+			CommitPerSceneData();
+
 			device.ImmediateContext.VertexShader.Set(debugVertexShader);
 			device.ImmediateContext.PixelShader.Set(debugPixelShader);
 			device.ImmediateContext.InputAssembler.InputLayout = debugInputLayout;
@@ -438,7 +470,7 @@ namespace sadx_model_view
 			device.ImmediateContext.InputAssembler.SetVertexBuffers(0, binding);
 			device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.LineList;
 
-			// TODO: make debug line z-writes configurable
+			// TODO: make debug line z-writes (and tests) configurable
 			device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
 			zWrite = true;
 
@@ -472,6 +504,8 @@ namespace sadx_model_view
 				device.ImmediateContext.UnmapSubresource(lineVertexBuffer, 0);
 				device.ImmediateContext.Draw(2, 0);
 			}
+
+			debugLines.Clear();
 
 			// restore default shaders, input layout and topology
 			device.ImmediateContext.VertexShader.Set(vertexShader);
@@ -799,10 +833,10 @@ namespace sadx_model_view
 			switch (state)
 			{
 				case TransformState.World:
-					matrixData.World = m;
+					perModelData.World.Value = m;
 					break;
 				case TransformState.View:
-					matrixData.View = m;
+					perSceneData.View.Value = m;
 					break;
 				case TransformState.Projection:
 #if REVERSE_Z
@@ -813,19 +847,14 @@ namespace sadx_model_view
 						0f, 0f,  1f, 1f
 					);
 
-					matrixData.Projection = rawMatrix * a;
+					perSceneData.Projection.Value = rawMatrix * a;
 #else
-					matrixData.Projection = m;
+					perSceneData.Projection.Value = m;
 #endif
-					break;
-				case TransformState.Texture:
-					matrixData.Texture = m;
 					break;
 				default:
 					throw new ArgumentOutOfRangeException(nameof(state), state, null);
 			}
-
-			matrixDataChanged = true;
 		}
 
 		SceneTexture lastTexture;
@@ -1004,7 +1033,6 @@ namespace sadx_model_view
 			depthStateRO?.Dispose();
 			depthView?.Dispose();
 			rasterizerState?.Dispose();
-			matrixBuffer?.Dispose();
 			materialBuffer?.Dispose();
 			lastVertexBuffer?.Dispose();
 			lastBlend?.Dispose();
@@ -1018,6 +1046,10 @@ namespace sadx_model_view
 			inputLayout?.Dispose();
 			debugInputLayout?.Dispose();
 			lineVertexBuffer?.Dispose();
+
+			perSceneBuffer?.Dispose();
+			perModelBuffer?.Dispose();
+			materialBuffer?.Dispose();
 
 			ClearTexturePool();
 			ClearDisplayStates();

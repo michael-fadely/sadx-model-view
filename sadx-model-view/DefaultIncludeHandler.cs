@@ -6,24 +6,20 @@ namespace sadx_model_view
 {
 	class DefaultIncludeHandler : Include
 	{
-		Stream fileStream;
-
 		public IDisposable Shadow { get; set; }
 
 		public void Dispose()
 		{
-			fileStream?.Dispose();
 		}
 
 		public Stream Open(IncludeType type, string fileName, Stream parentStream)
 		{
-			fileStream = File.Open(Path.Combine("Shaders", fileName), FileMode.Open);
-			return fileStream;
+			return File.Open(Path.Combine("Shaders", fileName), FileMode.Open);
 		}
 
 		public void Close(Stream stream)
 		{
-			fileStream?.Close();
+			stream?.Close();
 		}
 	}
 }

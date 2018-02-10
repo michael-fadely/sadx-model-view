@@ -1,4 +1,4 @@
-#include "common.hlsli"
+#include "scene_common.hlsli"
 
 Texture2D<float4> DiffuseMap : register(t0);
 

@@ -1,4 +1,5 @@
-﻿using SharpDX;
+﻿using System;
+using SharpDX;
 
 namespace sadx_model_view.Extensions
 {
@@ -27,6 +28,12 @@ namespace sadx_model_view.Extensions
 		public static float Wrap(this float value, float low, float high)
 		{
 			return MathUtil.Wrap(value, low, high);
+		}
+
+		public static int RoundToMultiple(this int value, int multiple)
+		{
+			var m = (double)multiple;
+			return (int)(Math.Ceiling(value / m) * m);
 		}
 	}
 }

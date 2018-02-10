@@ -94,6 +94,7 @@
     <Compile Include="BoundsOctreeNode.cs" />
     <Compile Include="DebugLine.cs" />
     <Compile Include="DebugPoint.cs" />
+    <Compile Include="Interfaces\IModifiable.cs" />
     <Compile Include="MeshsetQueue.cs" />
     <Compile Include="Camera.cs" />
     <Compile Include="DefaultIncludeHandler.cs" />
@@ -103,7 +104,8 @@
     <Compile Include="Extensions\StreamExtensions.cs" />
     <Compile Include="Extensions\QuaternionExtensions.cs" />
     <Compile Include="Interfaces\IInvalidatable.cs" />
-    <Compile Include="MatrixBuffer.cs" />
+    <Compile Include="Modifiable.cs" />
+    <Compile Include="ShaderBuffers.cs" />
     <Compile Include="Ninja\FlowControl.cs" />
     <Compile Include="Ninja\ModelCache.cs" />
     <Compile Include="Ninja\Tex.cs" />
@@ -177,6 +179,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Shaders\debug_vs.hlsl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Shaders\scene_common.hlsli">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Shaders\scene_vs.hlsl">

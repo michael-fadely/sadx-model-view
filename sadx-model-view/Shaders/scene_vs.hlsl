@@ -1,14 +1,4 @@
-﻿#include "common.hlsli"
-
-cbuffer MatrixBuffer : register(b0)
-{
-	matrix worldMatrix;
-	matrix viewMatrix;
-	matrix projectionMatrix;
-	matrix wvMatrixInvT;
-	matrix textureTransform;
-	float3 cameraPos;
-};
+﻿#include "scene_common.hlsli"
 
 VS_OUTPUT main(VS_INPUT input)
 {
