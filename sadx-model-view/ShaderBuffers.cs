@@ -1,4 +1,3 @@
-using sadx_model_view.Extensions;
 using sadx_model_view.Interfaces;
 using SharpDX;
 
@@ -6,7 +5,7 @@ namespace sadx_model_view
 {
 	public class PerSceneBuffer : IModifiable
 	{
-		public static int SizeInBytes => (Vector3.SizeInBytes + 2 * Matrix.SizeInBytes).RoundToMultiple(16);
+		public static int SizeInBytes => Vector3.SizeInBytes + 2 * Matrix.SizeInBytes;
 		
 		public bool Modified => View.Modified || Projection.Modified || CameraPosition.Modified;
 
@@ -24,7 +23,7 @@ namespace sadx_model_view
 
 	public class PerModelBuffer : IModifiable
 	{
-		public static int SizeInBytes => (2 * Matrix.SizeInBytes).RoundToMultiple(16);
+		public static int SizeInBytes => 2 * Matrix.SizeInBytes;
 
 		public bool Modified => World.Modified || wvMatrixInvT.Modified;
 

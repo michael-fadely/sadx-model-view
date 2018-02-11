@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.Linq;
 using System.Runtime.InteropServices;
+using sadx_model_view.Extensions;
 using sadx_model_view.Ninja;
 using sadx_model_view.SA1;
 using SharpDX;
@@ -107,12 +108,12 @@ namespace sadx_model_view
 				throw new InsufficientFeatureLevelException(device.FeatureLevel, FeatureLevel.Level_10_0);
 			}
 
-			var bufferDesc = new BufferDescription(PerSceneBuffer.SizeInBytes,
+			var bufferDesc = new BufferDescription(PerSceneBuffer.SizeInBytes.RoundToMultiple(16),
 				ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write, ResourceOptionFlags.None, PerSceneBuffer.SizeInBytes);
 
 			perSceneBuffer = new Buffer(device, bufferDesc);
 
-			bufferDesc = new BufferDescription(PerModelBuffer.SizeInBytes,
+			bufferDesc = new BufferDescription(PerModelBuffer.SizeInBytes.RoundToMultiple(16),
 				ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write, ResourceOptionFlags.None, PerModelBuffer.SizeInBytes);
 
 			perModelBuffer = new Buffer(device, bufferDesc);

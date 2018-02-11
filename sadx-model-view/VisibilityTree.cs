@@ -48,19 +48,22 @@ namespace sadx_model_view
 		{
 			foreach (NJS_OBJECT o in @object)
 			{
-				if (o.Model != null)
+				if (o.Model == null)
 				{
-					foreach (var set in o.Model.meshsets)
-					{
-						tree.Add(new MeshsetQueueElementBase(renderer, o, o.Model, set), set.GetWorldSpaceBoundingBox());
-					}
+					continue;
+				}
+
+				foreach (var set in o.Model.meshsets)
+				{
+					var element = new MeshsetQueueElementBase(renderer, o, o.Model, set);
+					tree.Add(element, set.GetWorldSpaceBoundingBox());
 				}
 			}
 		}
 
 		public List<MeshsetQueueElementBase> GetVisible(Camera camera)
 		{
-			var frustum = camera.Frustum;
+			BoundingFrustum frustum = camera.Frustum;
 			return GetVisible(in frustum);
 		}
 

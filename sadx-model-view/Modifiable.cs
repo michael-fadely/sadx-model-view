@@ -1,8 +1,6 @@
-using sadx_model_view.Interfaces;
-
 namespace sadx_model_view
 {
-	public class Modifiable<T> : IModifiable
+	public class Modifiable<T>
 	{
 		public bool Modified { get; private set; }
 
@@ -31,6 +29,16 @@ namespace sadx_model_view
 		public void Clear()
 		{
 			Modified = false;
+		}
+
+		public static implicit operator Modifiable<T>(T value)
+		{
+			return new Modifiable<T>(value);
+		}
+
+		public static explicit operator T(Modifiable<T> value)
+		{
+			return value.Value;
 		}
 	}
 }
