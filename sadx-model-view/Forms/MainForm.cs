@@ -503,9 +503,12 @@ namespace sadx_model_view.Forms
 					objectTree.Add(obj, renderer);
 				}
 
-				foreach (BoundingBox bounds in objectTree.GiveMeTheBounds())
+				if (showOctreeToolStripMenuItem.Checked)
 				{
-					renderer.DrawBounds(in bounds);
+					foreach (BoundingBox bounds in objectTree.GiveMeTheBounds())
+					{
+						renderer.DrawBounds(in bounds);
+					}
 				}
 
 				renderer.Draw(objectTree.GetVisible(camera), camera);
@@ -521,9 +524,12 @@ namespace sadx_model_view.Forms
 					landTableTree.Add(landTable, renderer);
 				}
 
-				foreach (BoundingBox bounds in landTableTree.GiveMeTheBounds())
+				if (showOctreeToolStripMenuItem.Checked)
 				{
-					renderer.DrawBounds(in bounds);
+					foreach (BoundingBox bounds in landTableTree.GiveMeTheBounds())
+					{
+						renderer.DrawBounds(in bounds);
+					}
 				}
 
 				renderer.Draw(landTableTree.GetVisible(camera), camera);

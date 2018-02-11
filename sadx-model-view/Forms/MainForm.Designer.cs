@@ -30,7 +30,7 @@ namespace sadx_model_view.Forms
 		/// </summary>
 		private void InitializeComponent()
 		{
-			this.menuStrip1 = new System.Windows.Forms.MenuStrip();
+			this.menuStrip = new System.Windows.Forms.MenuStrip();
 			this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.openTexturesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -38,21 +38,23 @@ namespace sadx_model_view.Forms
 			this.recompileShadersToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.openModelDialog = new System.Windows.Forms.OpenFileDialog();
 			this.openTexturesDialog = new System.Windows.Forms.OpenFileDialog();
-			this.scene = new sadx_model_view.Controls.Scene();
+			this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.enableAlphaToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.menuStrip1.SuspendLayout();
+			this.showOctreeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.scene = new sadx_model_view.Controls.Scene();
+			this.menuStrip.SuspendLayout();
 			this.SuspendLayout();
 			// 
-			// menuStrip1
+			// menuStrip
 			// 
-			this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+			this.menuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileToolStripMenuItem,
-            this.editToolStripMenuItem});
-			this.menuStrip1.Location = new System.Drawing.Point(0, 0);
-			this.menuStrip1.Name = "menuStrip1";
-			this.menuStrip1.Size = new System.Drawing.Size(944, 24);
-			this.menuStrip1.TabIndex = 0;
-			this.menuStrip1.Text = "menuStrip1";
+            this.editToolStripMenuItem,
+            this.viewToolStripMenuItem});
+			this.menuStrip.Location = new System.Drawing.Point(0, 0);
+			this.menuStrip.Name = "menuStrip";
+			this.menuStrip.Size = new System.Drawing.Size(944, 24);
+			this.menuStrip.TabIndex = 0;
 			// 
 			// fileToolStripMenuItem
 			// 
@@ -82,8 +84,7 @@ namespace sadx_model_view.Forms
 			// editToolStripMenuItem
 			// 
 			this.editToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.recompileShadersToolStripMenuItem,
-            this.enableAlphaToolStripMenuItem});
+            this.recompileShadersToolStripMenuItem});
 			this.editToolStripMenuItem.Name = "editToolStripMenuItem";
 			this.editToolStripMenuItem.Size = new System.Drawing.Size(39, 20);
 			this.editToolStripMenuItem.Text = "&Edit";
@@ -109,6 +110,32 @@ namespace sadx_model_view.Forms
     "s|PVM files|*.pvm";
 			this.openTexturesDialog.Title = "Open Textures";
 			// 
+			// viewToolStripMenuItem
+			// 
+			this.viewToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.enableAlphaToolStripMenuItem,
+            this.showOctreeToolStripMenuItem});
+			this.viewToolStripMenuItem.Name = "viewToolStripMenuItem";
+			this.viewToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
+			this.viewToolStripMenuItem.Text = "View";
+			// 
+			// enableAlphaToolStripMenuItem
+			// 
+			this.enableAlphaToolStripMenuItem.Checked = true;
+			this.enableAlphaToolStripMenuItem.CheckOnClick = true;
+			this.enableAlphaToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
+			this.enableAlphaToolStripMenuItem.Name = "enableAlphaToolStripMenuItem";
+			this.enableAlphaToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+			this.enableAlphaToolStripMenuItem.Text = "Enable Alpha";
+			this.enableAlphaToolStripMenuItem.CheckedChanged += new System.EventHandler(this.enableAlphaToolStripMenuItem_CheckedChanged);
+			// 
+			// showOctreeToolStripMenuItem
+			// 
+			this.showOctreeToolStripMenuItem.CheckOnClick = true;
+			this.showOctreeToolStripMenuItem.Name = "showOctreeToolStripMenuItem";
+			this.showOctreeToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+			this.showOctreeToolStripMenuItem.Text = "Show Octree";
+			// 
 			// scene
 			// 
 			this.scene.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
@@ -122,24 +149,14 @@ namespace sadx_model_view.Forms
 			this.scene.KeyUp += new System.Windows.Forms.KeyEventHandler(this.scene_KeyUp);
 			this.scene.MouseMove += new System.Windows.Forms.MouseEventHandler(this.scene_MouseMove);
 			// 
-			// enableAlphaToolStripMenuItem
-			// 
-			this.enableAlphaToolStripMenuItem.Checked = true;
-			this.enableAlphaToolStripMenuItem.CheckOnClick = true;
-			this.enableAlphaToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
-			this.enableAlphaToolStripMenuItem.Name = "enableAlphaToolStripMenuItem";
-			this.enableAlphaToolStripMenuItem.Size = new System.Drawing.Size(174, 22);
-			this.enableAlphaToolStripMenuItem.Text = "Enable Alpha";
-			this.enableAlphaToolStripMenuItem.CheckedChanged += new System.EventHandler(this.enableAlphaToolStripMenuItem_CheckedChanged);
-			// 
 			// MainForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(944, 561);
 			this.Controls.Add(this.scene);
-			this.Controls.Add(this.menuStrip1);
-			this.MainMenuStrip = this.menuStrip1;
+			this.Controls.Add(this.menuStrip);
+			this.MainMenuStrip = this.menuStrip;
 			this.MinimumSize = new System.Drawing.Size(320, 200);
 			this.Name = "MainForm";
 			this.Text = "Model Viewer";
@@ -148,8 +165,8 @@ namespace sadx_model_view.Forms
 			this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.scene_KeyDown);
 			this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.scene_KeyUp);
 			this.MouseMove += new System.Windows.Forms.MouseEventHandler(this.scene_MouseMove);
-			this.menuStrip1.ResumeLayout(false);
-			this.menuStrip1.PerformLayout();
+			this.menuStrip.ResumeLayout(false);
+			this.menuStrip.PerformLayout();
 			this.ResumeLayout(false);
 			this.PerformLayout();
 
@@ -157,7 +174,7 @@ namespace sadx_model_view.Forms
 
 		#endregion
 
-		private System.Windows.Forms.MenuStrip menuStrip1;
+		private System.Windows.Forms.MenuStrip menuStrip;
 		private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem editToolStripMenuItem;
@@ -166,7 +183,9 @@ namespace sadx_model_view.Forms
 		private System.Windows.Forms.ToolStripMenuItem openTexturesToolStripMenuItem;
 		private Scene scene;
 		private System.Windows.Forms.ToolStripMenuItem recompileShadersToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem viewToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem enableAlphaToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem showOctreeToolStripMenuItem;
 	}
 }
 
