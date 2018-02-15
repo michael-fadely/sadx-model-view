@@ -460,6 +460,11 @@ namespace sadx_model_view
 
 		void DrawDebugLines()
 		{
+			if (debugLines.Count == 0)
+			{
+				return;
+			}
+
 			CommitPerSceneData();
 
 			device.ImmediateContext.VertexShader.Set(debugVertexShader);
