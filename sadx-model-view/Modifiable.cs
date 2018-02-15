@@ -31,11 +31,6 @@ namespace sadx_model_view
 			Modified = false;
 		}
 
-		public static implicit operator Modifiable<T>(T value)
-		{
-			return new Modifiable<T>(value);
-		}
-
 		public static explicit operator T(Modifiable<T> value)
 		{
 			return value.Value;
