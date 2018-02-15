@@ -213,7 +213,7 @@ namespace sadx_model_view.Ninja
 			}
 			else
 			{
-				var n = (int)material.attr_texId;
+				var n = (int)material.TextureIndex;
 				device.SetTexture(0, n);
 			}
 

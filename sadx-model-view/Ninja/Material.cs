@@ -87,6 +87,12 @@ namespace sadx_model_view.Ninja
 		public uint      attr_texId; /* attribute and texture ID in texlist        */
 		public NJD_FLAG  attrflags;  /* attribute flags                            */
 
+		public uint TextureIndex
+		{
+			get => attr_texId & 0xFFFF;
+			set => attr_texId = (uint)((attr_texId & ~0xFFFF) | (value & 0xFFFF));
+		}
+
 		public uint DestinationBlend
 		{
 			get => ((uint)attrflags >> 26) & 7;

@@ -1013,6 +1013,7 @@ namespace sadx_model_view
 			lastZwrite = zWrite;
 
 			device.ImmediateContext.MapSubresource(materialBuffer, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
+
 			using (stream)
 			{
 				stream.Write(material.Diffuse);
