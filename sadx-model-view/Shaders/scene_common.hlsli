@@ -16,7 +16,7 @@ struct VS_OUTPUT
 	float4 specular : COLOR1;
 };
 
-matrix textureTransform = {
+static const matrix textureTransform = {
 	-0.5f, 0.0f, 0.0f, 0.0f,
 	0.0f, 0.5f, 0.0f, 0.0f,
 	0.0f, 0.0f, 1.0f, 0.0f,

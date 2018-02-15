@@ -336,7 +336,6 @@ namespace sadx_model_view
 				lastRasterizerState = state.Raster;
 			}
 
-			CommitPerSceneData();
 			CommitPerModelData();
 
 			if (parent.VertexBuffer != lastVertexBuffer)
@@ -392,9 +391,8 @@ namespace sadx_model_view
 				stream.Write(perSceneData.View.Value);
 				stream.Write(perSceneData.Projection.Value);
 				stream.Write(perSceneData.CameraPosition.Value);
-				stream.Write(0f);
 
-				Debug.Assert(stream.RemainingLength == 0);
+				//Debug.Assert(stream.RemainingLength == 0);
 			}
 
 			perSceneData.Clear();
@@ -407,6 +405,7 @@ namespace sadx_model_view
 			zWrite = true;
 
 			perSceneData.CameraPosition.Value = camera.Position;
+			CommitPerSceneData();
 
 			//meshTree.SortOpaque();
 
