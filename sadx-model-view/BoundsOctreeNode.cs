@@ -766,7 +766,7 @@ namespace sadx_model_view
 
 		public IEnumerable<BoundingBox> GiveMeTheBounds()
 		{
-			//if (objects.Count > 0)
+			if (objects.Count > 0)
 			{
 				yield return bounds;
 			}

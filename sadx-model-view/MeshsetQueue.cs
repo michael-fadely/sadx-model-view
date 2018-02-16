@@ -65,8 +65,8 @@ namespace sadx_model_view
 		readonly List<MeshsetQueueElement> opaqueSets = new List<MeshsetQueueElement>();
 		readonly List<MeshsetQueueElement> alphaSets  = new List<MeshsetQueueElement>();
 
-		public IEnumerable<MeshsetQueueElement> OpaqueSets => opaqueSets;
-		public IEnumerable<MeshsetQueueElement> AlphaSets  => alphaSets;
+		public IReadOnlyList<MeshsetQueueElement> OpaqueSets => opaqueSets;
+		public IReadOnlyList<MeshsetQueueElement> AlphaSets  => alphaSets;
 
 		public void Clear()
 		{

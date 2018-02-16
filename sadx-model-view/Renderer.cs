@@ -25,8 +25,24 @@ using Resource = SharpDX.Direct3D11.Resource;
 
 namespace sadx_model_view
 {
+	// TODO: renderer interface to handle SADX/SA1/SA2 renderers
+
 	public class Renderer : IDisposable
 	{
+		static readonly NJS_MATERIAL nullMaterial = new NJS_MATERIAL();
+
+		static readonly BlendOption[] blendModes =
+		{
+			BlendOption.Zero,
+			BlendOption.One,
+			BlendOption.SourceColor,
+			BlendOption.InverseSourceColor,
+			BlendOption.SourceAlpha,
+			BlendOption.InverseSourceAlpha,
+			BlendOption.DestinationAlpha,
+			BlendOption.InverseDestinationAlpha,
+		};
+
 		int lastVisibleCount;
 
 		public FlowControl FlowControl;
@@ -67,11 +83,26 @@ namespace sadx_model_view
 		readonly PerModelBuffer perModelData = new PerModelBuffer();
 
 		bool zWrite = true;
+		bool lastZwrite;
 
 		readonly MeshsetQueue meshQueue = new MeshsetQueue();
 		readonly Dictionary<NJD_FLAG, DisplayState> displayStates = new Dictionary<NJD_FLAG, DisplayState>();
 
 		readonly List<DebugLine> debugLines = new List<DebugLine>();
+
+		ShaderMaterial lastMaterial;
+		VertexShader   vertexShader;
+		PixelShader    pixelShader;
+		InputLayout    inputLayout;
+
+		VertexShader debugVertexShader;
+		PixelShader  debugPixelShader;
+		InputLayout  debugInputLayout;
+
+		Buffer          lastVertexBuffer;
+		BlendState      lastBlend;
+		RasterizerState lastRasterizerState;
+		SamplerState    lastSamplerState;
 
 		public Renderer(int w, int h, IntPtr sceneHandle)
 		{
@@ -276,8 +307,6 @@ namespace sadx_model_view
 			}
 		}
 
-		static readonly NJS_MATERIAL nullMaterial = new NJS_MATERIAL();
-
 		public void Draw(Camera camera, NJS_OBJECT @object, NJS_MODEL model)
 		{
 			foreach (NJS_MESHSET set in model.meshsets)
@@ -285,11 +314,6 @@ namespace sadx_model_view
 				meshQueue.Enqueue(this, camera, @object, model, set);
 			}
 		}
-
-		Buffer          lastVertexBuffer;
-		BlendState      lastBlend;
-		RasterizerState lastRasterizerState;
-		SamplerState    lastSamplerState;
 
 		void DrawSet(NJS_MODEL parent, NJS_MESHSET set)
 		{
@@ -415,7 +439,7 @@ namespace sadx_model_view
 				DrawMeshsetQueueElement(e);
 			}
 
-			if (EnableAlpha)
+			if (EnableAlpha && meshQueue.AlphaSets.Count > 1)
 			{
 				meshQueue.SortAlpha();
 
@@ -885,20 +909,6 @@ namespace sadx_model_view
 			}
 		}
 
-		// TODO: renderer interface to handle SADX/SA1/SA2 renderers
-
-		static readonly BlendOption[] blendModes =
-		{
-			BlendOption.Zero,
-			BlendOption.One,
-			BlendOption.SourceColor,
-			BlendOption.InverseSourceColor,
-			BlendOption.SourceAlpha,
-			BlendOption.InverseSourceAlpha,
-			BlendOption.DestinationAlpha,
-			BlendOption.InverseDestinationAlpha,
-		};
-
 		// TODO: generate in bulk
 		public DisplayState GetSADXDisplayState(NJS_MATERIAL material)
 		{
@@ -990,17 +1000,6 @@ namespace sadx_model_view
 
 			return result;
 		}
-
-		ShaderMaterial lastMaterial;
-		VertexShader   vertexShader;
-		PixelShader    pixelShader;
-		InputLayout    inputLayout;
-
-		VertexShader debugVertexShader;
-		PixelShader  debugPixelShader;
-		InputLayout  debugInputLayout;
-
-		bool lastZwrite;
 
 		public void SetShaderMaterial(in ShaderMaterial material)
 		{

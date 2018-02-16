@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using sadx_model_view.Ninja;
 using sadx_model_view.SA1;
@@ -14,7 +15,7 @@ namespace sadx_model_view
 
 		public VisibilityTree(LandTable landTable)
 		{
-			BoundingSphere bounds = default;
+			BoundingBox bounds = default;
 
 			foreach (var col in landTable.ColList)
 			{
@@ -27,7 +28,7 @@ namespace sadx_model_view
 
 		public VisibilityTree(NJS_OBJECT @object)
 		{
-			BoundingSphere bounds = default;
+			BoundingBox bounds = default;
 			CalculateBounds(@object, ref bounds);
 			Create(in bounds);
 		}
@@ -74,7 +75,7 @@ namespace sadx_model_view
 			return result;
 		}
 
-		static void CalculateBounds(NJS_OBJECT @object, ref BoundingSphere bounds)
+		static void CalculateBounds(NJS_OBJECT @object, ref BoundingBox bounds)
 		{
 			foreach (NJS_OBJECT o in @object)
 			{
@@ -85,14 +86,19 @@ namespace sadx_model_view
 
 				foreach (var set in o.Model.meshsets)
 				{
-					bounds = BoundingSphere.Merge(bounds, set.GetWorldSpaceBoundingSphere());
+					bounds = BoundingBox.Merge(bounds, set.GetWorldSpaceBoundingBox());
 				}
 			}
 		}
 
-		void Create(in BoundingSphere bounds)
+		void Create(in BoundingBox bounds)
 		{
-			tree = new BoundsOctree<MeshsetQueueElementBase>(bounds, 0.1f, 1.0f);
+			// because .FromBox produces bounding boxes that are larger than required
+			BoundingSphere sphere;
+			sphere.Center = bounds.Center;
+			sphere.Radius = Math.Max(Math.Max(bounds.Width, bounds.Height), bounds.Depth) / 2f;
+
+			tree = new BoundsOctree<MeshsetQueueElementBase>(sphere, 0.1f, 1.0f);
 		}
 
 		public IEnumerable<BoundingBox> GiveMeTheBounds() => tree.GiveMeTheBounds();
