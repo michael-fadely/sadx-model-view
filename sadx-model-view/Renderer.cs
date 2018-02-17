@@ -103,6 +103,7 @@ namespace sadx_model_view
 		BlendState      lastBlend;
 		RasterizerState lastRasterizerState;
 		SamplerState    lastSamplerState;
+		SceneTexture    lastTexture;
 
 		public Renderer(int w, int h, IntPtr sceneHandle)
 		{
@@ -885,8 +886,6 @@ namespace sadx_model_view
 					throw new ArgumentOutOfRangeException(nameof(state), state, null);
 			}
 		}
-
-		SceneTexture lastTexture;
 
 		public void SetTexture(int sampler, int textureIndex)
 		{
