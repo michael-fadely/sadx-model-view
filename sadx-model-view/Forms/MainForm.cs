@@ -377,6 +377,10 @@ namespace sadx_model_view.Forms
 
 		void OnShown(object sender, EventArgs e)
 		{
+#if DEBUG
+			showOctreeToolStripMenuItem.Checked = true;
+#endif
+
 			int w = scene.ClientRectangle.Width;
 			int h = scene.ClientRectangle.Height;
 
