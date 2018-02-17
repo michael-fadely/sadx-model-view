@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
-using sadx_model_view.Extensions;
 using sadx_model_view.Ninja;
 using sadx_model_view.SA1;
 using SharpDX;
@@ -93,7 +92,7 @@ namespace sadx_model_view
 
 		void Create(in BoundingBox bounds)
 		{
-			tree = new BoundsOctree<MeshsetQueueElementBase>(bounds.ToSphere(), 0.1f, 1.0f);
+			tree = new BoundsOctree<MeshsetQueueElementBase>(bounds, 0.1f, 1.0f);
 		}
 
 		public IEnumerable<BoundingBox> GiveMeTheBounds() => tree.GiveMeTheBounds();

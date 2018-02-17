@@ -57,7 +57,7 @@ namespace sadx_model_view
 		/// <param name="bounds">The size of the initial node. The octree will never shrink smaller than this.</param>
 		/// <param name="minNodeSize">Nodes will stop splitting if the new nodes would be smaller than this.</param>
 		/// <param name="loosenessVal">Clamped between 1 and 2. Values > 1 let nodes overlap.</param>
-		public BoundsOctree(BoundingSphere bounds, float minNodeSize, float loosenessVal) : this(bounds.Radius, bounds.Center, minNodeSize, loosenessVal)
+		public BoundsOctree(BoundingSphere bounds, float minNodeSize, float loosenessVal) : this(bounds.Radius * 2f, bounds.Center, minNodeSize, loosenessVal)
 		{
 		}
 
@@ -71,7 +71,7 @@ namespace sadx_model_view
 		/// </param>
 		/// <param name="minNodeSize">Nodes will stop splitting if the new nodes would be smaller than this.</param>
 		/// <param name="loosenessVal">Clamped between 1 and 2. Values > 1 let nodes overlap.</param>
-		public BoundsOctree(BoundingBox bounds, float minNodeSize, float loosenessVal) : this(bounds.ToSphere(), minNodeSize, loosenessVal)
+		public BoundsOctree(BoundingBox bounds, float minNodeSize, float loosenessVal) : this(BoundingSphere.FromBox(bounds), minNodeSize, loosenessVal)
 		{
 		}
 
@@ -129,7 +129,7 @@ namespace sadx_model_view
 		/// Remove an object. Makes the assumption that the object only exists once in the tree.
 		/// </summary>
 		/// <param name="obj">Object to remove.</param>
-		/// <returns>True if the object was removed successfully.</returns>
+		/// <returns><value>true</value> if the object was removed successfully.</returns>
 		public bool Remove(T obj)
 		{
 			bool removed = rootNode.Remove(obj);
@@ -149,7 +149,7 @@ namespace sadx_model_view
 		/// </summary>
 		/// <param name="obj">Object to remove.</param>
 		/// <param name="objBounds">3D bounding box around the object.</param>
-		/// <returns>True if the object was removed successfully.</returns>
+		/// <returns><value>true</value> if the object was removed successfully.</returns>
 		public bool Remove(T obj, in BoundingBox objBounds)
 		{
 			bool removed = rootNode.Remove(obj, objBounds);
@@ -168,7 +168,7 @@ namespace sadx_model_view
 		/// Check if the specified bounds intersect with anything in the tree. See also: GetColliding.
 		/// </summary>
 		/// <param name="checkBounds">bounds to check.</param>
-		/// <returns>True if there was a collision.</returns>
+		/// <returns><value>true</value> if there was a collision.</returns>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool IsColliding(in BoundingBox checkBounds)
 		{
@@ -184,7 +184,7 @@ namespace sadx_model_view
 		/// </summary>
 		/// <param name="checkRay">ray to check.</param>
 		/// <param name="maxDistance">distance to check.</param>
-		/// <returns>True if there was a collision.</returns>
+		/// <returns><value>true</value> if there was a collision.</returns>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool IsColliding(in Ray checkRay, float maxDistance)
 		{

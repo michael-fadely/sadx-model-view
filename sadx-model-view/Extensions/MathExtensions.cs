@@ -41,17 +41,5 @@ namespace sadx_model_view.Extensions
 			var m = (double)multiple;
 			return (int)(Math.Ceiling(value / m) * m);
 		}
-
-		// because BoundingSphere.FromBox produces bounding boxes that are larger than required
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static BoundingSphere ToSphere(in this BoundingBox box)
-		{
-			BoundingSphere result;
-
-			result.Center = box.Center;
-			result.Radius = Math.Max(Math.Max(box.Width, box.Height), box.Depth) / 2f;
-
-			return result;
-		}
 	}
 }

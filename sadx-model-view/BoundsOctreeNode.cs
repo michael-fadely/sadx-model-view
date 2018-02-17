@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using SharpDX;
 
 // A node in a BoundsOctree
@@ -9,54 +10,76 @@ namespace sadx_model_view
 {
 	public class BoundsOctreeNode<T>
 	{
-		// Centre of this node
-		public Vector3 Center { get; private set; }
-
-		// Length of this node if it has a looseness of 1.0
-		public float BaseLength { get; private set; }
-
-		// Looseness value for this node
-		float looseness;
-
-		// Minimum size for a node in this octree
-		float minSize;
-
-		// Actual length of sides, taking the looseness value into account
-		float adjLength;
-
-		// Bounding box that represents this node
-		BoundingBox bounds;
-
-		// Objects in this node
-		readonly List<OctreeObject> objects = new List<OctreeObject>();
-
-		// Child nodes, if any
-		BoundsOctreeNode<T>[] children;
-
-		// BoundingBox of potential children to this node. These are actual size (with looseness taken into account), not base size
-		BoundingBox[] childBounds;
-
-		// If there are already numObjectsAllowed in a node, we split it into children
-		// A generally good number seems to be something around 8-15
+		/// <summary>
+		/// If there are already numObjectsAllowed in a node, we split it into children.
+		/// A generally good number seems to be something around 8-15.
+		/// </summary>
 		const int numObjectsAllowed = 8;
 
-		// An object in the octree
+		/// <summary>
+		/// Centre of this node
+		/// </summary>
+		public Vector3 Center { get; private set; }
+
+		/// <summary>
+		/// Length of this node if it has a looseness of 1.0.
+		/// </summary>
+		public float BaseLength { get; private set; }
+
+		/// <summary>
+		/// Looseness value for this node
+		/// </summary>
+		float looseness;
+
+		/// <summary>
+		// Minimum size for a node in this octree
+		/// </summary>
+		float minimumSize;
+
+		/// <summary>
+		/// Actual length of sides, taking the looseness value into account
+		/// </summary>
+		float looseLength;
+
+		/// <summary>
+		/// Bounding box that represents this node
+		/// </summary>
+		BoundingBox bounds;
+
+		/// <summary>
+		// Objects in this node
+		/// </summary>
+		readonly List<OctreeObject> objects = new List<OctreeObject>();
+
+		/// <summary>
+		/// Child nodes, if any
+		/// </summary>
+		BoundsOctreeNode<T>[] children;
+
+		/// <summary>
+		/// Bounds of potential children in this node. These are actual size (with looseness taken into account), not base size.
+		/// </summary>
+		BoundingBox[] childBounds;
+
+		/// <summary>
+		/// An object in the octree
+		/// </summary>
 		class OctreeObject
 		{
-			public T Obj;
-			public BoundingBox BoundingBox;
+			public T Object;
+			public BoundingBox Bounds;
 		}
 
 		/// <summary>
 		/// Constructor.
 		/// </summary>
-		/// <param name="baseLengthVal">Length of this node, not taking looseness into account.</param>
+		/// <param name="baseLength">Length of this node, not taking looseness into account.</param>
 		/// <param name="minSizeVal">Minimum size of nodes in this octree.</param>
-		/// <param name="loosenessVal">Multiplier for baseLengthVal to get the actual size.</param>
+		/// <param name="loosenessVal">Multiplier for <paramref name="baseLength"/> to get the actual size.</param>
 		/// <param name="centerVal">Centre position of this node.</param>
-		public BoundsOctreeNode(float baseLengthVal, float minSizeVal, float loosenessVal, Vector3 centerVal)
+		public BoundsOctreeNode(float baseLength, float minSizeVal, float loosenessVal, Vector3 centerVal)
 		{
-			SetValues(baseLengthVal, minSizeVal, loosenessVal, centerVal);
+			SetValues(baseLength, minSizeVal, loosenessVal, centerVal);
 		}
 
 		// #### PUBLIC METHODS ####
@@ -66,7 +89,7 @@ namespace sadx_model_view
 		/// </summary>
 		/// <param name="obj">Object to add.</param>
 		/// <param name="objBounds">3D bounding box around the object.</param>
-		/// <returns>True if the object fits entirely within this node.</returns>
+		/// <returns><value>true</value> if the object fits entirely within this node.</returns>
 		public bool Add(T obj, BoundingBox objBounds)
 		{
 			if (!Encapsulates(bounds, objBounds))
@@ -82,14 +105,14 @@ namespace sadx_model_view
 		/// Remove an object. Makes the assumption that the object only exists once in the tree.
 		/// </summary>
 		/// <param name="obj">Object to remove.</param>
-		/// <returns>True if the object was removed successfully.</returns>
+		/// <returns><value>true</value> if the object was removed successfully.</returns>
 		public bool Remove(T obj)
 		{
 			var removed = false;
 
 			for (int i = 0; i < objects.Count; i++)
 			{
-				if (objects[i].Obj.Equals(obj))
+				if (objects[i].Object.Equals(obj))
 				{
 					removed = objects.Remove(objects[i]);
 					break;
@@ -126,7 +149,7 @@ namespace sadx_model_view
 		/// </summary>
 		/// <param name="obj">Object to remove.</param>
 		/// <param name="objBounds">3D bounding box around the object.</param>
-		/// <returns>True if the object was removed successfully.</returns>
+		/// <returns><value>true</value> if the object was removed successfully.</returns>
 		public bool Remove(T obj, BoundingBox objBounds)
 		{
 			if (!Encapsulates(bounds, objBounds))
@@ -141,7 +164,7 @@ namespace sadx_model_view
 		/// Check if the specified bounds intersect with anything in the tree. See also: GetColliding.
 		/// </summary>
 		/// <param name="checkBounds">BoundingBox to check.</param>
-		/// <returns>True if there was a collision.</returns>
+		/// <returns><value>true</value> if there was a collision.</returns>
 		public bool IsColliding(in BoundingBox checkBounds)
 		{
 			// Are the input bounds at least partially in this node?
@@ -154,7 +177,7 @@ namespace sadx_model_view
 			for (var i = 0; i < objects.Count; i++)
 			{
 				OctreeObject o = objects[i];
-				if (o.BoundingBox.Intersects(checkBounds))
+				if (o.Bounds.Intersects(checkBounds))
 				{
 					return true;
 				}
@@ -180,7 +203,7 @@ namespace sadx_model_view
 		/// </summary>
 		/// <param name="checkRay">Ray to check.</param>
 		/// <param name="maxDistance">Distance to check.</param>
-		/// <returns>True if there was a collision.</returns>
+		/// <returns><value>true</value> if there was a collision.</returns>
 		public bool IsColliding(in Ray checkRay, float maxDistance = float.PositiveInfinity)
 		{
 			// Is the input ray at least partially in this node?
@@ -193,7 +216,7 @@ namespace sadx_model_view
 			for (var i = 0; i < objects.Count; i++)
 			{
 				OctreeObject o = objects[i];
-				if (checkRay.Intersects(ref o.BoundingBox, out distance) && distance <= maxDistance)
+				if (checkRay.Intersects(ref o.Bounds, out distance) && distance <= maxDistance)
 				{
 					return true;
 				}
@@ -233,7 +256,7 @@ namespace sadx_model_view
 					for (var i = 0; i < objects.Count; i++)
 					{
 						OctreeObject o = objects[i];
-						result.Add(o.Obj);
+						result.Add(o.Object);
 					}
 
 					break;
@@ -242,9 +265,9 @@ namespace sadx_model_view
 					for (var i = 0; i < objects.Count; i++)
 					{
 						OctreeObject o = objects[i];
-						if (o.BoundingBox.Intersects(checkBounds))
+						if (o.Bounds.Intersects(checkBounds))
 						{
-							result.Add(o.Obj);
+							result.Add(o.Object);
 						}
 					}
 
@@ -283,9 +306,9 @@ namespace sadx_model_view
 			for (var i = 0; i < objects.Count; i++)
 			{
 				OctreeObject o = objects[i];
-				if (checkRay.Intersects(ref o.BoundingBox, out distance) && distance <= maxDistance)
+				if (checkRay.Intersects(ref o.Bounds, out distance) && distance <= maxDistance)
 				{
-					result.Add(o.Obj);
+					result.Add(o.Object);
 				}
 			}
 
@@ -318,7 +341,7 @@ namespace sadx_model_view
 					for (var i = 0; i < objects.Count; i++)
 					{
 						OctreeObject o = objects[i];
-						result.Add(o.Obj);
+						result.Add(o.Object);
 					}
 
 					break;
@@ -328,9 +351,9 @@ namespace sadx_model_view
 					for (var i = 0; i < objects.Count; i++)
 					{
 						OctreeObject o = objects[i];
-						if (frustum.Intersects(ref o.BoundingBox))
+						if (frustum.Intersects(ref o.Bounds))
 						{
-							result.Add(o.Obj);
+							result.Add(o.Object);
 						}
 					}
 
@@ -449,11 +472,11 @@ namespace sadx_model_view
 			for (int i = 0; i < objects.Count; i++)
 			{
 				OctreeObject curObj = objects[i];
-				int newBestFit = BestFitChild(curObj.BoundingBox);
+				int newBestFit = BestFitChild(curObj.Bounds);
 				if (i == 0 || newBestFit == bestFit)
 				{
 					// In same octant as the other(s). Does it fit completely inside that octant?
-					if (Encapsulates(childBounds[newBestFit], curObj.BoundingBox))
+					if (Encapsulates(childBounds[newBestFit], curObj.Bounds))
 					{
 						if (bestFit < 0)
 						{
@@ -491,7 +514,7 @@ namespace sadx_model_view
 						}
 
 						childHadContent = true;
-						bestFit         = i;
+						bestFit = i;
 					}
 				}
 			}
@@ -501,7 +524,7 @@ namespace sadx_model_view
 			{
 				// We don't have any children, so just shrink this node to the new size
 				// We already know that everything will still fit in it
-				SetValues(BaseLength / 2, minSize, looseness, childBounds[bestFit].Center);
+				SetValues(BaseLength / 2, minimumSize, looseness, childBounds[bestFit].Center);
 				return this;
 			}
 
@@ -535,103 +558,107 @@ namespace sadx_model_view
 		// #### PRIVATE METHODS ####
 
 		/// <summary>
-		/// Set values for this node. 
+		/// Set values for this node.
 		/// </summary>
-		/// <param name="baseLengthVal">Length of this node, not taking looseness into account.</param>
-		/// <param name="minSizeVal">Minimum size of nodes in this octree.</param>
-		/// <param name="loosenessVal">Multiplier for baseLengthVal to get the actual size.</param>
-		/// <param name="centerVal">Centre position of this node.</param>
-		void SetValues(float baseLengthVal, float minSizeVal, float loosenessVal, Vector3 centerVal)
+		/// <param name="baseLength">Length of this node, not taking looseness into account.</param>
+		/// <param name="minSize">Minimum size of nodes in this octree.</param>
+		/// <param name="loosenessVal">Multiplier for <paramref name="baseLength"/> to get the actual size.</param>
+		/// <param name="center">Centre position of this node.</param>
+		void SetValues(float baseLength, float minSize, float loosenessVal, Vector3 center)
 		{
-			BaseLength = baseLengthVal;
-			minSize    = minSizeVal;
-			looseness  = loosenessVal;
-			Center     = centerVal;
-			adjLength  = looseness * baseLengthVal;
+			if (childBounds is null)
+			{
+				childBounds = new BoundingBox[8];
+			}
+
+			BaseLength  = baseLength;
+			minimumSize = minSize;
+			looseness   = loosenessVal;
+			Center      = center;
+			looseLength = looseness * BaseLength;
 
 			// Create the bounding box.
-			bounds = BoundingBox.FromSphere(new BoundingSphere(Center, adjLength));
+			bounds = BoundingBox.FromSphere(new BoundingSphere(Center, looseLength / 2f));
 
-			float quarter           = BaseLength / 4f;
-			float childActualLength = (BaseLength / 2f) * looseness;
+			float quarter = BaseLength / 4f;
 
-			childBounds    = new BoundingBox[8];
-			childBounds[0] = BoundingBox.FromSphere(new BoundingSphere(Center + new Vector3(-quarter, quarter,  -quarter), childActualLength));
-			childBounds[1] = BoundingBox.FromSphere(new BoundingSphere(Center + new Vector3(quarter,  quarter,  -quarter), childActualLength));
-			childBounds[2] = BoundingBox.FromSphere(new BoundingSphere(Center + new Vector3(-quarter, quarter,  quarter),  childActualLength));
-			childBounds[3] = BoundingBox.FromSphere(new BoundingSphere(Center + new Vector3(quarter,  quarter,  quarter),  childActualLength));
-			childBounds[4] = BoundingBox.FromSphere(new BoundingSphere(Center + new Vector3(-quarter, -quarter, -quarter), childActualLength));
-			childBounds[5] = BoundingBox.FromSphere(new BoundingSphere(Center + new Vector3(quarter,  -quarter, -quarter), childActualLength));
-			childBounds[6] = BoundingBox.FromSphere(new BoundingSphere(Center + new Vector3(-quarter, -quarter, quarter),  childActualLength));
-			childBounds[7] = BoundingBox.FromSphere(new BoundingSphere(Center + new Vector3(quarter,  -quarter, quarter),  childActualLength));
+			// since we're using a bounding sphere for convenience, this is a radius
+			// and we can therefore reuse quarter (wherease BaseLength is the length of
+			// the side of the bounding box).
+			float childSize = quarter * looseness;
+
+			childBounds[0] = BoundingBox.FromSphere(new BoundingSphere(Center + new Vector3(-quarter, quarter, -quarter), childSize));
+			childBounds[1] = BoundingBox.FromSphere(new BoundingSphere(Center + new Vector3(quarter, quarter, -quarter), childSize));
+			childBounds[2] = BoundingBox.FromSphere(new BoundingSphere(Center + new Vector3(-quarter, quarter, quarter), childSize));
+			childBounds[3] = BoundingBox.FromSphere(new BoundingSphere(Center + new Vector3(quarter, quarter, quarter), childSize));
+			childBounds[4] = BoundingBox.FromSphere(new BoundingSphere(Center + new Vector3(-quarter, -quarter, -quarter), childSize));
+			childBounds[5] = BoundingBox.FromSphere(new BoundingSphere(Center + new Vector3(quarter, -quarter, -quarter), childSize));
+			childBounds[6] = BoundingBox.FromSphere(new BoundingSphere(Center + new Vector3(-quarter, -quarter, quarter), childSize));
+			childBounds[7] = BoundingBox.FromSphere(new BoundingSphere(Center + new Vector3(quarter, -quarter, quarter), childSize));
 		}
 
 		/// <summary>
 		/// Private counterpart to the public Add method.
 		/// </summary>
 		/// <param name="obj">Object to add.</param>
-		/// <param name="objBounds">3D bounding box around the object.</param>
-		void SubAdd(T obj, BoundingBox objBounds)
+		/// <param name="box">3D bounding box around the object.</param>
+		void SubAdd(T obj, BoundingBox box)
 		{
 			// We know it fits at this level if we've got this far
 			// Just add if few objects are here, or children would be below min size
-			if (objects.Count < numObjectsAllowed || (BaseLength / 2f) < minSize)
+			if (objects.Count < numObjectsAllowed || BaseLength / 2f < minimumSize)
 			{
 				var newObj = new OctreeObject
 				{
-					Obj         = obj,
-					BoundingBox = objBounds
+					Object = obj,
+					Bounds = box
 				};
 
 				objects.Add(newObj);
+				return;
+			}
+
+			// Fits at this level, but we can go deeper. Would it fit there?
+
+			// Create the 8 children
+			int bestFitChild;
+
+			if (children is null)
+			{
+				Split();
+
+				// Now that we have the new children, see if this node's existing objects would fit there
+				for (int i = objects.Count - 1; i >= 0; i--)
+				{
+					OctreeObject existing = objects[i];
+					// Find which child the object is closest to based on where the
+					// object's center is located in relation to the octree's center.
+					bestFitChild = BestFitChild(existing.Bounds);
+					// Does it fit?
+					if (Encapsulates(children[bestFitChild].bounds, existing.Bounds))
+					{
+						children[bestFitChild].SubAdd(existing.Object, existing.Bounds); // Go a level deeper
+						objects.Remove(existing);                                        // Remove from here
+					}
+				}
+			}
+
+			// Now handle the new object we're adding now
+			bestFitChild = BestFitChild(box);
+
+			if (Encapsulates(children[bestFitChild].bounds, box))
+			{
+				children[bestFitChild].SubAdd(obj, box);
 			}
 			else
 			{
-				// Fits at this level, but we can go deeper. Would it fit there?
-
-				// Create the 8 children
-				int bestFitChild;
-				if (children == null)
+				var newObj = new OctreeObject
 				{
-					Split();
-					if (children == null)
-					{
-						Debug.WriteLine("Child creation failed for an unknown reason. Early exit.");
-						return;
-					}
+					Object = obj,
+					Bounds = box
+				};
 
-					// Now that we have the new children, see if this node's existing objects would fit there
-					for (int i = objects.Count - 1; i >= 0; i--)
-					{
-						OctreeObject existingObj = objects[i];
-						// Find which child the object is closest to based on where the
-						// object's center is located in relation to the octree's center.
-						bestFitChild = BestFitChild(existingObj.BoundingBox);
-						// Does it fit?
-						if (Encapsulates(children[bestFitChild].bounds, existingObj.BoundingBox))
-						{
-							children[bestFitChild].SubAdd(existingObj.Obj, existingObj.BoundingBox); // Go a level deeper
-							objects.Remove(existingObj);                                             // Remove from here
-						}
-					}
-				}
-
-				// Now handle the new object we're adding now
-				bestFitChild = BestFitChild(objBounds);
-				if (Encapsulates(children[bestFitChild].bounds, objBounds))
-				{
-					children[bestFitChild].SubAdd(obj, objBounds);
-				}
-				else
-				{
-					var newObj = new OctreeObject
-					{
-						Obj         = obj,
-						BoundingBox = objBounds
-					};
-
-					objects.Add(newObj);
-				}
+				objects.Add(newObj);
 			}
 		}
 
@@ -640,14 +667,14 @@ namespace sadx_model_view
 		/// </summary>
 		/// <param name="obj">Object to remove.</param>
 		/// <param name="objBounds">3D bounding box around the object.</param>
-		/// <returns>True if the object was removed successfully.</returns>
+		/// <returns><value>true</value> if the object was removed successfully.</returns>
 		bool SubRemove(T obj, BoundingBox objBounds)
 		{
 			bool removed = false;
 
 			for (int i = 0; i < objects.Count; i++)
 			{
-				if (objects[i].Obj.Equals(obj))
+				if (objects[i].Object.Equals(obj))
 				{
 					removed = objects.Remove(objects[i]);
 					break;
@@ -677,17 +704,22 @@ namespace sadx_model_view
 		/// </summary>
 		void Split()
 		{
+			if (children is null)
+			{
+				children = new BoundsOctreeNode<T>[8];
+			}
+
 			float quarter   = BaseLength / 4f;
-			float newLength = BaseLength / 2;
-			children    = new BoundsOctreeNode<T>[8];
-			children[0] = new BoundsOctreeNode<T>(newLength, minSize, looseness, Center + new Vector3(-quarter, quarter,  -quarter));
-			children[1] = new BoundsOctreeNode<T>(newLength, minSize, looseness, Center + new Vector3(quarter,  quarter,  -quarter));
-			children[2] = new BoundsOctreeNode<T>(newLength, minSize, looseness, Center + new Vector3(-quarter, quarter,  quarter));
-			children[3] = new BoundsOctreeNode<T>(newLength, minSize, looseness, Center + new Vector3(quarter,  quarter,  quarter));
-			children[4] = new BoundsOctreeNode<T>(newLength, minSize, looseness, Center + new Vector3(-quarter, -quarter, -quarter));
-			children[5] = new BoundsOctreeNode<T>(newLength, minSize, looseness, Center + new Vector3(quarter,  -quarter, -quarter));
-			children[6] = new BoundsOctreeNode<T>(newLength, minSize, looseness, Center + new Vector3(-quarter, -quarter, quarter));
-			children[7] = new BoundsOctreeNode<T>(newLength, minSize, looseness, Center + new Vector3(quarter,  -quarter, quarter));
+			float newLength = BaseLength / 2f;
+
+			children[0] = new BoundsOctreeNode<T>(newLength, minimumSize, looseness, Center + new Vector3(-quarter, quarter,  -quarter));
+			children[1] = new BoundsOctreeNode<T>(newLength, minimumSize, looseness, Center + new Vector3(quarter,  quarter,  -quarter));
+			children[2] = new BoundsOctreeNode<T>(newLength, minimumSize, looseness, Center + new Vector3(-quarter, quarter,  quarter));
+			children[3] = new BoundsOctreeNode<T>(newLength, minimumSize, looseness, Center + new Vector3(quarter,  quarter,  quarter));
+			children[4] = new BoundsOctreeNode<T>(newLength, minimumSize, looseness, Center + new Vector3(-quarter, -quarter, -quarter));
+			children[5] = new BoundsOctreeNode<T>(newLength, minimumSize, looseness, Center + new Vector3(quarter,  -quarter, -quarter));
+			children[6] = new BoundsOctreeNode<T>(newLength, minimumSize, looseness, Center + new Vector3(-quarter, -quarter, quarter));
+			children[7] = new BoundsOctreeNode<T>(newLength, minimumSize, looseness, Center + new Vector3(quarter,  -quarter, quarter));
 		}
 
 		/// <summary>
@@ -718,7 +750,8 @@ namespace sadx_model_view
 		/// </summary>
 		/// <param name="outerBounds">Outer bounds.</param>
 		/// <param name="innerBounds">Inner bounds.</param>
-		/// <returns>True if innerBounds is fully encapsulated by outerBounds.</returns>
+		/// <returns><value>true</value> if innerBounds is fully encapsulated by outerBounds.</returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		static bool Encapsulates(BoundingBox outerBounds, BoundingBox innerBounds)
 		{
 			//return outerBounds.Contains(innerBounds.Minimum) && outerBounds.Contains(innerBounds.Maximum);
@@ -730,6 +763,7 @@ namespace sadx_model_view
 		/// </summary>
 		/// <param name="objBounds">The object's bounds.</param>
 		/// <returns>One of the eight child octants.</returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		int BestFitChild(BoundingBox objBounds)
 		{
 			return (objBounds.Center.X <= Center.X ? 0 : 1) + (objBounds.Center.Y >= Center.Y ? 0 : 4) + (objBounds.Center.Z <= Center.Z ? 0 : 2);
@@ -738,7 +772,7 @@ namespace sadx_model_view
 		/// <summary>
 		/// Checks if there are few enough objects in this node and its children that the children should all be merged into this.
 		/// </summary>
-		/// <returns>True there are less or the same abount of objects in this and its children than numObjectsAllowed.</returns>
+		/// <returns><value>true</value> there are less or the same abount of objects in this and its children than numObjectsAllowed.</returns>
 		bool ShouldMerge()
 		{
 			int totalObjects = objects.Count;
@@ -765,7 +799,7 @@ namespace sadx_model_view
 		/// <summary>
 		/// Checks if this node or anything below it has something in it.
 		/// </summary>
-		/// <returns>True if this node or any of its children, grandchildren etc have something in them</returns>
+		/// <returns><value>true</value> if this node or any of its children, grandchildren etc have something in them</returns>
 		public bool HasAnyObjects()
 		{
 			if (objects.Count > 0)
@@ -789,7 +823,7 @@ namespace sadx_model_view
 
 		public IEnumerable<BoundingBox> GiveMeTheBounds()
 		{
-			if (objects.Count > 0)
+			//if (objects.Count > 0)
 			{
 				yield return bounds;
 			}
