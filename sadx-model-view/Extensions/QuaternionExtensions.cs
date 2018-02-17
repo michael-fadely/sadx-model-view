@@ -8,7 +8,11 @@ namespace sadx_model_view.Extensions
 	{
 		internal static Vector3 GetYawPitchRollVector(this Quaternion q)
 		{
-			return new Vector3(q.GetPitch(), -q.GetYaw(), q.GetRoll());
+			Vector3 result;
+			result.X = q.GetPitch();
+			result.Y = -q.GetYaw();
+			result.Z = q.GetRoll();
+			return result;
 		}
 
 		static float GetYaw(this Quaternion q)
