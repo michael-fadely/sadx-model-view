@@ -8,9 +8,10 @@ namespace sadx_model_view
 		const float pitchThreshold = MathUtil.PiOverTwo - 0.0017453292519943296f;
 
 		public bool Invalid { get; private set; } = true;
-		Vector3     position;
-		Vector3     rotation;
-		Matrix      rotationMatrix = Matrix.Identity;
+
+		Vector3 position;
+		Vector3 rotation;
+		Matrix  rotationMatrix = Matrix.Identity;
 
 		// ReSharper disable once UnusedMember.Global
 		public Vector3 Position
