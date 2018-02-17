@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using sadx_model_view.Extensions;
 using SharpDX;
 
@@ -70,7 +71,7 @@ namespace sadx_model_view
 		/// </param>
 		/// <param name="minNodeSize">Nodes will stop splitting if the new nodes would be smaller than this.</param>
 		/// <param name="loosenessVal">Clamped between 1 and 2. Values > 1 let nodes overlap.</param>
-		public BoundsOctree(BoundingBox bounds, float minNodeSize, float loosenessVal) : this(BoundingSphere.FromBox(bounds), minNodeSize, loosenessVal)
+		public BoundsOctree(BoundingBox bounds, float minNodeSize, float loosenessVal) : this(bounds.ToSphere(), minNodeSize, loosenessVal)
 		{
 		}
 
@@ -95,6 +96,7 @@ namespace sadx_model_view
 			rootNode    = new BoundsOctreeNode<T>(initialSize, minSize, loosenessVal, initialWorldPos);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public IEnumerable<BoundingBox> GiveMeTheBounds()
 		{
 			return rootNode.GiveMeTheBounds();
@@ -148,7 +150,7 @@ namespace sadx_model_view
 		/// <param name="obj">Object to remove.</param>
 		/// <param name="objBounds">3D bounding box around the object.</param>
 		/// <returns>True if the object was removed successfully.</returns>
-		public bool Remove(T obj, BoundingBox objBounds)
+		public bool Remove(T obj, in BoundingBox objBounds)
 		{
 			bool removed = rootNode.Remove(obj, objBounds);
 
@@ -167,7 +169,8 @@ namespace sadx_model_view
 		/// </summary>
 		/// <param name="checkBounds">bounds to check.</param>
 		/// <returns>True if there was a collision.</returns>
-		public bool IsColliding(BoundingBox checkBounds)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public bool IsColliding(in BoundingBox checkBounds)
 		{
 			//#if UNITY_EDITOR
 			// For debugging
@@ -182,7 +185,8 @@ namespace sadx_model_view
 		/// <param name="checkRay">ray to check.</param>
 		/// <param name="maxDistance">distance to check.</param>
 		/// <returns>True if there was a collision.</returns>
-		public bool IsColliding(Ray checkRay, float maxDistance)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public bool IsColliding(in Ray checkRay, float maxDistance)
 		{
 			//#if UNITY_EDITOR
 			// For debugging
@@ -197,7 +201,8 @@ namespace sadx_model_view
 		/// <param name="collidingWith">list to store intersections.</param>
 		/// <param name="checkBounds">bounds to check.</param>
 		/// <returns>Objects that intersect with the specified bounds.</returns>
-		public void GetColliding(List<T> collidingWith, BoundingBox checkBounds)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public void GetColliding(List<T> collidingWith, in BoundingBox checkBounds)
 		{
 			//#if UNITY_EDITOR
 			// For debugging
@@ -213,7 +218,8 @@ namespace sadx_model_view
 		/// <param name="checkRay">ray to check.</param>
 		/// <param name="maxDistance">distance to check.</param>
 		/// <returns>Objects that intersect with the specified ray.</returns>
-		public void GetColliding(List<T> collidingWith, Ray checkRay, float maxDistance = float.PositiveInfinity)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public void GetColliding(List<T> collidingWith, in Ray checkRay, float maxDistance = float.PositiveInfinity)
 		{
 			//#if UNITY_EDITOR
 			// For debugging
@@ -228,7 +234,8 @@ namespace sadx_model_view
 		/// <param name="collidingWith">list to store intersections.</param>
 		/// <param name="frustum">Frustum to check.</param>
 		/// <returns>Objects that intersect with the specified bounds.</returns>
-		public void GetColliding(List<T> collidingWith, BoundingFrustum frustum)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public void GetColliding(List<T> collidingWith, in BoundingFrustum frustum)
 		{
 			//#if UNITY_EDITOR
 			// For debugging
@@ -237,6 +244,7 @@ namespace sadx_model_view
 			rootNode.GetColliding(in frustum, collidingWith);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public BoundingBox GetMaxBounds()
 		{
 			return rootNode.GetBounds();

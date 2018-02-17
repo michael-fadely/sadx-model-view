@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using SharpDX;
 
 // A node in a BoundsOctree
@@ -152,8 +151,9 @@ namespace sadx_model_view
 			}
 
 			// Check against any objects in this node
-			foreach (OctreeObject o in objects)
+			for (var i = 0; i < objects.Count; i++)
 			{
+				OctreeObject o = objects[i];
 				if (o.BoundingBox.Intersects(checkBounds))
 				{
 					return true;
@@ -190,8 +190,9 @@ namespace sadx_model_view
 			}
 
 			// Check against any objects in this node
-			foreach (OctreeObject o in objects)
+			for (var i = 0; i < objects.Count; i++)
 			{
+				OctreeObject o = objects[i];
 				if (checkRay.Intersects(ref o.BoundingBox, out distance) && distance <= maxDistance)
 				{
 					return true;
@@ -229,12 +230,18 @@ namespace sadx_model_view
 					return;
 
 				case ContainmentType.Contains:
-					result.AddRange(objects.Select(x => x.Obj));
+					for (var i = 0; i < objects.Count; i++)
+					{
+						OctreeObject o = objects[i];
+						result.Add(o.Obj);
+					}
+
 					break;
 
 				case ContainmentType.Intersects:
-					foreach (OctreeObject o in objects)
+					for (var i = 0; i < objects.Count; i++)
 					{
+						OctreeObject o = objects[i];
 						if (o.BoundingBox.Intersects(checkBounds))
 						{
 							result.Add(o.Obj);
@@ -273,8 +280,9 @@ namespace sadx_model_view
 			}
 
 			// Check against any objects in this node
-			foreach (OctreeObject o in objects)
+			for (var i = 0; i < objects.Count; i++)
 			{
+				OctreeObject o = objects[i];
 				if (checkRay.Intersects(ref o.BoundingBox, out distance) && distance <= maxDistance)
 				{
 					result.Add(o.Obj);
@@ -307,13 +315,19 @@ namespace sadx_model_view
 					return;
 
 				case ContainmentType.Contains:
-					result.AddRange(objects.Select(x => x.Obj));
+					for (var i = 0; i < objects.Count; i++)
+					{
+						OctreeObject o = objects[i];
+						result.Add(o.Obj);
+					}
+
 					break;
 
 				case ContainmentType.Intersects:
 					// Check against any objects in this node
-					foreach (OctreeObject o in objects)
+					for (var i = 0; i < objects.Count; i++)
 					{
+						OctreeObject o = objects[i];
 						if (frustum.Intersects(ref o.BoundingBox))
 						{
 							result.Add(o.Obj);
@@ -434,8 +448,8 @@ namespace sadx_model_view
 			int bestFit = -1;
 			for (int i = 0; i < objects.Count; i++)
 			{
-				OctreeObject curObj     = objects[i];
-				int          newBestFit = BestFitChild(curObj.BoundingBox);
+				OctreeObject curObj = objects[i];
+				int newBestFit = BestFitChild(curObj.BoundingBox);
 				if (i == 0 || newBestFit == bestFit)
 				{
 					// In same octant as the other(s). Does it fit completely inside that octant?
@@ -563,8 +577,12 @@ namespace sadx_model_view
 			// Just add if few objects are here, or children would be below min size
 			if (objects.Count < numObjectsAllowed || (BaseLength / 2f) < minSize)
 			{
-				var newObj = new OctreeObject { Obj = obj, BoundingBox = objBounds };
-				//Debug.WriteLine("ADD " + obj.name + " to depth " + depth);
+				var newObj = new OctreeObject
+				{
+					Obj         = obj,
+					BoundingBox = objBounds
+				};
+
 				objects.Add(newObj);
 			}
 			else
@@ -606,8 +624,12 @@ namespace sadx_model_view
 				}
 				else
 				{
-					var newObj = new OctreeObject { Obj = obj, BoundingBox = objBounds };
-					//Debug.WriteLine("ADD " + obj.name + " to depth " + depth);
+					var newObj = new OctreeObject
+					{
+						Obj         = obj,
+						BoundingBox = objBounds
+					};
+
 					objects.Add(newObj);
 				}
 			}
@@ -723,8 +745,9 @@ namespace sadx_model_view
 
 			if (children != null)
 			{
-				foreach (BoundsOctreeNode<T> child in children)
+				for (var i = 0; i < children.Length; i++)
 				{
+					BoundsOctreeNode<T> child = children[i];
 					if (child.children != null)
 					{
 						// If any of the *children* have children, there are definitely too many to merge,
@@ -776,8 +799,10 @@ namespace sadx_model_view
 				yield break;
 			}
 
-			foreach (BoundsOctreeNode<T> child in children)
+			for (var i = 0; i < children.Length; i++)
 			{
+				BoundsOctreeNode<T> child = children[i];
+
 				foreach (BoundingBox b in child.GiveMeTheBounds())
 				{
 					yield return b;

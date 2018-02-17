@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using sadx_model_view.Extensions;
 using sadx_model_view.Interfaces;
 using SharpDX;
 using Buffer = SharpDX.Direct3D11.Buffer;
@@ -462,7 +463,7 @@ namespace sadx_model_view.Ninja
 
 		public BoundingSphere GetWorldSpaceBoundingSphere()
 		{
-			worldSphere = BoundingSphere.FromBox(GetWorldSpaceBoundingBox());
+			worldSphere = GetWorldSpaceBoundingBox().ToSphere();
 			return worldSphere;
 		}
 
