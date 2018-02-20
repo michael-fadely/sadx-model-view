@@ -327,10 +327,11 @@ namespace sadx_model_view
 		/// </summary>
 		/// <param name="frustum">Frustum to check. Passing by ref as it improves performance with structs.</param>
 		/// <param name="result">List result.</param>
+		/// <param name="contains">Indicates if the parent is completely contained by the frustum to speed up child checks.</param>
 		/// <returns>Objects that intersect with the specified bounds.</returns>
-		public void GetColliding(in BoundingFrustum frustum, List<T> result)
+		public void GetColliding(in BoundingFrustum frustum, List<T> result, bool contains = false)
 		{
-			ContainmentType containment = frustum.Contains(ref bounds);
+			ContainmentType containment = contains ? ContainmentType.Contains : frustum.Contains(ref bounds);
 
 			switch (containment)
 			{
@@ -344,6 +345,7 @@ namespace sadx_model_view
 						result.Add(o.Object);
 					}
 
+					contains = true;
 					break;
 
 				case ContainmentType.Intersects:
@@ -368,7 +370,7 @@ namespace sadx_model_view
 			{
 				for (int i = 0; i < 8; i++)
 				{
-					children[i].GetColliding(in frustum, result);
+					children[i].GetColliding(in frustum, result, contains);
 				}
 			}
 		}
