@@ -74,7 +74,7 @@ namespace sadx_model_view
 		RasterizerState              rasterizerState;
 		RasterizerStateDescription   rasterizerDescription;
 
-		readonly Buffer lineVertexBuffer;
+		readonly Buffer debugHelperVertexBuffer;
 		readonly Buffer perSceneBuffer;
 		readonly Buffer perModelBuffer;
 		readonly Buffer materialBuffer;
@@ -89,6 +89,7 @@ namespace sadx_model_view
 		readonly Dictionary<NJD_FLAG, DisplayState> displayStates = new Dictionary<NJD_FLAG, DisplayState>();
 
 		readonly List<DebugLine> debugLines = new List<DebugLine>();
+		readonly List<DebugWireCube> debugWireCubes = new List<DebugWireCube>();
 
 		ShaderMaterial lastMaterial;
 		VertexShader   vertexShader;
@@ -174,15 +175,15 @@ namespace sadx_model_view
 
 			device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
 
-			int lineBufferSize = 2 * DebugPoint.SizeInBytes;
+			int helperBufferSize = DebugWireCube.SizeInBytes.RoundToMultiple(16);
 
-			var lineDescription = new BufferDescription(lineBufferSize, BindFlags.VertexBuffer, ResourceUsage.Dynamic)
+			var debugHelperDescription = new BufferDescription(helperBufferSize, BindFlags.VertexBuffer, ResourceUsage.Dynamic)
 			{
 				CpuAccessFlags      = CpuAccessFlags.Write,
 				StructureByteStride = DebugPoint.SizeInBytes
 			};
 
-			lineVertexBuffer = new Buffer(device, lineDescription);
+			debugHelperVertexBuffer = new Buffer(device, debugHelperDescription);
 
 			RefreshDevice(w, h);
 		}
@@ -464,7 +465,7 @@ namespace sadx_model_view
 				zWrite = true;
 			}
 
-			DrawDebugLines();
+			DrawDebugHelpers();
 			meshQueue.Clear();
 			swapChain.Present(0, 0);
 
@@ -482,9 +483,35 @@ namespace sadx_model_view
 			lastVertexBuffer = null;
 		}
 
-		void DrawDebugLines()
+		static void WriteToStream(in DebugPoint point, DataStream stream)
 		{
-			if (debugLines.Count == 0)
+			stream.Write(point.Point);
+
+			Color4 color = point.Color;
+
+			stream.Write(color.Red);
+			stream.Write(color.Green);
+			stream.Write(color.Blue);
+			stream.Write(1.0f);
+		}
+
+		static void WriteToStream(in DebugLine line, DataStream stream)
+		{
+			WriteToStream(in line.PointA, stream);
+			WriteToStream(in line.PointB, stream);
+		}
+
+		void WriteToStream(in DebugWireCube cube, DataStream stream)
+		{
+			foreach (var line in cube.Lines)
+			{
+				WriteToStream(in line, stream);
+			}
+		}
+
+		void DrawDebugHelpers()
+		{
+			if (debugLines.Count == 0 && debugWireCubes.Count == 0)
 			{
 				return;
 			}
@@ -495,7 +522,7 @@ namespace sadx_model_view
 			device.ImmediateContext.PixelShader.Set(debugPixelShader);
 			device.ImmediateContext.InputAssembler.InputLayout = debugInputLayout;
 
-			var binding = new VertexBufferBinding(lineVertexBuffer, DebugPoint.SizeInBytes, 0);
+			var binding = new VertexBufferBinding(debugHelperVertexBuffer, DebugPoint.SizeInBytes, 0);
 
 			device.ImmediateContext.InputAssembler.SetVertexBuffers(0, binding);
 			device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.LineList;
@@ -506,35 +533,31 @@ namespace sadx_model_view
 
 			foreach (DebugLine line in debugLines)
 			{
-				device.ImmediateContext.MapSubresource(lineVertexBuffer, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
+				device.ImmediateContext.MapSubresource(debugHelperVertexBuffer, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
 
 				using (stream)
 				{
-					// point a
-					stream.Write(line.PointA.Point);
-
-					Color4 color = line.PointA.Color;
-
-					stream.Write(color.Red);
-					stream.Write(color.Green);
-					stream.Write(color.Blue);
-					stream.Write(1.0f);
-
-					// point b
-					stream.Write(line.PointB.Point);
-
-					color = line.PointB.Color;
-
-					stream.Write(color.Red);
-					stream.Write(color.Green);
-					stream.Write(color.Blue);
-					stream.Write(1.0f);
+					WriteToStream(in line, stream);
 				}
 
-				device.ImmediateContext.UnmapSubresource(lineVertexBuffer, 0);
+				device.ImmediateContext.UnmapSubresource(debugHelperVertexBuffer, 0);
 				device.ImmediateContext.Draw(2, 0);
 			}
 
+			foreach (DebugWireCube cube in debugWireCubes)
+			{
+				device.ImmediateContext.MapSubresource(debugHelperVertexBuffer, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
+
+				using (stream)
+				{
+					WriteToStream(in cube, stream);
+				}
+
+				device.ImmediateContext.UnmapSubresource(debugHelperVertexBuffer, 0);
+				device.ImmediateContext.Draw(24, 0);
+			}
+
+			debugWireCubes.Clear();
 			debugLines.Clear();
 
 			// restore default shaders, input layout and topology
@@ -1049,7 +1072,7 @@ namespace sadx_model_view
 			debugPixelShader?.Dispose();
 			inputLayout?.Dispose();
 			debugInputLayout?.Dispose();
-			lineVertexBuffer?.Dispose();
+			debugHelperVertexBuffer?.Dispose();
 
 			perSceneBuffer?.Dispose();
 			perModelBuffer?.Dispose();
@@ -1090,33 +1113,7 @@ namespace sadx_model_view
 
 		public void DrawBounds(in BoundingBox bounds)
 		{
-			var corners = bounds.GetCorners();
-
-			var lines = new DebugLine[]
-			{
-				// first plane
-				new DebugLine(new DebugPoint(corners[0], Color4.White), new DebugPoint(corners[1], Color4.White)),
-				new DebugLine(new DebugPoint(corners[1], Color4.White), new DebugPoint(corners[2], Color4.White)),
-				new DebugLine(new DebugPoint(corners[2], Color4.White), new DebugPoint(corners[3], Color4.White)),
-				new DebugLine(new DebugPoint(corners[3], Color4.White), new DebugPoint(corners[0], Color4.White)),
-
-				// second plane
-				new DebugLine(new DebugPoint(corners[4], Color4.White), new DebugPoint(corners[5], Color4.White)),
-				new DebugLine(new DebugPoint(corners[5], Color4.White), new DebugPoint(corners[6], Color4.White)),
-				new DebugLine(new DebugPoint(corners[6], Color4.White), new DebugPoint(corners[7], Color4.White)),
-				new DebugLine(new DebugPoint(corners[7], Color4.White), new DebugPoint(corners[4], Color4.White)),
-
-				// last two (four lines)
-				new DebugLine(new DebugPoint(corners[0], Color4.White), new DebugPoint(corners[4], Color4.White)),
-				new DebugLine(new DebugPoint(corners[1], Color4.White), new DebugPoint(corners[5], Color4.White)),
-				new DebugLine(new DebugPoint(corners[2], Color4.White), new DebugPoint(corners[6], Color4.White)),
-				new DebugLine(new DebugPoint(corners[3], Color4.White), new DebugPoint(corners[7], Color4.White)),
-			};
-
-			foreach (DebugLine line in lines)
-			{
-				DrawDebugLine(line);
-			}
+			debugWireCubes.Add(new DebugWireCube(in bounds));
 		}
 	}
 
