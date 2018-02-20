@@ -539,21 +539,21 @@ namespace sadx_model_view
 		}
 
 		/*
-	/// <summary>
-	/// Get the total amount of objects in this node and all its children, grandchildren etc. Useful for debugging.
-	/// </summary>
-	/// <param name="startingNum">Used by recursive calls to add to the previous total.</param>
-	/// <returns>Total objects in this node and its children, grandchildren etc.</returns>
-	public int GetTotalObjects(int startingNum = 0) {
-		int totalObjects = startingNum + objects.Count;
-		if (children != null) {
-			for (int i = 0; i < 8; i++) {
-				totalObjects += children[i].GetTotalObjects();
+		/// <summary>
+		/// Get the total amount of objects in this node and all its children, grandchildren etc. Useful for debugging.
+		/// </summary>
+		/// <param name="startingNum">Used by recursive calls to add to the previous total.</param>
+		/// <returns>Total objects in this node and its children, grandchildren etc.</returns>
+		public int GetTotalObjects(int startingNum = 0) {
+			int totalObjects = startingNum + objects.Count;
+			if (children != null) {
+				for (int i = 0; i < 8; i++) {
+					totalObjects += children[i].GetTotalObjects();
+				}
 			}
+			return totalObjects;
 		}
-		return totalObjects;
-	}
-	*/
+		*/
 
 		// #### PRIVATE METHODS ####
 

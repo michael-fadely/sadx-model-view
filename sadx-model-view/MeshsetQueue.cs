@@ -12,6 +12,7 @@ namespace sadx_model_view
 		public NJS_MODEL      Model          { get; }
 		public NJS_MESHSET    Set            { get; }
 		public Matrix         Transform      { get; }
+		public BoundingBox    BoundingBox    { get; }
 		public BoundingSphere BoundingSphere { get; }
 		public bool           Transparent    { get; }
 
@@ -30,6 +31,7 @@ namespace sadx_model_view
 
 			Transparent = matId < mats.Count && (mats[matId].attrflags & NJD_FLAG.UseAlpha) != 0;
 
+			BoundingBox = Set.GetWorldSpaceBoundingBox();
 			BoundingSphere = Set.GetWorldSpaceBoundingSphere();
 		}
 
@@ -39,6 +41,7 @@ namespace sadx_model_view
 			Model          = b.Model;
 			Set            = b.Set;
 			Transform      = b.Transform;
+			BoundingBox    = b.BoundingBox;
 			BoundingSphere = b.BoundingSphere;
 			Transparent    = b.Transparent;
 			FlowControl    = b.FlowControl;

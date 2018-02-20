@@ -56,7 +56,7 @@ namespace sadx_model_view
 				foreach (var set in o.Model.meshsets)
 				{
 					var element = new MeshsetQueueElementBase(renderer, o, o.Model, set);
-					tree.Add(element, set.GetWorldSpaceBoundingBox());
+					tree.Add(element, element.BoundingBox);
 				}
 			}
 		}
