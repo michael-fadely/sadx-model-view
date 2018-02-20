@@ -527,21 +527,32 @@ namespace sadx_model_view
 			device.ImmediateContext.InputAssembler.SetVertexBuffers(0, binding);
 			device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.LineList;
 
-			// TODO: make debug line z-writes (and tests) configurable
+			// TODO: make debug z-writes (and tests) configurable
 			device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
 			zWrite = true;
 
-			foreach (DebugLine line in debugLines)
+			// using these variables we're able to batch lines into
+			// the cube-sized vertex buffer to reduce draw calls.
+			int lineCount = debugLines.Count;
+			int lineIndex = 0;
+
+			while (lineCount > 0)
 			{
+				int n = Math.Min(lineCount, 12);
 				device.ImmediateContext.MapSubresource(debugHelperVertexBuffer, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
 
 				using (stream)
 				{
-					WriteToStream(in line, stream);
+					for (int i = 0; i < n; i++)
+					{
+						DebugLine line = debugLines[lineIndex++];
+						WriteToStream(in line, stream);
+						--lineCount;
+					}
 				}
 
 				device.ImmediateContext.UnmapSubresource(debugHelperVertexBuffer, 0);
-				device.ImmediateContext.Draw(2, 0);
+				device.ImmediateContext.Draw(2 * n, 0);
 			}
 
 			foreach (DebugWireCube cube in debugWireCubes)
