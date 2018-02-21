@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using sadx_model_view.Interfaces;
 using SharpDX;
@@ -56,7 +57,7 @@ namespace sadx_model_view.Ninja
 	/// See also:
 	/// <seealso cref="NJS_MODEL"/>
 	/// </summary>
-	public class NJS_OBJECT : IDisposable, IInvalidatable, IEnumerable
+	public class NJS_OBJECT : IDisposable, IInvalidatable, IEnumerable<NJS_OBJECT>
 	{
 		/// <summary>
 		/// Native structure size in bytes.
@@ -335,11 +336,11 @@ namespace sadx_model_view.Ninja
 			}
 		}
 
-		public IEnumerator GetEnumerator()
+		public IEnumerator<NJS_OBJECT> GetEnumerator()
 		{
-			var o = this;
+			NJS_OBJECT o = this;
 
-			while (o != null)
+			do
 			{
 				MatrixStack.Push();
 				o.PushTransform();
@@ -348,7 +349,7 @@ namespace sadx_model_view.Ninja
 
 				if (o.Child != null)
 				{
-					foreach (var c in o.Child)
+					foreach (NJS_OBJECT c in o.Child)
 					{
 						yield return c;
 					}
@@ -356,7 +357,12 @@ namespace sadx_model_view.Ninja
 
 				MatrixStack.Pop();
 				o = o.Sibling;
-			}
+			} while (o != null);
+		}
+
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			return GetEnumerator();
 		}
 	}
 }
