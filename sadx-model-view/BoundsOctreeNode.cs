@@ -79,7 +79,7 @@ namespace sadx_model_view
 		/// <param name="centerVal">Centre position of this node.</param>
 		public BoundsOctreeNode(float baseLength, float minSizeVal, float loosenessVal, Vector3 centerVal)
 		{
-			SetValues(baseLength, minSizeVal, loosenessVal, centerVal);
+			SetValues(baseLength, minSizeVal, loosenessVal, in centerVal);
 		}
 
 		// #### PUBLIC METHODS ####
@@ -90,14 +90,14 @@ namespace sadx_model_view
 		/// <param name="obj">Object to add.</param>
 		/// <param name="objBounds">3D bounding box around the object.</param>
 		/// <returns><value>true</value> if the object fits entirely within this node.</returns>
-		public bool Add(T obj, BoundingBox objBounds)
+		public bool Add(T obj, in BoundingBox objBounds)
 		{
 			if (!Encapsulates(bounds, objBounds))
 			{
 				return false;
 			}
 
-			SubAdd(obj, objBounds);
+			SubAdd(obj, in objBounds);
 			return true;
 		}
 
@@ -150,14 +150,14 @@ namespace sadx_model_view
 		/// <param name="obj">Object to remove.</param>
 		/// <param name="objBounds">3D bounding box around the object.</param>
 		/// <returns><value>true</value> if the object was removed successfully.</returns>
-		public bool Remove(T obj, BoundingBox objBounds)
+		public bool Remove(T obj, in BoundingBox objBounds)
 		{
 			if (!Encapsulates(bounds, objBounds))
 			{
 				return false;
 			}
 
-			return SubRemove(obj, objBounds);
+			return SubRemove(obj, in objBounds);
 		}
 
 		/// <summary>
@@ -174,9 +174,45 @@ namespace sadx_model_view
 			}
 
 			// Check against any objects in this node
-			for (var i = 0; i < objects.Count; i++)
+			foreach (OctreeObject o in objects)
 			{
-				OctreeObject o = objects[i];
+				if (o.Bounds.Intersects(checkBounds))
+				{
+					return true;
+				}
+			}
+
+			// Check children
+			if (children != null)
+			{
+				for (int i = 0; i < 8; i++)
+				{
+					if (children[i].IsColliding(in checkBounds))
+					{
+						return true;
+					}
+				}
+			}
+
+			return false;
+		}
+
+		/// <summary>
+		/// Check if the specified bounds intersect with anything in the tree. See also: GetColliding.
+		/// </summary>
+		/// <param name="checkBounds">BoundingSphere to check.</param>
+		/// <returns><value>true</value> if there was a collision.</returns>
+		public bool IsColliding(in BoundingSphere checkBounds)
+		{
+			// Are the input bounds at least partially in this node?
+			if (!bounds.Intersects(checkBounds))
+			{
+				return false;
+			}
+
+			// Check against any objects in this node
+			foreach (OctreeObject o in objects)
+			{
 				if (o.Bounds.Intersects(checkBounds))
 				{
 					return true;
@@ -213,9 +249,8 @@ namespace sadx_model_view
 			}
 
 			// Check against any objects in this node
-			for (var i = 0; i < objects.Count; i++)
+			foreach (OctreeObject o in objects)
 			{
-				OctreeObject o = objects[i];
 				if (checkRay.Intersects(ref o.Bounds, out distance) && distance <= maxDistance)
 				{
 					return true;
@@ -243,9 +278,15 @@ namespace sadx_model_view
 		/// <param name="checkBounds">BoundingBox to check. Passing by ref as it improves performance with structs.</param>
 		/// <param name="result">List result.</param>
 		/// <returns>Objects that intersect with the specified bounds.</returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void GetColliding(in BoundingBox checkBounds, List<T> result)
 		{
-			ContainmentType containment = bounds.Contains(checkBounds);
+			GetCollidingImpl(in checkBounds, result, false);
+		}
+
+		void GetCollidingImpl(in BoundingBox checkBounds, List<T> result, bool contains)
+		{
+			ContainmentType containment = contains ? ContainmentType.Contains : bounds.Contains(checkBounds);
 
 			switch (containment)
 			{
@@ -253,18 +294,17 @@ namespace sadx_model_view
 					return;
 
 				case ContainmentType.Contains:
-					for (var i = 0; i < objects.Count; i++)
+					foreach (OctreeObject o in objects)
 					{
-						OctreeObject o = objects[i];
 						result.Add(o.Object);
 					}
 
+					contains = true;
 					break;
 
 				case ContainmentType.Intersects:
-					for (var i = 0; i < objects.Count; i++)
+					foreach (OctreeObject o in objects)
 					{
-						OctreeObject o = objects[i];
 						if (o.Bounds.Intersects(checkBounds))
 						{
 							result.Add(o.Object);
@@ -282,7 +322,62 @@ namespace sadx_model_view
 			{
 				for (int i = 0; i < 8; i++)
 				{
-					children[i].GetColliding(in checkBounds, result);
+					children[i].GetCollidingImpl(in checkBounds, result, contains);
+				}
+			}
+		}
+
+		/// <summary>
+		/// Returns an array of objects that intersect with the specified bounds, if any. Otherwise returns an empty array. See also: IsColliding.
+		/// </summary>
+		/// <param name="checkBounds">BoundingSphere to check. Passing by ref as it improves performance with structs.</param>
+		/// <param name="result">List result.</param>
+		/// <returns>Objects that intersect with the specified bounds.</returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public void GetColliding(in BoundingSphere checkBounds, List<T> result)
+		{
+			GetCollidingImpl(in checkBounds, result, false);
+		}
+
+		void GetCollidingImpl(in BoundingSphere checkBounds, List<T> result, bool contains)
+		{
+			ContainmentType containment = contains ? ContainmentType.Contains : bounds.Contains(checkBounds);
+
+			switch (containment)
+			{
+				case ContainmentType.Disjoint:
+					return;
+
+				case ContainmentType.Contains:
+					foreach (OctreeObject o in objects)
+					{
+						result.Add(o.Object);
+					}
+
+					contains = true;
+					break;
+
+				case ContainmentType.Intersects:
+					foreach (OctreeObject o in objects)
+					{
+						if (o.Bounds.Intersects(checkBounds))
+						{
+							result.Add(o.Object);
+						}
+					}
+
+					break;
+
+				default:
+					throw new ArgumentOutOfRangeException();
+			}
+
+			// Check children
+			if (children != null)
+			{
+				for (int i = 0; i < 8; i++)
+				{
+					children[i].GetCollidingImpl(in checkBounds, result, contains);
 				}
 			}
 		}
@@ -303,9 +398,8 @@ namespace sadx_model_view
 			}
 
 			// Check against any objects in this node
-			for (var i = 0; i < objects.Count; i++)
+			foreach (OctreeObject o in objects)
 			{
-				OctreeObject o = objects[i];
 				if (checkRay.Intersects(ref o.Bounds, out distance) && distance <= maxDistance)
 				{
 					result.Add(o.Object);
@@ -327,9 +421,14 @@ namespace sadx_model_view
 		/// </summary>
 		/// <param name="frustum">Frustum to check. Passing by ref as it improves performance with structs.</param>
 		/// <param name="result">List result.</param>
-		/// <param name="contains">Indicates if the parent is completely contained by the frustum to speed up child checks.</param>
 		/// <returns>Objects that intersect with the specified bounds.</returns>
-		public void GetColliding(in BoundingFrustum frustum, List<T> result, bool contains = false)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public void GetColliding(in BoundingFrustum frustum, List<T> result)
+		{
+			GetCollidingImpl(in frustum, result, false);
+		}
+
+		void GetCollidingImpl(in BoundingFrustum frustum, List<T> result, bool contains)
 		{
 			ContainmentType containment = contains ? ContainmentType.Contains : frustum.Contains(ref bounds);
 
@@ -339,9 +438,8 @@ namespace sadx_model_view
 					return;
 
 				case ContainmentType.Contains:
-					for (var i = 0; i < objects.Count; i++)
+					foreach (OctreeObject o in objects)
 					{
-						OctreeObject o = objects[i];
 						result.Add(o.Object);
 					}
 
@@ -350,9 +448,8 @@ namespace sadx_model_view
 
 				case ContainmentType.Intersects:
 					// Check against any objects in this node
-					for (var i = 0; i < objects.Count; i++)
+					foreach (OctreeObject o in objects)
 					{
-						OctreeObject o = objects[i];
 						if (frustum.Intersects(ref o.Bounds))
 						{
 							result.Add(o.Object);
@@ -370,7 +467,7 @@ namespace sadx_model_view
 			{
 				for (int i = 0; i < 8; i++)
 				{
-					children[i].GetColliding(in frustum, result, contains);
+					children[i].GetCollidingImpl(in frustum, result, contains);
 				}
 			}
 		}
@@ -394,59 +491,6 @@ namespace sadx_model_view
 		{
 			return bounds;
 		}
-
-		/*
-		/// <summary>
-		/// Draws node boundaries visually for debugging.
-		/// Must be called from OnDrawGizmos externally. See also: DrawAllObjects.
-		/// </summary>
-		/// <param name="depth">Used for recurcive calls to this method.</param>
-		public void DrawAllBounds(float depth = 0)
-		{
-			float tintVal = depth / 7; // Will eventually get values > 1. Color rounds to 1 automatically
-			Gizmos.color = new Color(tintVal, 0, 1.0f - tintVal);
-
-			BoundingBox thisBounds = new BoundingBox(Center, new Vector3(adjLength, adjLength, adjLength));
-			Gizmos.DrawWireCube(thisBounds.center, thisBounds.size);
-
-			if (children != null)
-			{
-				depth++;
-				for (int i = 0; i < 8; i++)
-				{
-					children[i].DrawAllBounds(depth);
-				}
-			}
-			Gizmos.color = Color.white;
-		}
-		*/
-
-		/*
-		/// <summary>
-		/// Draws the bounds of all objects in the tree visually for debugging.
-		/// Must be called from OnDrawGizmos externally. See also: DrawAllBounds.
-		/// </summary>
-		public void DrawAllObjects()
-		{
-			float tintVal = BaseLength / 20;
-			Gizmos.color = new Color(0, 1.0f - tintVal, tintVal, 0.25f);
-
-			foreach (OctreeObject obj in objects)
-			{
-				Gizmos.DrawCube(obj.BoundingBox.center, obj.BoundingBox.size);
-			}
-
-			if (children != null)
-			{
-				for (int i = 0; i < 8; i++)
-				{
-					children[i].DrawAllObjects();
-				}
-			}
-
-			Gizmos.color = Color.white;
-		}
-		*/
 
 		/// <summary>
 		/// We can shrink the octree if:
@@ -526,7 +570,8 @@ namespace sadx_model_view
 			{
 				// We don't have any children, so just shrink this node to the new size
 				// We already know that everything will still fit in it
-				SetValues(BaseLength / 2, minimumSize, looseness, childBounds[bestFit].Center);
+				Vector3 c = childBounds[bestFit].Center;
+				SetValues(BaseLength / 2, minimumSize, looseness, in c);
 				return this;
 			}
 
@@ -540,23 +585,6 @@ namespace sadx_model_view
 			return children[bestFit];
 		}
 
-		/*
-		/// <summary>
-		/// Get the total amount of objects in this node and all its children, grandchildren etc. Useful for debugging.
-		/// </summary>
-		/// <param name="startingNum">Used by recursive calls to add to the previous total.</param>
-		/// <returns>Total objects in this node and its children, grandchildren etc.</returns>
-		public int GetTotalObjects(int startingNum = 0) {
-			int totalObjects = startingNum + objects.Count;
-			if (children != null) {
-				for (int i = 0; i < 8; i++) {
-					totalObjects += children[i].GetTotalObjects();
-				}
-			}
-			return totalObjects;
-		}
-		*/
-
 		// #### PRIVATE METHODS ####
 
 		/// <summary>
@@ -566,7 +594,7 @@ namespace sadx_model_view
 		/// <param name="minSize">Minimum size of nodes in this octree.</param>
 		/// <param name="loosenessVal">Multiplier for <paramref name="baseLength"/> to get the actual size.</param>
 		/// <param name="center">Centre position of this node.</param>
-		void SetValues(float baseLength, float minSize, float loosenessVal, Vector3 center)
+		void SetValues(float baseLength, float minSize, float loosenessVal, in Vector3 center)
 		{
 			if (childBounds is null)
 			{
@@ -604,7 +632,7 @@ namespace sadx_model_view
 		/// </summary>
 		/// <param name="obj">Object to add.</param>
 		/// <param name="box">3D bounding box around the object.</param>
-		void SubAdd(T obj, BoundingBox box)
+		void SubAdd(T obj, in BoundingBox box)
 		{
 			// We know it fits at this level if we've got this far
 			// Just add if few objects are here, or children would be below min size
@@ -639,8 +667,9 @@ namespace sadx_model_view
 					// Does it fit?
 					if (Encapsulates(children[bestFitChild].bounds, existing.Bounds))
 					{
-						children[bestFitChild].SubAdd(existing.Object, existing.Bounds); // Go a level deeper
-						objects.Remove(existing);                                        // Remove from here
+						BoundingBox b = existing.Bounds;
+						children[bestFitChild].SubAdd(existing.Object, in b); // Go a level deeper
+						objects.Remove(existing);                             // Remove from here
 					}
 				}
 			}
@@ -650,7 +679,7 @@ namespace sadx_model_view
 
 			if (Encapsulates(children[bestFitChild].bounds, box))
 			{
-				children[bestFitChild].SubAdd(obj, box);
+				children[bestFitChild].SubAdd(obj, in box);
 			}
 			else
 			{
@@ -665,12 +694,14 @@ namespace sadx_model_view
 		}
 
 		/// <summary>
+#pragma warning disable 1574
 		/// Private counterpart to the public <see cref="Remove(T, BoundingBox)"/> method.
+#pragma warning restore 1574
 		/// </summary>
 		/// <param name="obj">Object to remove.</param>
 		/// <param name="objBounds">3D bounding box around the object.</param>
 		/// <returns><value>true</value> if the object was removed successfully.</returns>
-		bool SubRemove(T obj, BoundingBox objBounds)
+		bool SubRemove(T obj, in BoundingBox objBounds)
 		{
 			bool removed = false;
 
@@ -686,7 +717,7 @@ namespace sadx_model_view
 			if (!removed && children != null)
 			{
 				int bestFitChild = BestFitChild(objBounds);
-				removed = children[bestFitChild].SubRemove(obj, objBounds);
+				removed = children[bestFitChild].SubRemove(obj, in objBounds);
 			}
 
 			if (removed && children != null)
@@ -781,9 +812,8 @@ namespace sadx_model_view
 
 			if (children != null)
 			{
-				for (var i = 0; i < children.Length; i++)
+				foreach (BoundsOctreeNode<T> child in children)
 				{
-					BoundsOctreeNode<T> child = children[i];
 					if (child.children != null)
 					{
 						// If any of the *children* have children, there are definitely too many to merge,
@@ -835,10 +865,8 @@ namespace sadx_model_view
 				yield break;
 			}
 
-			for (var i = 0; i < children.Length; i++)
+			foreach (BoundsOctreeNode<T> child in children)
 			{
-				BoundsOctreeNode<T> child = children[i];
-
 				foreach (BoundingBox b in child.GiveMeTheBounds())
 				{
 					yield return b;

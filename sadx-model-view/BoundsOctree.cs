@@ -111,7 +111,7 @@ namespace sadx_model_view
 		{
 			// Add object or expand the octree until it can be added
 			var count = 0; // Safety check against infinite/excessive growth
-			while (!rootNode.Add(obj, objBounds))
+			while (!rootNode.Add(obj, in objBounds))
 			{
 				Grow(objBounds.Center - rootNode.Center);
 				if (++count > 20)
@@ -152,7 +152,7 @@ namespace sadx_model_view
 		/// <returns><value>true</value> if the object was removed successfully.</returns>
 		public bool Remove(T obj, in BoundingBox objBounds)
 		{
-			bool removed = rootNode.Remove(obj, objBounds);
+			bool removed = rootNode.Remove(obj, in objBounds);
 
 			// See if we can shrink the octree down now that we've removed the item
 			if (removed)
@@ -172,10 +172,17 @@ namespace sadx_model_view
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool IsColliding(in BoundingBox checkBounds)
 		{
-			//#if UNITY_EDITOR
-			// For debugging
-			//AddCollisionCheck(checkBounds);
-			//#endif
+			return rootNode.IsColliding(in checkBounds);
+		}
+
+		/// <summary>
+		/// Check if the specified bounds intersect with anything in the tree. See also: GetColliding.
+		/// </summary>
+		/// <param name="checkBounds">bounds to check.</param>
+		/// <returns><value>true</value> if there was a collision.</returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public bool IsColliding(in BoundingSphere checkBounds)
+		{
 			return rootNode.IsColliding(in checkBounds);
 		}
 
@@ -188,10 +195,6 @@ namespace sadx_model_view
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool IsColliding(in Ray checkRay, float maxDistance)
 		{
-			//#if UNITY_EDITOR
-			// For debugging
-			//AddCollisionCheck(checkRay);
-			//#endif
 			return rootNode.IsColliding(in checkRay, maxDistance);
 		}
 
@@ -204,10 +207,18 @@ namespace sadx_model_view
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void GetColliding(List<T> collidingWith, in BoundingBox checkBounds)
 		{
-			//#if UNITY_EDITOR
-			// For debugging
-			//AddCollisionCheck(checkBounds);
-			//#endif
+			rootNode.GetColliding(in checkBounds, collidingWith);
+		}
+
+		/// <summary>
+		/// Returns an array of objects that intersect with the specified bounds, if any. Otherwise returns an empty array. See also: IsColliding.
+		/// </summary>
+		/// <param name="collidingWith">list to store intersections.</param>
+		/// <param name="checkBounds">bounds to check.</param>
+		/// <returns>Objects that intersect with the specified bounds.</returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public void GetColliding(List<T> collidingWith, in BoundingSphere checkBounds)
+		{
 			rootNode.GetColliding(in checkBounds, collidingWith);
 		}
 
@@ -221,10 +232,6 @@ namespace sadx_model_view
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void GetColliding(List<T> collidingWith, in Ray checkRay, float maxDistance = float.PositiveInfinity)
 		{
-			//#if UNITY_EDITOR
-			// For debugging
-			//AddCollisionCheck(checkRay);
-			//#endif
 			rootNode.GetColliding(in checkRay, collidingWith, maxDistance);
 		}
 
@@ -237,10 +244,6 @@ namespace sadx_model_view
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void GetColliding(List<T> collidingWith, in BoundingFrustum frustum)
 		{
-			//#if UNITY_EDITOR
-			// For debugging
-			//AddCollisionCheck(checkBounds);
-			//#endif
 			rootNode.GetColliding(in frustum, collidingWith);
 		}
 
@@ -250,82 +253,7 @@ namespace sadx_model_view
 			return rootNode.GetBounds();
 		}
 
-		/*
-		/// <summary>
-		/// Draws node boundaries visually for debugging.
-		/// Must be called from OnDrawGizmos externally. See also: DrawAllObjects.
-		/// </summary>
-		public void DrawAllBounds()
-		{
-			rootNode.DrawAllBounds();
-		}
-		*/
-
-		/*
-		/// <summary>
-		/// Draws the bounds of all objects in the tree visually for debugging.
-		/// Must be called from OnDrawGizmos externally. See also: DrawAllBounds.
-		/// </summary>
-		public void DrawAllObjects()
-		{
-			rootNode.DrawAllObjects();
-		}
-		*/
-
-		// Intended for debugging. Must be called from OnDrawGizmos externally
-		// See also DrawAllBounds and DrawAllObjects
-#if UNITY_EDITOR
-	/// <summary>
-	/// Visualises collision checks from IsColliding and GetColliding.
-	/// Collision visualisation code is automatically removed from builds so that collision checks aren't slowed down.
-	/// </summary>
-	public void DrawCollisionChecks()
-	{
-		int count = 0;
-		foreach (BoundingBox collisionCheck in lastBoundsCollisionChecks) {
-			Gizmos.color = new Color(1.0f, 1.0f - ((float)count / numCollisionsToSave), 1.0f);
-			Gizmos.DrawCube(collisionCheck.center, collisionCheck.size);
-			count++;
-		}
-
-		foreach (Ray collisionCheck in lastRayCollisionChecks) {
-			Gizmos.color = new Color(1.0f, 1.0f - ((float)count / numCollisionsToSave), 1.0f);
-			Gizmos.DrawRay(collisionCheck.origin, collisionCheck.direction);
-			count++;
-		}
-		Gizmos.color = Color.white;
-	}
-#endif
-
 		// #### PRIVATE METHODS ####
-
-#if UNITY_EDITOR
-	/// <summary>
-	/// Used for visualising collision checks with DrawCollisionChecks.
-	/// Automatically removed from builds so that collision checks aren't slowed down.
-	/// </summary>
-	/// <param name="checkBounds">bounds that were passed in to check for collisions.</param>
-	void AddCollisionCheck(BoundingBox checkBounds) {
-		lastBoundsCollisionChecks.Enqueue(checkBounds);
-		if (lastBoundsCollisionChecks.Count > numCollisionsToSave) {
-			lastBoundsCollisionChecks.Dequeue();
-		}
-	}
-#endif
-
-#if UNITY_EDITOR
-	/// <summary>
-	/// Used for visualising collision checks with DrawCollisionChecks.
-	/// Automatically removed from builds so that collision checks aren't slowed down.
-	/// </summary>
-	/// <param name="checkRay">ray that was passed in to check for collisions.</param>
-	void AddCollisionCheck(Ray checkRay) {
-		lastRayCollisionChecks.Enqueue(checkRay);
-		if (lastRayCollisionChecks.Count > numCollisionsToSave) {
-			lastRayCollisionChecks.Dequeue();
-		}
-	}
-#endif
 
 		/// <summary>
 		/// Grow the octree to fit in all objects.
