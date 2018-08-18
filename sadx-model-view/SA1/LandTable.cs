@@ -99,6 +99,14 @@ namespace sadx_model_view.SA1
 			Unknown_3 = 0;
 		}
 
+		public void GetTriangles(List<Triangle> list)
+		{
+			foreach (Col c in ColList)
+			{
+				c.GetTriangles(list);
+			}
+		}
+
 		public void CommitVertexBuffer(Renderer device)
 		{
 			foreach (Col c in ColList)

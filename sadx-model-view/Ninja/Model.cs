@@ -250,5 +250,22 @@ namespace sadx_model_view.Ninja
 				isInvalid = value;
 			}
 		}
+
+		public void GetTriangles(List<Triangle> list)
+		{
+			Matrix m = MatrixStack.Peek();
+
+			foreach (var set in meshsets)
+			{
+				foreach (var t in set.Triangles)
+				{
+					Triangle t_ = t;
+					Vector3.Transform(ref t_.A, ref m, out t_.A);
+					Vector3.Transform(ref t_.B, ref m, out t_.B);
+					Vector3.Transform(ref t_.C, ref m, out t_.C);
+					list.Add(t_);
+				}
+			}
+		}
 	}
 }

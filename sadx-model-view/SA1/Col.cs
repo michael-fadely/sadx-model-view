@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using sadx_model_view.Ninja;
 using SharpDX;
@@ -109,6 +110,11 @@ namespace sadx_model_view.SA1
 		public void CommitVertexBuffer(Renderer device)
 		{
 			Object?.CommitVertexBuffer(device);
+		}
+
+		public void GetTriangles(List<Triangle> list)
+		{
+			Object?.GetTriangles(list);
 		}
 	}
 }

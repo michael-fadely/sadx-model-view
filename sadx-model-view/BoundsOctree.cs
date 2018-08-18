@@ -80,7 +80,7 @@ namespace sadx_model_view
 		/// </summary>
 		/// <param name="initialWorldSize">Size of the sides of the initial node. The octree will never shrink smaller than this.</param>
 		/// <param name="initialWorldPos">Position of the centre of the initial node.</param>
-		/// <param name="minNodeSize">Nodes will stop splitting if the new nodes would be smaller than this .</param>
+		/// <param name="minNodeSize">Nodes will stop splitting if the new nodes would be smaller than this.</param>
 		/// <param name="loosenessVal">Clamped between 1 and 2. Values > 1 let nodes overlap.</param>
 		public BoundsOctree(float initialWorldSize, Vector3 initialWorldPos, float minNodeSize, float loosenessVal)
 		{
@@ -93,7 +93,7 @@ namespace sadx_model_view
 			initialSize = initialWorldSize;
 			minSize     = minNodeSize;
 			looseness   = loosenessVal.Clamp(1.0f, 2.0f);
-			rootNode    = new BoundsOctreeNode<T>(initialSize, minSize, loosenessVal, initialWorldPos);
+			rootNode    = new BoundsOctreeNode<T>(initialSize, minSize, looseness, initialWorldPos);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

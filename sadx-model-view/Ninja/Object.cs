@@ -310,6 +310,19 @@ namespace sadx_model_view.Ninja
 			return obj;
 		}
 
+		public void GetTriangles(List<Triangle> list)
+		{
+			MatrixStack.Push();
+			PushTransform();
+
+			Model?.GetTriangles(list);
+			Child?.GetTriangles(list);
+
+			MatrixStack.Pop();
+
+			Sibling?.GetTriangles(list);
+		}
+
 		bool isInvalid;
 
 		public bool IsInvalid

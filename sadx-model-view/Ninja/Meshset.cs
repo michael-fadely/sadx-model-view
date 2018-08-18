@@ -8,6 +8,21 @@ using Buffer = SharpDX.Direct3D11.Buffer;
 
 namespace sadx_model_view.Ninja
 {
+	public struct Triangle
+	{
+		public Vector3 A;
+		public Vector3 B;
+		public Vector3 C;
+
+		public Vector3[] ToArray()
+		{
+			return new Vector3[]
+			{
+				A, B, C
+			};
+		}
+	}
+
 	/// <summary>
 	/// Used to identify different types of <see cref="NJS_MESHSET"/>.
 	/// </summary>
@@ -336,8 +351,11 @@ namespace sadx_model_view.Ninja
 			return (short)result;
 		}
 
+		public readonly List<Triangle> Triangles = new List<Triangle>();
+
 		public void CommitIndexBuffer(Renderer device, List<Vertex> vertices)
 		{
+			Triangles.Clear();
 			var indices = new List<short>();
 
 			switch (Type)
@@ -418,6 +436,32 @@ namespace sadx_model_view.Ninja
 			}
 
 			points = indices.Distinct().Select(i => (Vector3)vertices[i].Position).ToArray();
+
+			var tri = new Triangle();
+			int trin = 0;
+
+			foreach (short i in indices)
+			{
+				switch (trin++)
+				{
+					case 0:
+						tri.A = vertices[i].Position;
+						break;
+
+					case 1:
+						tri.B = vertices[i].Position;
+						break;
+
+					case 2:
+						tri.C = vertices[i].Position;
+						Triangles.Add(tri);
+						trin = 0;
+						break;
+
+					default:
+						throw new ArgumentOutOfRangeException();
+				}
+			}
 
 			IndexCount = indices.Count;
 
