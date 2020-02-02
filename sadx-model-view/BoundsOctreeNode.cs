@@ -32,7 +32,7 @@ namespace sadx_model_view
 		float looseness;
 
 		/// <summary>
-		// Minimum size for a node in this octree
+		/// Minimum size for a node in this octree
 		/// </summary>
 		float minimumSize;
 
@@ -47,7 +47,7 @@ namespace sadx_model_view
 		BoundingBox bounds;
 
 		/// <summary>
-		// Objects in this node
+		/// Objects in this node
 		/// </summary>
 		readonly List<OctreeObject> objects = new List<OctreeObject>();
 
@@ -694,9 +694,7 @@ namespace sadx_model_view
 		}
 
 		/// <summary>
-#pragma warning disable 1574
-		/// Private counterpart to the public <see cref="Remove(T, BoundingBox)"/> method.
-#pragma warning restore 1574
+		/// Private counterpart to the public <see cref="Remove(T, in BoundingBox)"/> method.
 		/// </summary>
 		/// <param name="obj">Object to remove.</param>
 		/// <param name="objBounds">3D bounding box around the object.</param>

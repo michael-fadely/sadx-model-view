@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing.Imaging;
@@ -7,7 +6,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using sadx_model_view.Extensions;
 using sadx_model_view.Ninja;
-using sadx_model_view.SA1;
 using SharpDX;
 using SharpDX.D3DCompiler;
 using SharpDX.Direct3D;
@@ -88,7 +86,7 @@ namespace sadx_model_view
 		readonly MeshsetQueue meshQueue = new MeshsetQueue();
 		readonly Dictionary<NJD_FLAG, DisplayState> displayStates = new Dictionary<NJD_FLAG, DisplayState>();
 
-		readonly List<DebugLine> debugLines = new List<DebugLine>();
+		readonly List<DebugLine>     debugLines     = new List<DebugLine>();
 		readonly List<DebugWireCube> debugWireCubes = new List<DebugWireCube>();
 
 		ShaderMaterial lastMaterial;
@@ -337,7 +335,7 @@ namespace sadx_model_view
 				FlowControl.Set(FlowControl.AndFlags & ~NJD_FLAG.UseTexture, FlowControl.OrFlags);
 			}
 
-			ShaderMaterial shaderMaterial = parent.GetSADXMaterial(this, njMaterial);
+			ShaderMaterial shaderMaterial = NJS_MODEL.GetSADXMaterial(this, njMaterial);
 			SetShaderMaterial(in shaderMaterial);
 
 			DisplayState state = GetSADXDisplayState(njMaterial);
@@ -446,10 +444,10 @@ namespace sadx_model_view
 				meshQueue.SortAlpha();
 
 				// First draw with depth writes enabled & alpha threshold (in shader)
-				//foreach (var e in meshTree.AlphaSets)
-				//{
-				//	DrawMeshsetQueueElement(camera, e);
-				//}
+				foreach (MeshsetQueueElement e in meshQueue.AlphaSets)
+				{
+					DrawMeshsetQueueElement(e);
+				}
 
 				// Now draw with depth writes disabled
 				device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRO);
@@ -609,9 +607,9 @@ namespace sadx_model_view
 
 			Viewport vp = viewPort;
 
-			vp.X = x;
-			vp.Y = y;
-			vp.Width = width;
+			vp.X      = x;
+			vp.Y      = y;
+			vp.Width  = width;
 			vp.Height = height;
 
 			if (vp == viewPort)
@@ -710,22 +708,6 @@ namespace sadx_model_view
 
 			device?.ImmediateContext.OutputMerger.SetTargets(depthView, backBuffer);
 			device?.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
-		}
-
-		public void Draw(LandTable landTable, Camera camera)
-		{
-			if (landTable == null)
-			{
-				return;
-			}
-
-			foreach (Col col in landTable.ColList)
-			{
-				if ((col.Flags & ColFlags.Visible) != 0)
-				{
-					Draw(camera, col.Object);
-				}
-			}
 		}
 
 		void CreateRasterizerState()
@@ -848,14 +830,14 @@ namespace sadx_model_view
 					stream.Write(v.Normal.Y);
 					stream.Write(v.Normal.Z);
 
-					RawColorBGRA color = v.Diffuse == null ? Color.White : v.Diffuse.Value;
+					RawColorBGRA color = v.Diffuse ?? Color.White;
 
 					stream.Write(color.B);
 					stream.Write(color.G);
 					stream.Write(color.R);
 					stream.Write(color.A);
 
-					RawVector2 uv = v.UV == null ? (RawVector2)Vector2.Zero : v.UV.Value;
+					RawVector2 uv = v.UV ?? Vector2.Zero;
 
 					stream.Write(uv.X);
 					stream.Write(uv.Y);
@@ -951,8 +933,8 @@ namespace sadx_model_view
 			// - NJD_FLAG.UseFlat
 
 			const NJD_FLAG state_mask = NJD_FLAG.ClampU | NJD_FLAG.ClampV | NJD_FLAG.FlipU | NJD_FLAG.FlipV
-										| NJD_FLAG.DoubleSide | NJD_FLAG.UseAlpha
-										| (NJD_FLAG)0xFC000000 /* blend modes */;
+			                            | NJD_FLAG.DoubleSide | NJD_FLAG.UseAlpha
+			                            | (NJD_FLAG)0xFC000000 /* blend modes */;
 
 			NJD_FLAG flags = FlowControl.Apply(material.attrflags) & state_mask;
 
@@ -1072,11 +1054,6 @@ namespace sadx_model_view
 			depthView?.Dispose();
 			rasterizerState?.Dispose();
 			materialBuffer?.Dispose();
-			lastVertexBuffer?.Dispose();
-			lastBlend?.Dispose();
-			lastRasterizerState?.Dispose();
-			lastSamplerState?.Dispose();
-			lastTexture?.Dispose();
 			vertexShader?.Dispose();
 			pixelShader?.Dispose();
 			debugVertexShader?.Dispose();
@@ -1122,9 +1099,9 @@ namespace sadx_model_view
 			debugLines.Add(line);
 		}
 
-		public void DrawBounds(in BoundingBox bounds)
+		public void DrawBounds(in BoundingBox bounds, Color4 color)
 		{
-			debugWireCubes.Add(new DebugWireCube(in bounds));
+			debugWireCubes.Add(new DebugWireCube(in bounds, color));
 		}
 	}
 
@@ -1136,7 +1113,7 @@ namespace sadx_model_view
 		public InsufficientFeatureLevelException(FeatureLevel supported, FeatureLevel target)
 		{
 			SupportedLevel = supported;
-			TargetLevel = target;
+			TargetLevel    = target;
 		}
 	}
 }

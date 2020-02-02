@@ -16,7 +16,7 @@ namespace sadx_model_view
 		{
 			BoundingBox bounds = default;
 
-			foreach (var col in landTable.ColList)
+			foreach (Col col in landTable.ColList)
 			{
 				CalculateBounds(col.Object, ref bounds);
 			}
@@ -34,7 +34,7 @@ namespace sadx_model_view
 
 		public void Add(LandTable landTable, Renderer renderer)
 		{
-			foreach (var col in landTable.ColList)
+			foreach (Col col in landTable.ColList)
 			{
 				// HACK:
 				if ((col.Flags & ColFlags.Visible) != 0)
@@ -53,7 +53,7 @@ namespace sadx_model_view
 					continue;
 				}
 
-				foreach (var set in o.Model.meshsets)
+				foreach (NJS_MESHSET set in o.Model.meshsets)
 				{
 					var element = new MeshsetQueueElementBase(renderer, o, o.Model, set);
 					tree.Add(element, element.BoundingBox);
@@ -83,7 +83,7 @@ namespace sadx_model_view
 					continue;
 				}
 
-				foreach (var set in o.Model.meshsets)
+				foreach (NJS_MESHSET set in o.Model.meshsets)
 				{
 					bounds = BoundingBox.Merge(bounds, set.GetWorldSpaceBoundingBox());
 				}

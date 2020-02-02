@@ -511,7 +511,10 @@ namespace sadx_model_view.Forms
 				{
 					foreach (BoundingBox bounds in objectTree.GiveMeTheBounds())
 					{
-						renderer.DrawBounds(in bounds);
+						Color4 color = camera.Frustum.Contains(bounds) == ContainmentType.Contains
+							? new Color4(0f, 1f, 0f, 1f)
+							: new Color4(1f, 0f, 0f, 1f);
+						renderer.DrawBounds(in bounds, color);
 					}
 				}
 
@@ -532,7 +535,20 @@ namespace sadx_model_view.Forms
 				{
 					foreach (BoundingBox bounds in landTableTree.GiveMeTheBounds())
 					{
-						renderer.DrawBounds(in bounds);
+						//Color4 color = camera.Frustum.Contains(bounds) == ContainmentType.Contains
+						//	? new Color4(0f, 1f, 0f, 1f)
+						//	: new Color4(1f, 0f, 0f, 1f);
+
+						//renderer.DrawBounds(in bounds, color);
+
+						if (camera.Frustum.Contains(bounds) == ContainmentType.Contains)
+						{
+							renderer.DrawBounds(in bounds, new Color4(1.0f, 0.0f, 1.0f, 1.0f));
+						}
+						else
+						{
+							renderer.DrawBounds(in bounds, new Color4(1.0f, 0.0f, 0.0f, 1.0f));
+						}
 					}
 				}
 

@@ -8,29 +8,29 @@ namespace sadx_model_view
 
 		public DebugLine[] Lines;
 
-		public DebugWireCube(in BoundingBox box)
+		public DebugWireCube(in BoundingBox box, Color4 color)
 		{
 			var corners = box.GetCorners();
 
 			Lines = new DebugLine[]
 			{
 				// first plane
-				new DebugLine(new DebugPoint(corners[0], Color4.White), new DebugPoint(corners[1], Color4.White)),
-				new DebugLine(new DebugPoint(corners[1], Color4.White), new DebugPoint(corners[2], Color4.White)),
-				new DebugLine(new DebugPoint(corners[2], Color4.White), new DebugPoint(corners[3], Color4.White)),
-				new DebugLine(new DebugPoint(corners[3], Color4.White), new DebugPoint(corners[0], Color4.White)),
+				new DebugLine(new DebugPoint(corners[0], color), new DebugPoint(corners[1], color)),
+				new DebugLine(new DebugPoint(corners[1], color), new DebugPoint(corners[2], color)),
+				new DebugLine(new DebugPoint(corners[2], color), new DebugPoint(corners[3], color)),
+				new DebugLine(new DebugPoint(corners[3], color), new DebugPoint(corners[0], color)),
 
 				// second plane
-				new DebugLine(new DebugPoint(corners[4], Color4.White), new DebugPoint(corners[5], Color4.White)),
-				new DebugLine(new DebugPoint(corners[5], Color4.White), new DebugPoint(corners[6], Color4.White)),
-				new DebugLine(new DebugPoint(corners[6], Color4.White), new DebugPoint(corners[7], Color4.White)),
-				new DebugLine(new DebugPoint(corners[7], Color4.White), new DebugPoint(corners[4], Color4.White)),
+				new DebugLine(new DebugPoint(corners[4], color), new DebugPoint(corners[5], color)),
+				new DebugLine(new DebugPoint(corners[5], color), new DebugPoint(corners[6], color)),
+				new DebugLine(new DebugPoint(corners[6], color), new DebugPoint(corners[7], color)),
+				new DebugLine(new DebugPoint(corners[7], color), new DebugPoint(corners[4], color)),
 
 				// last two (four lines)
-				new DebugLine(new DebugPoint(corners[0], Color4.White), new DebugPoint(corners[4], Color4.White)),
-				new DebugLine(new DebugPoint(corners[1], Color4.White), new DebugPoint(corners[5], Color4.White)),
-				new DebugLine(new DebugPoint(corners[2], Color4.White), new DebugPoint(corners[6], Color4.White)),
-				new DebugLine(new DebugPoint(corners[3], Color4.White), new DebugPoint(corners[7], Color4.White)),
+				new DebugLine(new DebugPoint(corners[0], color), new DebugPoint(corners[4], color)),
+				new DebugLine(new DebugPoint(corners[1], color), new DebugPoint(corners[5], color)),
+				new DebugLine(new DebugPoint(corners[2], color), new DebugPoint(corners[6], color)),
+				new DebugLine(new DebugPoint(corners[3], color), new DebugPoint(corners[7], color)),
 			};
 		}
 	}

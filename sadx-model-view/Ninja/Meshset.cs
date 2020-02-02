@@ -469,10 +469,10 @@ namespace sadx_model_view.Ninja
 			IndexBuffer = device.CreateIndexBuffer(indices, IndexCount * sizeof(short));
 		}
 
-		readonly Dictionary<Matrix, BoundingBox> bounds = new Dictionary<Matrix, BoundingBox>();
+		//readonly Dictionary<Matrix, BoundingBox> bounds = new Dictionary<Matrix, BoundingBox>();
 
-		BoundingBox    worldBox;
-		BoundingSphere worldSphere;
+		//BoundingBox    worldBox;
+		//BoundingSphere worldSphere;
 
 		Vector3[] TransformedPoints(ref Matrix m)
 		{
@@ -495,18 +495,18 @@ namespace sadx_model_view.Ninja
 		{
 			Matrix m = MatrixStack.Peek();
 
-			if (!bounds.TryGetValue(m, out worldBox))
-			{
-				worldBox  = BoundingBox.FromPoints(TransformedPoints(ref m));
-				bounds[m] = worldBox;
-			}
+			//if (!bounds.TryGetValue(m, out worldBox))
+			//{
+				var worldBox  = BoundingBox.FromPoints(TransformedPoints(ref m));
+				//bounds[m] = worldBox;
+			//}
 
 			return worldBox;
 		}
 
 		public BoundingSphere GetWorldSpaceBoundingSphere()
 		{
-			worldSphere = BoundingSphere.FromBox(GetWorldSpaceBoundingBox());
+			var worldSphere = BoundingSphere.FromBox(GetWorldSpaceBoundingBox());
 			return worldSphere;
 		}
 
@@ -517,13 +517,10 @@ namespace sadx_model_view.Ninja
 
 		public bool IsInvalid
 		{
-			get => bounds.Count < 1;
+			get => true;
 			set
 			{
-				if (value)
-				{
-					bounds.Clear();
-				}
+		
 			}
 		}
 	}

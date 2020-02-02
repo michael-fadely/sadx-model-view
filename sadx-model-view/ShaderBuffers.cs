@@ -6,11 +6,11 @@ namespace sadx_model_view
 	public class PerSceneBuffer : IModifiable
 	{
 		public static int SizeInBytes => Vector3.SizeInBytes + 2 * Matrix.SizeInBytes;
-		
+
 		public bool Modified => View.Modified || Projection.Modified || CameraPosition.Modified;
 
-		public readonly Modifiable<Matrix> View = new Modifiable<Matrix>();
-		public readonly Modifiable<Matrix> Projection = new Modifiable<Matrix>();
+		public readonly Modifiable<Matrix>  View           = new Modifiable<Matrix>();
+		public readonly Modifiable<Matrix>  Projection     = new Modifiable<Matrix>();
 		public readonly Modifiable<Vector3> CameraPosition = new Modifiable<Vector3>();
 
 		public void Clear()
@@ -27,7 +27,7 @@ namespace sadx_model_view
 
 		public bool Modified => World.Modified || wvMatrixInvT.Modified;
 
-		public readonly Modifiable<Matrix> World = new Modifiable<Matrix>();
+		public readonly Modifiable<Matrix> World        = new Modifiable<Matrix>();
 		public readonly Modifiable<Matrix> wvMatrixInvT = new Modifiable<Matrix>();
 
 		public void Clear()

@@ -1,3 +1,4 @@
+using sadx_model_view.Extensions;
 using SharpDX;
 
 namespace sadx_model_view
@@ -18,13 +19,13 @@ namespace sadx_model_view
 		public bool Equals(ShaderMaterial other)
 		{
 			return Diffuse == other.Diffuse
-				   && Specular == other.Specular
-				   && Exponent == other.Exponent
-				   && UseLight == other.UseLight
-				   && UseAlpha == other.UseAlpha
-				   && UseEnv == other.UseEnv
-				   && UseTexture == other.UseTexture
-				   && UseSpecular == other.UseSpecular;
+			       && Specular == other.Specular
+			       && Exponent.NearEqual(other.Exponent)
+			       && UseLight == other.UseLight
+			       && UseAlpha == other.UseAlpha
+			       && UseEnv == other.UseEnv
+			       && UseTexture == other.UseTexture
+			       && UseSpecular == other.UseSpecular;
 		}
 
 		public override bool Equals(object obj)

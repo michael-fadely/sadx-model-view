@@ -11,16 +11,16 @@ namespace sadx_model_view.Ninja
 		{
 			lock (modelCache)
 			{
-				modelCache.TryGetValue(offset, out NJS_MODEL result);
+				//modelCache.TryGetValue(offset, out NJS_MODEL result);
 
-				if (result != null)
-				{
-					return result;
-				}
+				//if (result != null)
+				//{
+				//	return result;
+				//}
 
 				stream.Position = offset;
-				result = new NJS_MODEL(stream);
-				modelCache[offset] = result;
+				NJS_MODEL result = new NJS_MODEL(stream);
+				//modelCache[offset] = result;
 				return result;
 			}
 		}
