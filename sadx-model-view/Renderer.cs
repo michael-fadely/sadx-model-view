@@ -140,12 +140,14 @@ namespace sadx_model_view
 			}
 
 			var bufferDesc = new BufferDescription(PerSceneBuffer.SizeInBytes.RoundToMultiple(16),
-				ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write, ResourceOptionFlags.None, PerSceneBuffer.SizeInBytes);
+			                                       ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write,
+			                                       ResourceOptionFlags.None, PerSceneBuffer.SizeInBytes);
 
 			perSceneBuffer = new Buffer(device, bufferDesc);
 
 			bufferDesc = new BufferDescription(PerModelBuffer.SizeInBytes.RoundToMultiple(16),
-				ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write, ResourceOptionFlags.None, PerModelBuffer.SizeInBytes);
+			                                   ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write,
+			                                   ResourceOptionFlags.None, PerModelBuffer.SizeInBytes);
 
 			perModelBuffer = new Buffer(device, bufferDesc);
 
@@ -153,8 +155,8 @@ namespace sadx_model_view
 			int size   = Math.Max(ShaderMaterial.SizeInBytes, 80);
 			int stride = ShaderMaterial.SizeInBytes + sizeof(uint);
 
-			bufferDesc = new BufferDescription(size,
-				ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write, ResourceOptionFlags.None, stride);
+			bufferDesc = new BufferDescription(size, ResourceUsage.Dynamic, BindFlags.ConstantBuffer,
+			                                   CpuAccessFlags.Write, ResourceOptionFlags.None, stride);
 
 			materialBuffer = new Buffer(device, bufferDesc);
 
@@ -214,10 +216,10 @@ namespace sadx_model_view
 
 			var layout = new InputElement[]
 			{
-					new InputElement("POSITION", 0, Format.R32G32B32_Float, InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
-					new InputElement("NORMAL",   0, Format.R32G32B32_Float, InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
-					new InputElement("COLOR",    0, Format.R8G8B8A8_UNorm,  InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
-					new InputElement("TEXCOORD", 0, Format.R32G32_Float,    InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0)
+				new InputElement("POSITION", 0, Format.R32G32B32_Float, InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
+				new InputElement("NORMAL",   0, Format.R32G32B32_Float, InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
+				new InputElement("COLOR",    0, Format.R8G8B8A8_UNorm,  InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
+				new InputElement("TEXCOORD", 0, Format.R32G32_Float,    InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0)
 			};
 
 			inputLayout = new InputLayout(device, vs_result.Bytecode, layout);
@@ -254,8 +256,8 @@ namespace sadx_model_view
 
 			var layout = new InputElement[]
 			{
-					new InputElement("POSITION", 0, Format.R32G32B32_Float,    InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
-					new InputElement("COLOR",    0, Format.R32G32B32A32_Float, InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0)
+				new InputElement("POSITION", 0, Format.R32G32B32_Float,    InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
+				new InputElement("COLOR",    0, Format.R32G32B32A32_Float, InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0)
 			};
 
 			debugInputLayout = new InputLayout(device, vs_result.Bytecode, layout);
@@ -378,7 +380,7 @@ namespace sadx_model_view
 			}
 
 			device.ImmediateContext.MapSubresource(perModelBuffer, MapMode.WriteDiscard,
-				MapFlags.None, out DataStream stream);
+			                                       MapFlags.None, out DataStream stream);
 
 			using (stream)
 			{
@@ -405,7 +407,7 @@ namespace sadx_model_view
 			}
 
 			device.ImmediateContext.MapSubresource(perSceneBuffer, MapMode.WriteDiscard,
-				MapFlags.None, out DataStream stream);
+			                                       MapFlags.None, out DataStream stream);
 
 			using (stream)
 			{
@@ -732,8 +734,11 @@ namespace sadx_model_view
 		void CopyToTexture(Texture2D texture, Bitmap bitmap, int level)
 		{
 			BitmapData bmpData = bitmap.LockBits(new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+
 			var buffer = new byte[bmpData.Stride * bitmap.Height];
+
 			Marshal.Copy(bmpData.Scan0, buffer, 0, buffer.Length);
+
 			bitmap.UnlockBits(bmpData);
 
 			device.ImmediateContext.UpdateSubresource(buffer, texture, level, 4 * bitmap.Width, 4 * bitmap.Height);
