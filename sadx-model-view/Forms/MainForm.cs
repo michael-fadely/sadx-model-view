@@ -37,14 +37,16 @@ namespace sadx_model_view.Forms
 
 		enum ChunkTypes : uint
 		{
-			Label       = 0x4C42414C,
-			Animations  = 0x4D494E41,
-			Morphs      = 0x46524F4D,
-			Author      = 0x48545541,
-			Tool        = 0x4C4F4F54,
+			Label = 0x4C42414C,
+			Animations = 0x4D494E41,
+			[Obsolete("Superseded by animations; never used.")]
+			Morphs = 0x46524F4D,
+			Author = 0x48545541,
+			Tool = 0x4C4F4F54,
 			Description = 0x43534544,
-			Texture     = 0x584554,
-			End         = 0x444E45
+			[Obsolete("This type was never implemented.")]
+			Texture = 0x584554,
+			End = 0x444E45
 		}
 
 		readonly Camera camera = new Camera();
@@ -193,9 +195,6 @@ namespace sadx_model_view.Forms
 						animations = Encoding.UTF8.GetString(buffer, 0, file.ReadString(ref buffer));
 						break;
 
-					case ChunkTypes.Morphs:
-						throw new NotImplementedException(ChunkTypes.Morphs.ToString());
-
 					case ChunkTypes.Author:
 						if (size == 0)
 						{
@@ -225,9 +224,6 @@ namespace sadx_model_view.Forms
 						// ReSharper disable once RedundantAssignment
 						description = Encoding.UTF8.GetString(buffer, 0, file.ReadString(ref buffer));
 						break;
-
-					case ChunkTypes.Texture:
-						throw new NotImplementedException(ChunkTypes.Texture.ToString());
 
 					case ChunkTypes.End:
 						done = true;
