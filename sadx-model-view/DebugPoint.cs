@@ -14,5 +14,35 @@ namespace sadx_model_view
 			Point = point;
 			Color = color;
 		}
+
+		public override bool Equals(object obj)
+		{
+			if (obj is null)
+			{
+				return false;
+			}
+
+			if (!(obj is DebugPoint other))
+			{
+				return false;
+			}
+
+			return Point == other.Point && Color == other.Color;
+		}
+
+		public override int GetHashCode()
+		{
+			throw new System.NotImplementedException();
+		}
+
+		public static bool operator ==(DebugPoint left, DebugPoint right)
+		{
+			return left.Equals(right);
+		}
+
+		public static bool operator !=(DebugPoint left, DebugPoint right)
+		{
+			return !(left == right);
+		}
 	}
 }

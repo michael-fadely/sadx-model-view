@@ -64,182 +64,181 @@ namespace sadx_model_view.Forms
 
 			renderer.ClearTexturePool();
 
-			using (var file = new FileStream(dialog.FileName, FileMode.Open))
+			using var file = new FileStream(dialog.FileName, FileMode.Open);
+			var signature = new byte[6];
+			file.Read(signature, 0, 6);
+			string signatureStr = Encoding.UTF8.GetString(signature);
+
+			if (signatureStr != "SA1MDL" && signatureStr != "SA1LVL")
 			{
-				var signature = new byte[6];
-				file.Read(signature, 0, 6);
-				string signatureStr = Encoding.UTF8.GetString(signature);
+				throw new NotImplementedException();
+			}
 
-				if (signatureStr != "SA1MDL" && signatureStr != "SA1LVL")
+			var buffer = new byte[4096];
+			file.Position += 1;
+			file.Read(buffer, 0, 1);
+
+			if (buffer[0] != 3)
+			{
+				throw new NotImplementedException();
+			}
+
+			file.Read(buffer, 0, sizeof(int) * 2);
+
+			uint object_ptr   = BitConverter.ToUInt32(buffer, 0);
+			uint metadata_ptr = BitConverter.ToUInt32(buffer, 4);
+
+			file.Position = object_ptr;
+
+			obj?.Dispose();
+			obj = null;
+
+			landTable?.Dispose();
+			landTable = null;
+
+			objectTree    = null;
+			landTableTree = null;
+
+			switch (signatureStr)
+			{
+				case "SA1MDL":
+					obj = ObjectCache.FromStream(file, object_ptr);
+					obj.CommitVertexBuffer(renderer);
+					obj.CalculateRadius();
+
+					camera.Position = obj.Position;
+					camera.Translate(Vector3.BackwardRH, obj.Radius * 2.0f);
+					camera.LookAt(obj.Position);
+
+					objectTree = new VisibilityTree(obj);
+					break;
+
+				case "SA1LVL":
+					landTable = new LandTable(file);
+					landTable.CommitVertexBuffer(renderer);
+					landTableTree = new VisibilityTree(landTable);
+					break;
+
+				default:
+					throw new NotImplementedException(signatureStr);
+			}
+
+			ObjectCache.Clear();
+			ModelCache.Clear();
+
+			if (metadata_ptr == 0)
+			{
+				return;
+			}
+
+			file.Position = metadata_ptr;
+			var done = false;
+
+			// ReSharper disable once CollectionNeverQueried.Local
+			var labels = new List<KeyValuePair<uint, string>>();
+			// ReSharper disable once NotAccessedVariable
+			string description = string.Empty;
+			// ReSharper disable once NotAccessedVariable
+			string tool = string.Empty;
+			// ReSharper disable once NotAccessedVariable
+			string animations = string.Empty;
+			// ReSharper disable once NotAccessedVariable
+			string author = string.Empty;
+
+			while (!done)
+			{
+				file.Read(buffer, 0, 8);
+				long offset = file.Position;
+				var type = (ChunkTypes)BitConverter.ToUInt32(buffer, 0);
+				int size = BitConverter.ToInt32(buffer, 4);
+
+				switch (type)
 				{
-					throw new NotImplementedException();
-				}
+					case ChunkTypes.Label:
+						while (true)
+						{
+							file.Read(buffer, 0, 8);
+							uint addr = BitConverter.ToUInt32(buffer, 0);
 
-				var buffer = new byte[4096];
-				file.Position += 1;
-				file.Read(buffer, 0, 1);
+							if (addr == 0xFFFFFFFF)
+							{
+								break;
+							}
 
-				if (buffer[0] != 3)
-				{
-					throw new NotImplementedException();
-				}
+							uint name_addr = BitConverter.ToUInt32(buffer, 4);
 
-				file.Read(buffer, 0, sizeof(int) * 2);
+							if (name_addr == 0 || name_addr == 0xFFFFFFFF)
+							{
+								break;
+							}
 
-				uint object_ptr = BitConverter.ToUInt32(buffer, 0);
-				uint metadata_ptr = BitConverter.ToUInt32(buffer, 4);
+							long pos = file.Position;
+							file.Position = offset + name_addr;
 
-				file.Position = object_ptr;
+							int i = file.ReadString(ref buffer);
 
-				obj?.Dispose();
-				obj = null;
-
-				landTable?.Dispose();
-				landTable = null;
-
-				objectTree = null;
-				landTableTree = null;
-
-				switch (signatureStr)
-				{
-					case "SA1MDL":
-						obj = ObjectCache.FromStream(file, object_ptr);
-						obj.CommitVertexBuffer(renderer);
-						obj.CalculateRadius();
-
-						camera.Position = obj.Position;
-						camera.Translate(Vector3.BackwardRH, obj.Radius * 2.0f);
-						camera.LookAt(obj.Position);
-
-						objectTree = new VisibilityTree(obj);
+							file.Position = pos;
+							string name = Encoding.UTF8.GetString(buffer, 0, i);
+							labels.Add(new KeyValuePair<uint, string>(addr, name));
+						}
 						break;
 
-					case "SA1LVL":
-						landTable = new LandTable(file);
-						landTable.CommitVertexBuffer(renderer);
-						landTableTree = new VisibilityTree(landTable);
+					case ChunkTypes.Animations:
+						if (size == 0)
+						{
+							break;
+						}
+
+						// ReSharper disable once RedundantAssignment
+						animations = Encoding.UTF8.GetString(buffer, 0, file.ReadString(ref buffer));
+						break;
+
+					case ChunkTypes.Morphs:
+						throw new NotImplementedException(ChunkTypes.Morphs.ToString());
+
+					case ChunkTypes.Author:
+						if (size == 0)
+						{
+							break;
+						}
+
+						// ReSharper disable once RedundantAssignment
+						author = Encoding.UTF8.GetString(buffer, 0, file.ReadString(ref buffer));
+						break;
+
+					case ChunkTypes.Tool:
+						if (size == 0)
+						{
+							break;
+						}
+
+						// ReSharper disable once RedundantAssignment
+						tool = Encoding.UTF8.GetString(buffer, 0, file.ReadString(ref buffer));
+						break;
+
+					case ChunkTypes.Description:
+						if (size == 0)
+						{
+							break;
+						}
+
+						// ReSharper disable once RedundantAssignment
+						description = Encoding.UTF8.GetString(buffer, 0, file.ReadString(ref buffer));
+						break;
+
+					case ChunkTypes.Texture:
+						throw new NotImplementedException(ChunkTypes.Texture.ToString());
+
+					case ChunkTypes.End:
+						done = true;
 						break;
 
 					default:
-						throw new NotImplementedException(signatureStr);
+						throw new ArgumentOutOfRangeException();
 				}
 
-				ObjectCache.Clear();
-				ModelCache.Clear();
-
-				if (metadata_ptr == 0)
-				{
-					return;
-				}
-
-				file.Position = metadata_ptr;
-				var done = false;
-
-				// ReSharper disable once CollectionNeverQueried.Local
-				var labels = new List<KeyValuePair<uint, string>>();
-				// ReSharper disable once NotAccessedVariable
-				string description = string.Empty;
-				// ReSharper disable once NotAccessedVariable
-				string tool = string.Empty;
-				// ReSharper disable once NotAccessedVariable
-				string animations = string.Empty;
-				// ReSharper disable once NotAccessedVariable
-				string author = string.Empty;
-
-				while (!done)
-				{
-					file.Read(buffer, 0, 8);
-					long offset = file.Position;
-					var type = (ChunkTypes)BitConverter.ToUInt32(buffer, 0);
-					int size = BitConverter.ToInt32(buffer, 4);
-
-					switch (type)
-					{
-						case ChunkTypes.Label:
-							while (true)
-							{
-								file.Read(buffer, 0, 8);
-								uint addr = BitConverter.ToUInt32(buffer, 0);
-
-								if (addr == 0xFFFFFFFF)
-								{
-									break;
-								}
-
-								uint name_addr = BitConverter.ToUInt32(buffer, 4);
-
-								if (name_addr == 0 || name_addr == 0xFFFFFFFF)
-								{
-									break;
-								}
-
-								long pos = file.Position;
-								file.Position = offset + name_addr;
-
-								int i = file.ReadString(ref buffer);
-
-								file.Position = pos;
-								string name = Encoding.UTF8.GetString(buffer, 0, i);
-								labels.Add(new KeyValuePair<uint, string>(addr, name));
-							}
-							break;
-
-						case ChunkTypes.Animations:
-							if (size == 0)
-							{
-								break;
-							}
-
-							// ReSharper disable once RedundantAssignment
-							animations = Encoding.UTF8.GetString(buffer, 0, file.ReadString(ref buffer));
-							break;
-
-						case ChunkTypes.Morphs:
-							throw new NotImplementedException(ChunkTypes.Morphs.ToString());
-
-						case ChunkTypes.Author:
-							if (size == 0)
-							{
-								break;
-							}
-
-							// ReSharper disable once RedundantAssignment
-							author = Encoding.UTF8.GetString(buffer, 0, file.ReadString(ref buffer));
-							break;
-
-						case ChunkTypes.Tool:
-							if (size == 0)
-							{
-								break;
-							}
-
-							// ReSharper disable once RedundantAssignment
-							tool = Encoding.UTF8.GetString(buffer, 0, file.ReadString(ref buffer));
-							break;
-
-						case ChunkTypes.Description:
-							if (size == 0)
-							{
-								break;
-							}
-
-							// ReSharper disable once RedundantAssignment
-							description = Encoding.UTF8.GetString(buffer, 0, file.ReadString(ref buffer));
-							break;
-
-						case ChunkTypes.Texture:
-							throw new NotImplementedException(ChunkTypes.Texture.ToString());
-
-						case ChunkTypes.End:
-							done = true;
-							break;
-
-						default:
-							throw new ArgumentOutOfRangeException();
-					}
-
-					file.Position = offset + size;
-				}
+				file.Position = offset + size;
+			}
 
 #if false
 				MessageBox.Show(this, $"Description: {description}"
@@ -251,7 +250,6 @@ namespace sadx_model_view.Forms
 
 				MessageBox.Show(this, $"Labels:\n{thing}");
 #endif
-			}
 		}
 
 		void openTexturesToolStripMenuItem_Click(object sender, EventArgs e)
@@ -288,34 +286,30 @@ namespace sadx_model_view.Forms
 
 		void LoadTextureIndex(string fileName)
 		{
-			using (var factory = new ImagingFactory2())
+			using var factory = new ImagingFactory2();
+			string   directory = Path.GetDirectoryName(fileName) ?? string.Empty;
+			string[] index     = File.ReadAllLines(fileName);
+
+			var lineNumber = 0;
+			foreach (string line in index)
 			{
-				string   directory = Path.GetDirectoryName(fileName) ?? string.Empty;
-				string[] index     = File.ReadAllLines(fileName);
+				++lineNumber;
 
-				var lineNumber = 0;
-				foreach (string line in index)
+				int i = line.LastIndexOf(",", StringComparison.Ordinal);
+
+				string texturePath = Path.Combine(directory, line.Substring(++i));
+
+				if (!File.Exists(texturePath))
 				{
-					++lineNumber;
-
-					int i = line.LastIndexOf(",", StringComparison.Ordinal);
-
-					string texturePath = Path.Combine(directory, line.Substring(++i));
-
-					if (!File.Exists(texturePath))
-					{
-						MessageBox.Show($"Missing texture on line {lineNumber}: {texturePath}");
-						renderer.ClearTexturePool();
-						break;
-					}
-
-					using (var decoder = new BitmapDecoder(factory, texturePath, DecodeOptions.CacheOnDemand))
-					using (var converter = new FormatConverter(factory))
-					{
-						converter.Initialize(decoder.GetFrame(0), PixelFormat.Format32bppPRGBA, BitmapDitherType.None, null, 0.0, BitmapPaletteType.Custom);
-						renderer.CreateTextureFromBitmapSource(converter);
-					}
+					MessageBox.Show($"Missing texture on line {lineNumber}: {texturePath}");
+					renderer.ClearTexturePool();
+					break;
 				}
+
+				using var decoder = new BitmapDecoder(factory, texturePath, DecodeOptions.CacheOnDemand);
+				using var converter = new FormatConverter(factory);
+				converter.Initialize(decoder.GetFrame(0), PixelFormat.Format32bppPRGBA, BitmapDitherType.None, null, 0.0, BitmapPaletteType.Custom);
+				renderer.CreateTextureFromBitmapSource(converter);
 			}
 		}
 
@@ -323,24 +317,20 @@ namespace sadx_model_view.Forms
 		{
 			var prs = new PrsCompression();
 
-			using (var stream = new MemoryStream())
+			using var stream = new MemoryStream();
+			using (var file = new FileStream(fileName, FileMode.Open))
 			{
-				using (var file = new FileStream(fileName, FileMode.Open))
-				{
-					prs.Decompress(file, stream);
-				}
-
-				stream.Position = 0;
-				LoadPVM(stream);
+				prs.Decompress(file, stream);
 			}
+
+			stream.Position = 0;
+			LoadPVM(stream);
 		}
 
 		void LoadPVM(string fileName)
 		{
-			using (var file = new FileStream(fileName, FileMode.Open))
-			{
-				LoadPVM(file);
-			}
+			using var file = new FileStream(fileName, FileMode.Open);
+			LoadPVM(file);
 		}
 
 		void LoadPVM(Stream stream)
@@ -391,9 +381,9 @@ namespace sadx_model_view.Forms
 			catch (InsufficientFeatureLevelException)
 			{
 				MessageBox.Show(this,
-					"Your GPU does not meet the minimum required feature level. (Direct3D 10.0)",
-					"GPU TOO OLD FAM",
-					MessageBoxButtons.OK);
+				                "Your GPU does not meet the minimum required feature level. (Direct3D 10.0)",
+				                "GPU TOO OLD FAM",
+				                MessageBoxButtons.OK);
 
 				Close();
 				return;

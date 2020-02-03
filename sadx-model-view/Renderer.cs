@@ -188,80 +188,77 @@ namespace sadx_model_view
 
 		public void LoadShaders()
 		{
-			using (var includeMan = new DefaultIncludeHandler())
+			using var includeMan = new DefaultIncludeHandler();
+
+			vertexShader?.Dispose();
+			pixelShader?.Dispose();
+			inputLayout?.Dispose();
+
+			CompilationResult vs_result = ShaderBytecode.CompileFromFile("Shaders\\scene_vs.hlsl", "main", "vs_4_0", include: includeMan);
+
+			if (vs_result.HasErrors || !string.IsNullOrEmpty(vs_result.Message))
 			{
-				vertexShader?.Dispose();
-				pixelShader?.Dispose();
-				inputLayout?.Dispose();
+				throw new Exception(vs_result.Message);
+			}
 
-				CompilationResult vs_result = ShaderBytecode.CompileFromFile("Shaders\\scene_vs.hlsl", "main", "vs_4_0", include: includeMan);
+			vertexShader = new VertexShader(device, vs_result.Bytecode);
 
-				if (vs_result.HasErrors || !string.IsNullOrEmpty(vs_result.Message))
-				{
-					throw new Exception(vs_result.Message);
-				}
+			CompilationResult ps_result = ShaderBytecode.CompileFromFile("Shaders\\scene_ps.hlsl", "main", "ps_4_0", include: includeMan);
 
-				vertexShader = new VertexShader(device, vs_result.Bytecode);
+			if (ps_result.HasErrors || !string.IsNullOrEmpty(ps_result.Message))
+			{
+				throw new Exception(ps_result.Message);
+			}
 
-				CompilationResult ps_result = ShaderBytecode.CompileFromFile("Shaders\\scene_ps.hlsl", "main", "ps_4_0", include: includeMan);
+			pixelShader = new PixelShader(device, ps_result.Bytecode);
 
-				if (ps_result.HasErrors || !string.IsNullOrEmpty(ps_result.Message))
-				{
-					throw new Exception(ps_result.Message);
-				}
-
-				pixelShader = new PixelShader(device, ps_result.Bytecode);
-
-				var layout = new InputElement[]
-				{
+			var layout = new InputElement[]
+			{
 					new InputElement("POSITION", 0, Format.R32G32B32_Float, InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
 					new InputElement("NORMAL",   0, Format.R32G32B32_Float, InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
 					new InputElement("COLOR",    0, Format.R8G8B8A8_UNorm,  InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
 					new InputElement("TEXCOORD", 0, Format.R32G32_Float,    InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0)
-				};
+			};
 
-				inputLayout = new InputLayout(device, vs_result.Bytecode, layout);
+			inputLayout = new InputLayout(device, vs_result.Bytecode, layout);
 
-				device.ImmediateContext.VertexShader.Set(vertexShader);
-				device.ImmediateContext.PixelShader.Set(pixelShader);
-				device.ImmediateContext.InputAssembler.InputLayout = inputLayout;
-			}
+			device.ImmediateContext.VertexShader.Set(vertexShader);
+			device.ImmediateContext.PixelShader.Set(pixelShader);
+			device.ImmediateContext.InputAssembler.InputLayout = inputLayout;
 		}
 
 		public void LoadDebugShaders()
 		{
-			using (var includeMan = new DefaultIncludeHandler())
+			using var includeMan = new DefaultIncludeHandler();
+			debugVertexShader?.Dispose();
+			debugPixelShader?.Dispose();
+			debugInputLayout?.Dispose();
+
+			CompilationResult vs_result = ShaderBytecode.CompileFromFile("Shaders\\debug_vs.hlsl", "main", "vs_4_0", include: includeMan);
+
+			if (vs_result.HasErrors || !string.IsNullOrEmpty(vs_result.Message))
 			{
-				debugVertexShader?.Dispose();
-				debugPixelShader?.Dispose();
-				debugInputLayout?.Dispose();
+				throw new Exception(vs_result.Message);
+			}
 
-				CompilationResult vs_result = ShaderBytecode.CompileFromFile("Shaders\\debug_vs.hlsl", "main", "vs_4_0", include: includeMan);
+			debugVertexShader = new VertexShader(device, vs_result.Bytecode);
 
-				if (vs_result.HasErrors || !string.IsNullOrEmpty(vs_result.Message))
-				{
-					throw new Exception(vs_result.Message);
-				}
+			CompilationResult ps_result = ShaderBytecode.CompileFromFile("Shaders\\debug_ps.hlsl", "main", "ps_4_0", include: includeMan);
 
-				debugVertexShader = new VertexShader(device, vs_result.Bytecode);
+			if (ps_result.HasErrors || !string.IsNullOrEmpty(ps_result.Message))
+			{
+				throw new Exception(ps_result.Message);
+			}
 
-				CompilationResult ps_result = ShaderBytecode.CompileFromFile("Shaders\\debug_ps.hlsl", "main", "ps_4_0", include: includeMan);
+			debugPixelShader = new PixelShader(device, ps_result.Bytecode);
 
-				if (ps_result.HasErrors || !string.IsNullOrEmpty(ps_result.Message))
-				{
-					throw new Exception(ps_result.Message);
-				}
-
-				debugPixelShader = new PixelShader(device, ps_result.Bytecode);
-
-				var layout = new InputElement[]
-				{
+			var layout = new InputElement[]
+			{
 					new InputElement("POSITION", 0, Format.R32G32B32_Float,    InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0),
 					new InputElement("COLOR",    0, Format.R32G32B32A32_Float, InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0)
-				};
+			};
 
-				debugInputLayout = new InputLayout(device, vs_result.Bytecode, layout);
-			}
+			debugInputLayout = new InputLayout(device, vs_result.Bytecode, layout);
 		}
 
 		public void Clear()
@@ -779,26 +776,26 @@ namespace sadx_model_view
 		public void CreateTextureFromBitmapSource(BitmapSource bitmapSource)
 		{
 			int stride = bitmapSource.Size.Width * 4;
-			using (var buffer = new DataStream(bitmapSource.Size.Height * stride, true, true))
+
+			using var buffer = new DataStream(bitmapSource.Size.Height * stride, true, true);
+
+			bitmapSource.CopyPixels(stride, buffer);
+
+			var texture = new Texture2D(device, new Texture2DDescription
 			{
-				bitmapSource.CopyPixels(stride, buffer);
+				Width             = bitmapSource.Size.Width,
+				Height            = bitmapSource.Size.Height,
+				ArraySize         = 1,
+				BindFlags         = BindFlags.ShaderResource,
+				Usage             = ResourceUsage.Immutable,
+				CpuAccessFlags    = CpuAccessFlags.None,
+				Format            = Format.R8G8B8A8_UNorm,
+				MipLevels         = 1,
+				OptionFlags       = ResourceOptionFlags.None,
+				SampleDescription = new SampleDescription(1, 0)
+			}, new DataRectangle(buffer.DataPointer, stride));
 
-				var texture = new Texture2D(device, new Texture2DDescription
-				{
-					Width             = bitmapSource.Size.Width,
-					Height            = bitmapSource.Size.Height,
-					ArraySize         = 1,
-					BindFlags         = BindFlags.ShaderResource,
-					Usage             = ResourceUsage.Immutable,
-					CpuAccessFlags    = CpuAccessFlags.None,
-					Format            = Format.R8G8B8A8_UNorm,
-					MipLevels         = 1,
-					OptionFlags       = ResourceOptionFlags.None,
-					SampleDescription = new SampleDescription(1, 0)
-				}, new DataRectangle(buffer.DataPointer, stride));
-
-				texturePool.Add(new SceneTexture(texture, new ShaderResourceView(device, texture)));
-			}
+			texturePool.Add(new SceneTexture(texture, new ShaderResourceView(device, texture)));
 		}
 
 		public void ClearTexturePool()
@@ -818,60 +815,57 @@ namespace sadx_model_view
 
 			var desc = new BufferDescription(vertexSize, BindFlags.VertexBuffer, ResourceUsage.Immutable);
 
-			using (var stream = new DataStream(vertexSize, true, true))
+			using var stream = new DataStream(vertexSize, true, true);
+
+			foreach (Vertex v in vertices)
 			{
-				foreach (Vertex v in vertices)
-				{
-					stream.Write(v.Position.X);
-					stream.Write(v.Position.Y);
-					stream.Write(v.Position.Z);
+				stream.Write(v.Position.X);
+				stream.Write(v.Position.Y);
+				stream.Write(v.Position.Z);
 
-					stream.Write(v.Normal.X);
-					stream.Write(v.Normal.Y);
-					stream.Write(v.Normal.Z);
+				stream.Write(v.Normal.X);
+				stream.Write(v.Normal.Y);
+				stream.Write(v.Normal.Z);
 
-					RawColorBGRA color = v.Diffuse ?? Color.White;
+				RawColorBGRA color = v.Diffuse ?? Color.White;
 
-					stream.Write(color.B);
-					stream.Write(color.G);
-					stream.Write(color.R);
-					stream.Write(color.A);
+				stream.Write(color.B);
+				stream.Write(color.G);
+				stream.Write(color.R);
+				stream.Write(color.A);
 
-					RawVector2 uv = v.UV ?? Vector2.Zero;
+				RawVector2 uv = v.UV ?? Vector2.Zero;
 
-					stream.Write(uv.X);
-					stream.Write(uv.Y);
-				}
-
-				if (stream.RemainingLength != 0)
-				{
-					throw new Exception("Failed to fill vertex buffer.");
-				}
-
-				stream.Position = 0;
-				return new Buffer(device, stream, desc);
+				stream.Write(uv.X);
+				stream.Write(uv.Y);
 			}
+
+			if (stream.RemainingLength != 0)
+			{
+				throw new Exception("Failed to fill vertex buffer.");
+			}
+
+			stream.Position = 0;
+			return new Buffer(device, stream, desc);
 		}
 
 		public Buffer CreateIndexBuffer(IEnumerable<short> indices, int sizeInBytes)
 		{
 			var desc = new BufferDescription(sizeInBytes, BindFlags.IndexBuffer, ResourceUsage.Immutable);
 
-			using (var stream = new DataStream(sizeInBytes, true, true))
+			using var stream = new DataStream(sizeInBytes, true, true);
+			foreach (short i in indices)
 			{
-				foreach (short i in indices)
-				{
-					stream.Write(i);
-				}
-
-				if (stream.RemainingLength != 0)
-				{
-					throw new Exception("Failed to fill index buffer.");
-				}
-
-				stream.Position = 0;
-				return new Buffer(device, stream, desc);
+				stream.Write(i);
 			}
+
+			if (stream.RemainingLength != 0)
+			{
+				throw new Exception("Failed to fill index buffer.");
+			}
+
+			stream.Position = 0;
+			return new Buffer(device, stream, desc);
 		}
 
 		public void SetTransform(TransformState state, in Matrix m)
@@ -1111,6 +1105,7 @@ namespace sadx_model_view
 		public readonly FeatureLevel TargetLevel;
 
 		public InsufficientFeatureLevelException(FeatureLevel supported, FeatureLevel target)
+			: base($"Required feature level unsupported. Expected {target}, got {supported}")
 		{
 			SupportedLevel = supported;
 			TargetLevel    = target;

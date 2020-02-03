@@ -6,11 +6,11 @@ namespace sadx_model_view
 	{
 		public static int SizeInBytes => DebugLine.SizeInBytes * 12;
 
-		public DebugLine[] Lines;
+		public readonly DebugLine[] Lines;
 
 		public DebugWireCube(in BoundingBox box, Color4 color)
 		{
-			var corners = box.GetCorners();
+			Vector3[] corners = box.GetCorners();
 
 			Lines = new DebugLine[]
 			{

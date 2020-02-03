@@ -11,5 +11,35 @@
 			PointA = a;
 			PointB = b;
 		}
+
+		public override bool Equals(object obj)
+		{
+			if (obj is null)
+			{
+				return false;
+			}
+
+			if (!(obj is DebugLine other))
+			{
+				return false;
+			}
+
+			return PointA == other.PointA && PointB == other.PointA;
+		}
+
+		public override int GetHashCode()
+		{
+			throw new System.NotImplementedException();
+		}
+
+		public static bool operator ==(DebugLine left, DebugLine right)
+		{
+			return left.Equals(right);
+		}
+
+		public static bool operator !=(DebugLine left, DebugLine right)
+		{
+			return !(left == right);
+		}
 	}
 }

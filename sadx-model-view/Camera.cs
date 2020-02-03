@@ -73,7 +73,7 @@ namespace sadx_model_view
 
 		public void SetProjection(float fov, float ratio, float near, float far)
 		{
-			if (FieldOfView == fov && ratio == AspectRatio && MinDrawDistance == near && MaxDrawDistance == far)
+			if (FieldOfView.NearEqual(fov) && ratio.NearEqual(AspectRatio) && MinDrawDistance.NearEqual(near) && MaxDrawDistance.NearEqual(far))
 			{
 				return;
 			}
@@ -129,7 +129,7 @@ namespace sadx_model_view
 
 			View = Matrix.LookAtRH(position == Vector3.Zero ? Vector3.BackwardRH : position, point, Vector3.Up);
 
-			View.Decompose(out Vector3 dummy, out Quaternion q, out dummy);
+			View.Decompose(out _, out Quaternion q, out _);
 
 			rotation = q.GetYawPitchRollVector();
 			LimitRotation(ref rotation);
@@ -144,8 +144,8 @@ namespace sadx_model_view
 			}
 
 			rotationMatrix = Matrix.RotationX(rotation.X) *
-							 Matrix.RotationY(rotation.Y) *
-							 Matrix.RotationZ(rotation.Z);
+			                 Matrix.RotationY(rotation.Y) *
+			                 Matrix.RotationZ(rotation.Z);
 		}
 
 		static void LimitRotation(ref Vector3 v)

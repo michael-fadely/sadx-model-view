@@ -95,6 +95,7 @@
     <Compile Include="DebugLine.cs" />
     <Compile Include="DebugPoint.cs" />
     <Compile Include="DebugWireCube.cs" />
+    <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Interfaces\IModifiable.cs" />
     <Compile Include="MeshsetQueue.cs" />
     <Compile Include="Camera.cs" />
