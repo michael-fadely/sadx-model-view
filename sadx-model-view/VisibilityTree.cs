@@ -69,7 +69,7 @@ namespace sadx_model_view
 
 		public List<MeshsetQueueElementBase> GetVisible(in BoundingFrustum frustum)
 		{
-			List<MeshsetQueueElementBase> result = new List<MeshsetQueueElementBase>();
+			var result = new List<MeshsetQueueElementBase>();
 			tree.GetColliding(result, in frustum);
 			return result;
 		}

@@ -14,7 +14,7 @@ namespace sadx_model_view
 		/// If there are already numObjectsAllowed in a node, we split it into children.
 		/// A generally good number seems to be something around 8-15.
 		/// </summary>
-		const int numObjectsAllowed = 8; // TODO: configurable
+		const int numObjectsAllowed = 16; // TODO: configurable
 
 		/// <summary>
 		/// Centre of this node

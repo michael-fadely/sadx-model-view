@@ -32,7 +32,7 @@ namespace sadx_model_view
 			Transparent = matId < mats.Count && (mats[matId].attrflags & NJD_FLAG.UseAlpha) != 0;
 
 			BoundingBox = Set.GetWorldSpaceBoundingBox();
-			BoundingSphere = Set.GetWorldSpaceBoundingSphere();
+			BoundingSphere = BoundingSphere.FromBox(BoundingBox);
 		}
 
 		public MeshsetQueueElementBase(MeshsetQueueElementBase b)

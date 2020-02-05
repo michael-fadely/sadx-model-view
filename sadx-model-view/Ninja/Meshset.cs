@@ -438,11 +438,11 @@ namespace sadx_model_view.Ninja
 			points = indices.Distinct().Select(i => (Vector3)vertices[i].Position).ToArray();
 
 			var tri = new Triangle();
-			int trin = 0;
+			int triN = 0;
 
 			foreach (short i in indices)
 			{
-				switch (trin++)
+				switch (triN++)
 				{
 					case 0:
 						tri.A = vertices[i].Position;
@@ -455,7 +455,7 @@ namespace sadx_model_view.Ninja
 					case 2:
 						tri.C = vertices[i].Position;
 						Triangles.Add(tri);
-						trin = 0;
+						triN = 0;
 						break;
 
 					default:
@@ -468,11 +468,6 @@ namespace sadx_model_view.Ninja
 			IndexBuffer?.Dispose();
 			IndexBuffer = device.CreateIndexBuffer(indices, IndexCount * sizeof(short));
 		}
-
-		//readonly Dictionary<Matrix, BoundingBox> bounds = new Dictionary<Matrix, BoundingBox>();
-
-		//BoundingBox    worldBox;
-		//BoundingSphere worldSphere;
 
 		Vector3[] TransformedPoints(ref Matrix m)
 		{
@@ -494,20 +489,8 @@ namespace sadx_model_view.Ninja
 		public BoundingBox GetWorldSpaceBoundingBox()
 		{
 			Matrix m = MatrixStack.Peek();
-
-			//if (!bounds.TryGetValue(m, out worldBox))
-			//{
-				var worldBox  = BoundingBox.FromPoints(TransformedPoints(ref m));
-				//bounds[m] = worldBox;
-			//}
-
+			BoundingBox worldBox  = BoundingBox.FromPoints(TransformedPoints(ref m));
 			return worldBox;
-		}
-
-		public BoundingSphere GetWorldSpaceBoundingSphere()
-		{
-			var worldSphere = BoundingSphere.FromBox(GetWorldSpaceBoundingBox());
-			return worldSphere;
 		}
 
 		public void Dispose()

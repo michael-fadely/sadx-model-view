@@ -937,6 +937,11 @@ namespace sadx_model_view
 
 			NJD_FLAG flags = FlowControl.Apply(material.attrflags) & state_mask;
 
+			if (DefaultCullMode == CullMode.None)
+			{
+				flags |= NJD_FLAG.DoubleSide;
+			}
+
 			if (displayStates.TryGetValue(flags, out DisplayState state))
 			{
 				return state;

@@ -351,8 +351,11 @@ namespace sadx_model_view.Ninja
 
 		public IEnumerator<NJS_OBJECT> GetEnumerator()
 		{
-			NJS_OBJECT o = this;
+			return GetEnumerator(this);
+		}
 
+		static IEnumerator<NJS_OBJECT> GetEnumerator(NJS_OBJECT o)
+		{
 			do
 			{
 				MatrixStack.Push();
