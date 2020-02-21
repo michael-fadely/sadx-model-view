@@ -36,11 +36,11 @@ namespace sadx_model_view.Forms
 			this.openTexturesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.editToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.recompileShadersToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-			this.openModelDialog = new System.Windows.Forms.OpenFileDialog();
-			this.openTexturesDialog = new System.Windows.Forms.OpenFileDialog();
 			this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.enableAlphaToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.showOctreeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.openModelDialog = new System.Windows.Forms.OpenFileDialog();
+			this.openTexturesDialog = new System.Windows.Forms.OpenFileDialog();
 			this.scene = new sadx_model_view.Controls.Scene();
 			this.menuStrip.SuspendLayout();
 			this.SuspendLayout();
@@ -69,7 +69,7 @@ namespace sadx_model_view.Forms
 			// 
 			this.openToolStripMenuItem.Name = "openToolStripMenuItem";
 			this.openToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.O)));
-			this.openToolStripMenuItem.Size = new System.Drawing.Size(190, 22);
+			this.openToolStripMenuItem.Size = new System.Drawing.Size(189, 22);
 			this.openToolStripMenuItem.Text = "&Open";
 			this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
 			// 
@@ -77,7 +77,7 @@ namespace sadx_model_view.Forms
 			// 
 			this.openTexturesToolStripMenuItem.Name = "openTexturesToolStripMenuItem";
 			this.openTexturesToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.T)));
-			this.openTexturesToolStripMenuItem.Size = new System.Drawing.Size(190, 22);
+			this.openTexturesToolStripMenuItem.Size = new System.Drawing.Size(189, 22);
 			this.openTexturesToolStripMenuItem.Text = "Open &Textures";
 			this.openTexturesToolStripMenuItem.Click += new System.EventHandler(this.openTexturesToolStripMenuItem_Click);
 			// 
@@ -96,20 +96,6 @@ namespace sadx_model_view.Forms
 			this.recompileShadersToolStripMenuItem.Text = "Recompile Shaders";
 			this.recompileShadersToolStripMenuItem.Click += new System.EventHandler(this.recompileShadersToolStripMenuItem_Click);
 			// 
-			// openModelDialog
-			// 
-			this.openModelDialog.DefaultExt = "sa1mdl";
-			this.openModelDialog.Filter = "Sonic Adventure files|*.sa1mdl;*.sa1lvl|Sonic Adventure Model|*.sa1mdl|Sonic Adve" +
-    "nture LandTable|*.sa1lvl|All files|*.*";
-			this.openModelDialog.Title = "Open Model";
-			// 
-			// openTexturesDialog
-			// 
-			this.openTexturesDialog.DefaultExt = "txt";
-			this.openTexturesDialog.Filter = "All texture files|*.txt;*.prs;*.pvm|Texture Pack Index files|*.txt|PRS files|*.pr" +
-    "s|PVM files|*.pvm";
-			this.openTexturesDialog.Title = "Open Textures";
-			// 
 			// viewToolStripMenuItem
 			// 
 			this.viewToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -125,7 +111,7 @@ namespace sadx_model_view.Forms
 			this.enableAlphaToolStripMenuItem.CheckOnClick = true;
 			this.enableAlphaToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
 			this.enableAlphaToolStripMenuItem.Name = "enableAlphaToolStripMenuItem";
-			this.enableAlphaToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+			this.enableAlphaToolStripMenuItem.Size = new System.Drawing.Size(143, 22);
 			this.enableAlphaToolStripMenuItem.Text = "Enable Alpha";
 			this.enableAlphaToolStripMenuItem.CheckedChanged += new System.EventHandler(this.enableAlphaToolStripMenuItem_CheckedChanged);
 			// 
@@ -133,8 +119,22 @@ namespace sadx_model_view.Forms
 			// 
 			this.showOctreeToolStripMenuItem.CheckOnClick = true;
 			this.showOctreeToolStripMenuItem.Name = "showOctreeToolStripMenuItem";
-			this.showOctreeToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+			this.showOctreeToolStripMenuItem.Size = new System.Drawing.Size(143, 22);
 			this.showOctreeToolStripMenuItem.Text = "Show Octree";
+			// 
+			// openModelDialog
+			// 
+			this.openModelDialog.DefaultExt = "sa1mdl";
+			this.openModelDialog.Filter = "Sonic Adventure files|*.sa1mdl;*.sa1lvl|Sonic Adventure Model|*.sa1mdl|Sonic Adve" +
+    "nture LandTable|*.sa1lvl|All files|*.*";
+			this.openModelDialog.Title = "Open Model";
+			// 
+			// openTexturesDialog
+			// 
+			this.openTexturesDialog.DefaultExt = "txt";
+			this.openTexturesDialog.Filter = "All texture files|*.txt;*.prs;*.pvm|Texture Pack Index files|*.txt|PRS files|*.pr" +
+    "s|PVM files|*.pvm";
+			this.openTexturesDialog.Title = "Open Textures";
 			// 
 			// scene
 			// 
@@ -148,6 +148,7 @@ namespace sadx_model_view.Forms
 			this.scene.KeyDown += new System.Windows.Forms.KeyEventHandler(this.scene_KeyDown);
 			this.scene.KeyUp += new System.Windows.Forms.KeyEventHandler(this.scene_KeyUp);
 			this.scene.MouseMove += new System.Windows.Forms.MouseEventHandler(this.scene_MouseMove);
+			this.scene.MouseUp += new System.Windows.Forms.MouseEventHandler(this.scene_MouseUp);
 			// 
 			// MainForm
 			// 

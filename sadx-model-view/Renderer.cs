@@ -474,7 +474,7 @@ namespace sadx_model_view
 			if (visibleCount != lastVisibleCount)
 			{
 				lastVisibleCount = visibleCount;
-				Debug.WriteLine(visibleCount);
+				//Debug.WriteLine(visibleCount);
 			}
 
 			lastVertexBuffer = null;

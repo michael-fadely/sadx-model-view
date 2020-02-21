@@ -36,6 +36,8 @@ namespace sadx_model_view
 			}
 		}
 
+		public Matrix RotationMatrix => rotationMatrix;
+
 		public Matrix View { get; private set; }
 
 		public Matrix Projection { get; private set; }

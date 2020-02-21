@@ -11,6 +11,8 @@ namespace sadx_model_view.Ninja
 		{
 			lock (modelCache)
 			{
+				// HACK: disabled
+				// TODO: replace with offset as unique identifier to update shared references, but allow multiple instances
 				//modelCache.TryGetValue(offset, out NJS_MODEL result);
 
 				//if (result != null)

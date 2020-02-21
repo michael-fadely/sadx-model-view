@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using sadx_model_view.Extensions.SharpDX.Mathematics;
 using SharpDX;
 
 // A node in a BoundsOctree
@@ -389,10 +390,10 @@ namespace sadx_model_view
 		/// <param name="maxDistance">Distance to check.</param>
 		/// <param name="result">List result.</param>
 		/// <returns>Objects that intersect with the specified ray.</returns>
-		public void GetColliding(in Ray checkRay, List<T> result, float maxDistance = float.PositiveInfinity)
+		public void GetColliding(in Ray checkRay, List<Tuple<T, CollisionEx.RayHit>> result, float maxDistance = float.PositiveInfinity)
 		{
 			// Is the input ray at least partially in this node?
-			if (!checkRay.Intersects(ref bounds, out float distance) || distance > maxDistance)
+			if (!checkRay.Intersects(ref bounds, out CollisionEx.RayHit hit) || hit.Distance > maxDistance)
 			{
 				return;
 			}
@@ -400,9 +401,9 @@ namespace sadx_model_view
 			// Check against any objects in this node
 			foreach (OctreeObject o in objects)
 			{
-				if (checkRay.Intersects(ref o.Bounds, out distance) && distance <= maxDistance)
+				if (checkRay.Intersects(ref o.Bounds, out hit) && hit.Distance <= maxDistance)
 				{
-					result.Add(o.Object);
+					result.Add(new Tuple<T, CollisionEx.RayHit>(o.Object, hit));
 				}
 			}
 

@@ -8,21 +8,6 @@ using Buffer = SharpDX.Direct3D11.Buffer;
 
 namespace sadx_model_view.Ninja
 {
-	public struct Triangle
-	{
-		public Vector3 A;
-		public Vector3 B;
-		public Vector3 C;
-
-		public Vector3[] ToArray()
-		{
-			return new Vector3[]
-			{
-				A, B, C
-			};
-		}
-	}
-
 	/// <summary>
 	/// Used to identify different types of <see cref="NJS_MESHSET"/>.
 	/// </summary>

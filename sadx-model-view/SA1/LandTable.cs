@@ -99,11 +99,14 @@ namespace sadx_model_view.SA1
 			Unknown_3 = 0;
 		}
 
-		public void GetTriangles(List<Triangle> list)
+		public IEnumerable<NJS_OBJECT.ObjectTriangles> GetTriangles()
 		{
 			foreach (Col c in ColList)
 			{
-				c.GetTriangles(list);
+				foreach (var pair in c.GetTriangles())
+				{
+					yield return pair;
+				}
 			}
 		}
 

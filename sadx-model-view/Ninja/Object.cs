@@ -310,17 +310,30 @@ namespace sadx_model_view.Ninja
 			return obj;
 		}
 
-		public void GetTriangles(List<Triangle> list)
+		public class ObjectTriangles
+		{
+			public ObjectTriangles(NJS_OBJECT @object, List<Triangle> triangles)
+			{
+				this.Object = @object;
+				this.Triangles = triangles;
+			}
+
+			public NJS_OBJECT Object { get; set; }
+			public List<Triangle> Triangles { get; set; }
+		}
+
+		public ObjectTriangles GetTriangles()
 		{
 			MatrixStack.Push();
 			PushTransform();
 
-			Model?.GetTriangles(list);
-			Child?.GetTriangles(list);
+			var triangles = new List<Triangle>();
+			Model?.GetTriangles(triangles);
+
+			var result = new ObjectTriangles(this, triangles);
 
 			MatrixStack.Pop();
-
-			Sibling?.GetTriangles(list);
+			return result;
 		}
 
 		bool isInvalid;

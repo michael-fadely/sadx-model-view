@@ -1,7 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using sadx_model_view.Extensions;
+using sadx_model_view.Extensions.SharpDX.Mathematics;
 using SharpDX;
 
 // A Dynamic, Loose Octree for storing any objects that can be described with AABB bounds
@@ -110,16 +111,9 @@ namespace sadx_model_view
 		public void Add(T obj, BoundingBox objBounds)
 		{
 			// Add object or expand the octree until it can be added
-			var count = 0; // Safety check against infinite/excessive growth
 			while (!rootNode.Add(obj, in objBounds))
 			{
 				Grow(objBounds.Center - rootNode.Center);
-				if (++count > 20)
-				{
-					//Debug.WriteLine("Aborted Add operation as it seemed to be going on forever (" + (count - 1) + ") attempts at growing the octree.");
-					//return;
-					Debug.WriteLine("WARNING: Add failed. Attempts: {0}", count);
-				}
 			}
 
 			Count++;
@@ -230,7 +224,7 @@ namespace sadx_model_view
 		/// <param name="maxDistance">distance to check.</param>
 		/// <returns>Objects that intersect with the specified ray.</returns>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public void GetColliding(List<T> collidingWith, in Ray checkRay, float maxDistance = float.PositiveInfinity)
+		public void GetColliding(List<Tuple<T, CollisionEx.RayHit>> collidingWith, in Ray checkRay, float maxDistance = float.PositiveInfinity)
 		{
 			rootNode.GetColliding(in checkRay, collidingWith, maxDistance);
 		}

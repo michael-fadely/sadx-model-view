@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using PuyoTools.Modules.Archive;
 using PuyoTools.Modules.Compression;
 using sadx_model_view.Extensions;
+using sadx_model_view.Extensions.SharpDX.Mathematics;
 using sadx_model_view.Ninja;
 using sadx_model_view.SA1;
 using SharpDX;
@@ -25,6 +28,7 @@ namespace sadx_model_view.Forms
 		CamControls camcontrols = CamControls.None;
 
 		VisibilityTree objectTree, landTableTree;
+		BoundsOctree<NJS_OBJECT.ObjectTriangles> triangleTree;
 		Renderer renderer;
 
 		// SADX's default horizontal field of view.
@@ -104,6 +108,7 @@ namespace sadx_model_view.Forms
 			switch (signatureStr)
 			{
 				case "SA1MDL":
+				{
 					obj = ObjectCache.FromStream(file, object_ptr);
 					obj.CommitVertexBuffer(renderer);
 					obj.CalculateRadius();
@@ -113,13 +118,61 @@ namespace sadx_model_view.Forms
 					camera.LookAt(obj.Position);
 
 					objectTree = new VisibilityTree(obj);
+
+					List<NJS_OBJECT.ObjectTriangles> triangles = new List<NJS_OBJECT.ObjectTriangles>();
+
+					foreach (var o in obj)
+					{
+						if (o.Model == null)
+						{
+							continue;
+						}
+
+						triangles.Add(o.GetTriangles());
+					}
+
+					var bb = BoundingBox.FromPoints(triangles.SelectMany(x => x.Triangles).SelectMany(x => x.ToArray()).ToArray());
+					triangleTree = new BoundsOctree<NJS_OBJECT.ObjectTriangles>(bb, 0.1f, 1.0f);
+
+					foreach (var pair in triangles)
+					{
+						if (pair.Triangles.Count == 0)
+						{
+							continue;
+						}
+
+						Vector3[] a = pair.Triangles.SelectMany(x => x.ToArray()).ToArray();
+						bb = BoundingBox.FromPoints(a);
+						triangleTree.Add(pair, bb);
+					}
+
 					break;
+				}
 
 				case "SA1LVL":
+				{
 					landTable = new LandTable(file);
 					landTable.CommitVertexBuffer(renderer);
 					landTableTree = new VisibilityTree(landTable);
+
+					List<NJS_OBJECT.ObjectTriangles> triangles = landTable.GetTriangles().ToList();
+					var bb = BoundingBox.FromPoints(triangles.SelectMany(x => x.Triangles).SelectMany(x => x.ToArray()).ToArray());
+					triangleTree = new BoundsOctree<NJS_OBJECT.ObjectTriangles>(bb, 0.1f, 1.0f);
+
+					foreach (var pair in triangles)
+					{
+						if (pair.Triangles.Count == 0)
+						{
+							continue;
+						}
+
+						Vector3[] a = pair.Triangles.SelectMany(x => x.ToArray()).ToArray();
+						bb = BoundingBox.FromPoints(a);
+						triangleTree.Add(pair, bb);
+					}
+
 					break;
+				}
 
 				default:
 					throw new NotImplementedException(signatureStr);
@@ -493,18 +546,21 @@ namespace sadx_model_view.Forms
 					objectTree.Add(obj, renderer);
 				}
 
-				if (showOctreeToolStripMenuItem.Checked)
-				{
-					foreach (BoundingBox bounds in objectTree.GiveMeTheBounds())
-					{
-						Color4 color = camera.Frustum.Contains(bounds) == ContainmentType.Contains
-							? new Color4(0f, 1f, 0f, 1f)
-							: new Color4(1f, 0f, 0f, 1f);
-						renderer.DrawBounds(in bounds, color);
-					}
-				}
+				//if (showOctreeToolStripMenuItem.Checked)
+				//{
+				//	foreach (BoundingBox bounds in objectTree.GiveMeTheBounds())
+				//	{
+				//		Color4 color = camera.Frustum.Contains(bounds) == ContainmentType.Contains
+				//			? new Color4(0f, 1f, 0f, 1f)
+				//			: new Color4(1f, 0f, 0f, 1f);
+				//		renderer.DrawBounds(in bounds, color);
+				//	}
+				//}
 
-				renderer.Draw(objectTree.GetVisible(camera), camera);
+				List<MeshsetQueueElementBase> visible = objectTree.GetVisible(camera);
+				base.Text = $"{visible.Count}";
+
+				renderer.Draw(visible, camera);
 			}
 
 			if (landTable != null)
@@ -517,7 +573,7 @@ namespace sadx_model_view.Forms
 					landTableTree.Add(landTable, renderer);
 				}
 
-				if (showOctreeToolStripMenuItem.Checked)
+				/*if (showOctreeToolStripMenuItem.Checked)
 				{
 					foreach (BoundingBox bounds in landTableTree.GiveMeTheBounds())
 					{
@@ -536,10 +592,24 @@ namespace sadx_model_view.Forms
 							renderer.DrawBounds(in bounds, new Color4(1.0f, 0.0f, 0.0f, 1.0f));
 						}
 					}
-				}
+				}*/
 
-				renderer.Draw(landTableTree.GetVisible(camera), camera);
+				List<MeshsetQueueElementBase> visible = landTableTree.GetVisible(camera);
+				base.Text = $"{visible.Count}";
+
+				renderer.Draw(visible, camera);
 				renderer.FlowControl.Reset();
+			}
+
+			if (showOctreeToolStripMenuItem.Checked && triangleTree != null)
+			{
+				foreach (BoundingBox bounds in triangleTree.GiveMeTheBounds())
+				{
+					Color4 color = camera.Frustum.Contains(bounds) == ContainmentType.Contains
+						? new Color4(1f, 0f, 1f, 1f)
+						: new Color4(1f, 0f, 0f, 1f);
+					renderer.DrawBounds(in bounds, color);
+				}
 			}
 
 			renderer.Present(camera);
@@ -695,6 +765,61 @@ namespace sadx_model_view.Forms
 				{
 					MessageBox.Show(this, ex.Message, "Shader Compilation Failure", MessageBoxButtons.OK, MessageBoxIcon.Error);
 				}
+			}
+		}
+
+		private void scene_MouseUp(object sender, MouseEventArgs e)
+		{
+			if (triangleTree == null)
+			{
+				return;
+			}
+
+			//Matrix v = Matrix.Translation(camera.Position) * camera.RotationMatrix;
+
+			//var ray = Ray.GetPickRay(e.X, e.Y, new ViewportF(0f, 0f, scene.ClientRectangle.Width, scene.ClientRectangle.Height), v);
+
+			//Vector3 v = Vector3.Unproject(camera.RotationMatrix.Forward,
+			//                              e.X, e.Y,
+			//                              scene.ClientRectangle.Width, scene.ClientRectangle.Height,
+			//                              0.0f, 1.0f,
+			//                              camera.View * camera.Projection);
+
+			var ray = new Ray(camera.Position, camera.RotationMatrix.Forward * float.MaxValue);
+
+			var colliding = new List<Tuple<NJS_OBJECT.ObjectTriangles, CollisionEx.RayHit>>();
+			triangleTree.GetColliding(colliding, in ray, float.MaxValue);
+
+			renderer.DrawDebugLine(new DebugLine(new DebugPoint(ray.Position, Color.Blue), new DebugPoint(ray.Position + ray.Direction, Color.Blue)));
+
+			Tuple<NJS_OBJECT.ObjectTriangles, CollisionEx.RayHit> closestObject = null;
+			CollisionEx.RayHit closestTriHit = new CollisionEx.RayHit(Vector3.Zero, float.MaxValue);
+
+			foreach (var collider in colliding)
+			{
+				if (collider.Item1.Object.SkipDraw)
+				{
+					continue;
+				}
+
+				foreach (Triangle triangle in collider.Item1.Triangles)
+				{
+					if (!ray.IntersectsTriangle(triangle.A, triangle.B, triangle.C, out CollisionEx.RayHit hit))
+					{
+						continue;
+					}
+
+					if (hit.Distance < closestTriHit.Distance)
+					{
+						closestTriHit = hit;
+						closestObject = collider;
+					}
+				}
+			}
+
+			if (closestObject != null)
+			{
+				closestObject.Item1.Object.SkipDraw = true;
 			}
 		}
 

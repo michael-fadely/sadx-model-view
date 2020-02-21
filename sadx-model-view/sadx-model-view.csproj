@@ -95,6 +95,7 @@
     <Compile Include="DebugLine.cs" />
     <Compile Include="DebugPoint.cs" />
     <Compile Include="DebugWireCube.cs" />
+    <Compile Include="Extensions\SharpDX\Mathematics\CollisionEx.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Interfaces\IModifiable.cs" />
     <Compile Include="MeshsetQueue.cs" />
@@ -107,6 +108,7 @@
     <Compile Include="Extensions\QuaternionExtensions.cs" />
     <Compile Include="Interfaces\IInvalidatable.cs" />
     <Compile Include="Modifiable.cs" />
+    <Compile Include="Ninja\Triangle.cs" />
     <Compile Include="ShaderBuffers.cs" />
     <Compile Include="Ninja\FlowControl.cs" />
     <Compile Include="Ninja\ModelCache.cs" />
