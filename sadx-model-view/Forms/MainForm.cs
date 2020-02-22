@@ -793,7 +793,7 @@ namespace sadx_model_view.Forms
 
 				foreach (Triangle triangle in collider.Collider.Triangles)
 				{
-					if (!ray.IntersectsTriangle(triangle.A, triangle.B, triangle.C, out RayHit hit))
+					if (!ray.IntersectsTriangle(triangle.A, triangle.B, triangle.C, out RayHit hit, doubleSided: false))
 					{
 						continue;
 					}
