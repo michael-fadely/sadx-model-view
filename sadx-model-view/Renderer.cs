@@ -1007,8 +1007,8 @@ namespace sadx_model_view
 			rt.SourceBlend           = blendModes[material.SourceBlend];
 			rt.DestinationBlend      = blendModes[material.DestinationBlend];
 			rt.BlendOperation        = BlendOperation.Add;
-			rt.SourceAlphaBlend      = blendModes[material.SourceBlend];
-			rt.DestinationAlphaBlend = blendModes[material.DestinationBlend];
+			rt.SourceAlphaBlend      = BlendOption.Zero;
+			rt.DestinationAlphaBlend = BlendOption.Zero;
 			rt.AlphaBlendOperation   = BlendOperation.Add;
 			rt.RenderTargetWriteMask = ColorWriteMaskFlags.All;
 
