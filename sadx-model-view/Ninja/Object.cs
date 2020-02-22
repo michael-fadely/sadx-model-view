@@ -52,6 +52,18 @@ namespace sadx_model_view.Ninja
 		MODIFIER = 1 << 9
 	}
 
+	public class ObjectTriangles
+	{
+		public ObjectTriangles(NJS_OBJECT @object, List<Triangle> triangles)
+		{
+			this.Object    = @object;
+			this.Triangles = triangles;
+		}
+
+		public NJS_OBJECT     Object    { get; set; }
+		public List<Triangle> Triangles { get; set; }
+	}
+
 	/// <summary>
 	/// <para>An object in the world which has a model, position, angle, and scale.</para>
 	/// See also:
@@ -310,30 +322,16 @@ namespace sadx_model_view.Ninja
 			return obj;
 		}
 
-		public class ObjectTriangles
-		{
-			public ObjectTriangles(NJS_OBJECT @object, List<Triangle> triangles)
-			{
-				this.Object = @object;
-				this.Triangles = triangles;
-			}
-
-			public NJS_OBJECT Object { get; set; }
-			public List<Triangle> Triangles { get; set; }
-		}
-
 		public ObjectTriangles GetTriangles()
 		{
-			MatrixStack.Push();
-			PushTransform();
+			if (MatrixStack.Empty)
+			{
+				throw new Exception("oops");
+			}
 
 			var triangles = new List<Triangle>();
 			Model?.GetTriangles(triangles);
-
-			var result = new ObjectTriangles(this, triangles);
-
-			MatrixStack.Pop();
-			return result;
+			return new ObjectTriangles(this, triangles);
 		}
 
 		bool isInvalid;

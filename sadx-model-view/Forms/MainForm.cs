@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -8,7 +7,7 @@ using System.Windows.Forms;
 using PuyoTools.Modules.Archive;
 using PuyoTools.Modules.Compression;
 using sadx_model_view.Extensions;
-using sadx_model_view.Extensions.SharpDX.Mathematics;
+using sadx_model_view.Extensions.SharpDX.Mathematics.Collision;
 using sadx_model_view.Ninja;
 using sadx_model_view.SA1;
 using SharpDX;
@@ -28,7 +27,7 @@ namespace sadx_model_view.Forms
 		CamControls camcontrols = CamControls.None;
 
 		VisibilityTree objectTree, landTableTree;
-		BoundsOctree<NJS_OBJECT.ObjectTriangles> triangleTree;
+		BoundsOctree<ObjectTriangles> triangleTree;
 		Renderer renderer;
 
 		// SADX's default horizontal field of view.
@@ -119,7 +118,7 @@ namespace sadx_model_view.Forms
 
 					objectTree = new VisibilityTree(obj);
 
-					List<NJS_OBJECT.ObjectTriangles> triangles = new List<NJS_OBJECT.ObjectTriangles>();
+					List<ObjectTriangles> triangles = new List<ObjectTriangles>();
 
 					foreach (var o in obj)
 					{
@@ -132,7 +131,7 @@ namespace sadx_model_view.Forms
 					}
 
 					var bb = BoundingBox.FromPoints(triangles.SelectMany(x => x.Triangles).SelectMany(x => x.ToArray()).ToArray());
-					triangleTree = new BoundsOctree<NJS_OBJECT.ObjectTriangles>(bb, 0.1f, 1.0f);
+					triangleTree = new BoundsOctree<ObjectTriangles>(bb, 0.1f, 1.0f);
 
 					foreach (var pair in triangles)
 					{
@@ -155,9 +154,9 @@ namespace sadx_model_view.Forms
 					landTable.CommitVertexBuffer(renderer);
 					landTableTree = new VisibilityTree(landTable);
 
-					List<NJS_OBJECT.ObjectTriangles> triangles = landTable.GetTriangles().ToList();
+					List<ObjectTriangles> triangles = landTable.GetTriangles().ToList();
 					var bb = BoundingBox.FromPoints(triangles.SelectMany(x => x.Triangles).SelectMany(x => x.ToArray()).ToArray());
-					triangleTree = new BoundsOctree<NJS_OBJECT.ObjectTriangles>(bb, 0.1f, 1.0f);
+					triangleTree = new BoundsOctree<ObjectTriangles>(bb, 0.1f, 1.0f);
 
 					foreach (var pair in triangles)
 					{
@@ -520,6 +519,9 @@ namespace sadx_model_view.Forms
 			renderer.SetTransform(TransformState.View, in m);
 		}
 
+		Ray lastRay;
+		RayHit lastHit;
+
 		// TODO: conditional render (only render when the scene has been invalidated)
 		public void MainLoop()
 		{
@@ -539,6 +541,12 @@ namespace sadx_model_view.Forms
 
 			renderer.Clear();
 
+			renderer.DrawDebugLine(new DebugLine(new DebugPoint(lastRay.Position, Color.Blue),
+			                                     new DebugPoint(lastRay.Position + (lastRay.Direction * 16777215f), Color.Blue)));
+
+			renderer.DrawDebugLine(new DebugLine(new DebugPoint(lastRay.Position, Color.DarkGreen),
+			                                     new DebugPoint(lastRay.Position + (lastRay.Direction * lastHit.Distance), Color.DarkGreen)));
+
 			if (obj != null)
 			{
 				if (objectTree.Empty)
@@ -546,16 +554,16 @@ namespace sadx_model_view.Forms
 					objectTree.Add(obj, renderer);
 				}
 
-				//if (showOctreeToolStripMenuItem.Checked)
-				//{
-				//	foreach (BoundingBox bounds in objectTree.GiveMeTheBounds())
-				//	{
-				//		Color4 color = camera.Frustum.Contains(bounds) == ContainmentType.Contains
-				//			? new Color4(0f, 1f, 0f, 1f)
-				//			: new Color4(1f, 0f, 0f, 1f);
-				//		renderer.DrawBounds(in bounds, color);
-				//	}
-				//}
+				if (showOctreeToolStripMenuItem.Checked)
+				{
+					foreach (BoundingBox bounds in objectTree.GiveMeTheBounds())
+					{
+						Color4 color = camera.Frustum.Contains(bounds) == ContainmentType.Contains
+							? new Color4(0f, 1f, 0f, 1f)
+							: new Color4(1f, 0f, 0f, 1f);
+						renderer.DrawBounds(in bounds, color);
+					}
+				}
 
 				List<MeshsetQueueElementBase> visible = objectTree.GetVisible(camera);
 				base.Text = $"{visible.Count}";
@@ -573,7 +581,7 @@ namespace sadx_model_view.Forms
 					landTableTree.Add(landTable, renderer);
 				}
 
-				/*if (showOctreeToolStripMenuItem.Checked)
+				if (showOctreeToolStripMenuItem.Checked)
 				{
 					foreach (BoundingBox bounds in landTableTree.GiveMeTheBounds())
 					{
@@ -592,24 +600,13 @@ namespace sadx_model_view.Forms
 							renderer.DrawBounds(in bounds, new Color4(1.0f, 0.0f, 0.0f, 1.0f));
 						}
 					}
-				}*/
+				}
 
 				List<MeshsetQueueElementBase> visible = landTableTree.GetVisible(camera);
 				base.Text = $"{visible.Count}";
 
 				renderer.Draw(visible, camera);
 				renderer.FlowControl.Reset();
-			}
-
-			if (showOctreeToolStripMenuItem.Checked && triangleTree != null)
-			{
-				foreach (BoundingBox bounds in triangleTree.GiveMeTheBounds())
-				{
-					Color4 color = camera.Frustum.Contains(bounds) == ContainmentType.Contains
-						? new Color4(1f, 0f, 1f, 1f)
-						: new Color4(1f, 0f, 0f, 1f);
-					renderer.DrawBounds(in bounds, color);
-				}
 			}
 
 			renderer.Present(camera);
@@ -775,52 +772,49 @@ namespace sadx_model_view.Forms
 				return;
 			}
 
-			//Matrix v = Matrix.Translation(camera.Position) * camera.RotationMatrix;
+			var viewport = new ViewportF(0f, 0f, scene.ClientRectangle.Width, scene.ClientRectangle.Height);
+			var ray = Ray.GetPickRay(e.X, e.Y, viewport, camera.Frustum.Matrix);
 
-			//var ray = Ray.GetPickRay(e.X, e.Y, new ViewportF(0f, 0f, scene.ClientRectangle.Width, scene.ClientRectangle.Height), v);
+			var colliding = new List<RayCollisionResult<ObjectTriangles>>();
+			triangleTree.GetColliding(colliding, in ray);
 
-			//Vector3 v = Vector3.Unproject(camera.RotationMatrix.Forward,
-			//                              e.X, e.Y,
-			//                              scene.ClientRectangle.Width, scene.ClientRectangle.Height,
-			//                              0.0f, 1.0f,
-			//                              camera.View * camera.Projection);
+			lastRay = ray;
+			lastHit = default;
 
-			var ray = new Ray(camera.Position, camera.RotationMatrix.Forward * float.MaxValue);
+			RayCollisionResult<ObjectTriangles>? closestObject = null;
+			RayHit closestTriHit = new RayHit(Vector3.Zero, 16777215f);
 
-			var colliding = new List<Tuple<NJS_OBJECT.ObjectTriangles, CollisionEx.RayHit>>();
-			triangleTree.GetColliding(colliding, in ray, float.MaxValue);
-
-			renderer.DrawDebugLine(new DebugLine(new DebugPoint(ray.Position, Color.Blue), new DebugPoint(ray.Position + ray.Direction, Color.Blue)));
-
-			Tuple<NJS_OBJECT.ObjectTriangles, CollisionEx.RayHit> closestObject = null;
-			CollisionEx.RayHit closestTriHit = new CollisionEx.RayHit(Vector3.Zero, float.MaxValue);
-
-			foreach (var collider in colliding)
+			foreach (RayCollisionResult<ObjectTriangles> collider in colliding)
 			{
-				if (collider.Item1.Object.SkipDraw)
+				if (collider.Collider.Object.SkipDraw)
 				{
 					continue;
 				}
 
-				foreach (Triangle triangle in collider.Item1.Triangles)
+				foreach (Triangle triangle in collider.Collider.Triangles)
 				{
-					if (!ray.IntersectsTriangle(triangle.A, triangle.B, triangle.C, out CollisionEx.RayHit hit))
+					if (!ray.IntersectsTriangle(triangle.A, triangle.B, triangle.C, out RayHit hit))
 					{
 						continue;
 					}
 
-					if (hit.Distance < closestTriHit.Distance)
+					if (hit.Distance >= closestTriHit.Distance)
 					{
-						closestTriHit = hit;
-						closestObject = collider;
+						continue;
 					}
+
+					closestTriHit = hit;
+					closestObject = collider;
 				}
 			}
 
-			if (closestObject != null)
+			if (closestObject == null)
 			{
-				closestObject.Item1.Object.SkipDraw = true;
+				return;
 			}
+
+			lastHit = closestTriHit;
+			closestObject.Value.Collider.Object.SkipDraw = true;
 		}
 
 		void enableAlphaToolStripMenuItem_CheckedChanged(object sender, EventArgs e)

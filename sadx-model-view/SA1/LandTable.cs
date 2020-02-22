@@ -99,7 +99,7 @@ namespace sadx_model_view.SA1
 			Unknown_3 = 0;
 		}
 
-		public IEnumerable<NJS_OBJECT.ObjectTriangles> GetTriangles()
+		public IEnumerable<ObjectTriangles> GetTriangles()
 		{
 			foreach (Col c in ColList)
 			{

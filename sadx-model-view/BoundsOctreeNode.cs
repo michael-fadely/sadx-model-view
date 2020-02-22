@@ -2,13 +2,25 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using sadx_model_view.Extensions.SharpDX.Mathematics;
+using sadx_model_view.Extensions.SharpDX.Mathematics.Collision;
 using SharpDX;
 
 // A node in a BoundsOctree
 // Copyright 2014 Nition, BSD licence (see LICENCE file). http://nition.co
 namespace sadx_model_view
 {
+	public struct RayCollisionResult<T>
+	{
+		public T Collider;
+		public RayHit Hit;
+
+		public RayCollisionResult(T collider, RayHit hit)
+		{
+			Collider = collider;
+			Hit      = hit;
+		}
+	}
+
 	public class BoundsOctreeNode<T>
 	{
 		/// <summary>
@@ -18,7 +30,7 @@ namespace sadx_model_view
 		const int numObjectsAllowed = 16; // TODO: configurable
 
 		/// <summary>
-		/// Centre of this node
+		/// Center of this node
 		/// </summary>
 		public Vector3 Center { get; private set; }
 
@@ -77,7 +89,7 @@ namespace sadx_model_view
 		/// <param name="baseLength">Length of this node, not taking looseness into account.</param>
 		/// <param name="minSizeVal">Minimum size of nodes in this octree.</param>
 		/// <param name="loosenessVal">Multiplier for <paramref name="baseLength"/> to get the actual size.</param>
-		/// <param name="centerVal">Centre position of this node.</param>
+		/// <param name="centerVal">Center position of this node.</param>
 		public BoundsOctreeNode(float baseLength, float minSizeVal, float loosenessVal, Vector3 centerVal)
 		{
 			SetValues(baseLength, minSizeVal, loosenessVal, in centerVal);
@@ -390,10 +402,10 @@ namespace sadx_model_view
 		/// <param name="maxDistance">Distance to check.</param>
 		/// <param name="result">List result.</param>
 		/// <returns>Objects that intersect with the specified ray.</returns>
-		public void GetColliding(in Ray checkRay, List<Tuple<T, CollisionEx.RayHit>> result, float maxDistance = float.PositiveInfinity)
+		public void GetColliding(in Ray checkRay, List<RayCollisionResult<T>> result, float maxDistance = float.PositiveInfinity)
 		{
 			// Is the input ray at least partially in this node?
-			if (!checkRay.Intersects(ref bounds, out CollisionEx.RayHit hit) || hit.Distance > maxDistance)
+			if (!checkRay.Intersects(ref bounds, out RayHit hit) || hit.Distance > maxDistance)
 			{
 				return;
 			}
@@ -403,7 +415,7 @@ namespace sadx_model_view
 			{
 				if (checkRay.Intersects(ref o.Bounds, out hit) && hit.Distance <= maxDistance)
 				{
-					result.Add(new Tuple<T, CollisionEx.RayHit>(o.Object, hit));
+					result.Add(new RayCollisionResult<T>(o.Object, hit));
 				}
 			}
 
@@ -594,7 +606,7 @@ namespace sadx_model_view
 		/// <param name="baseLength">Length of this node, not taking looseness into account.</param>
 		/// <param name="minSize">Minimum size of nodes in this octree.</param>
 		/// <param name="loosenessVal">Multiplier for <paramref name="baseLength"/> to get the actual size.</param>
-		/// <param name="center">Centre position of this node.</param>
+		/// <param name="center">Center position of this node.</param>
 		void SetValues(float baseLength, float minSize, float loosenessVal, in Vector3 center)
 		{
 			if (childBounds is null)

@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using sadx_model_view.Ninja;
 using SharpDX;
 
@@ -114,7 +112,7 @@ namespace sadx_model_view.SA1
 			Object?.CommitVertexBuffer(device);
 		}
 
-		public IEnumerable<NJS_OBJECT.ObjectTriangles> GetTriangles()
+		public IEnumerable<ObjectTriangles> GetTriangles()
 		{
 			if (Object == null)
 			{

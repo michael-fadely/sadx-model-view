@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using sadx_model_view.Extensions;
-using sadx_model_view.Extensions.SharpDX.Mathematics;
 using SharpDX;
 
 // A Dynamic, Loose Octree for storing any objects that can be described with AABB bounds
@@ -80,7 +78,7 @@ namespace sadx_model_view
 		/// Constructor for the bounds octree.
 		/// </summary>
 		/// <param name="initialWorldSize">Size of the sides of the initial node. The octree will never shrink smaller than this.</param>
-		/// <param name="initialWorldPos">Position of the centre of the initial node.</param>
+		/// <param name="initialWorldPos">Position of the center of the initial node.</param>
 		/// <param name="minNodeSize">Nodes will stop splitting if the new nodes would be smaller than this.</param>
 		/// <param name="loosenessVal">Clamped between 1 and 2. Values > 1 let nodes overlap.</param>
 		public BoundsOctree(float initialWorldSize, Vector3 initialWorldPos, float minNodeSize, float loosenessVal)
@@ -224,7 +222,7 @@ namespace sadx_model_view
 		/// <param name="maxDistance">distance to check.</param>
 		/// <returns>Objects that intersect with the specified ray.</returns>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public void GetColliding(List<Tuple<T, CollisionEx.RayHit>> collidingWith, in Ray checkRay, float maxDistance = float.PositiveInfinity)
+		public void GetColliding(List<RayCollisionResult<T>> collidingWith, in Ray checkRay, float maxDistance = float.PositiveInfinity)
 		{
 			rootNode.GetColliding(in checkRay, collidingWith, maxDistance);
 		}
