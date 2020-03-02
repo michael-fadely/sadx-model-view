@@ -92,6 +92,7 @@
   <ItemGroup>
     <Compile Include="BoundsOctree.cs" />
     <Compile Include="BoundsOctreeNode.cs" />
+    <Compile Include="CoreExtensions.cs" />
     <Compile Include="DebugLine.cs" />
     <Compile Include="DebugPoint.cs" />
     <Compile Include="DebugWireCube.cs" />
@@ -186,6 +187,9 @@
     <Content Include="Shaders\debug_vs.hlsl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Shaders\include.hlsli" />
+    <Content Include="Shaders\oit.hlsli" />
+    <Content Include="Shaders\oit_composite.hlsl" />
     <Content Include="Shaders\scene_common.hlsli">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

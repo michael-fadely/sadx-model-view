@@ -33,4 +33,5 @@ cbuffer PerModelBuffer : register(b2)
 {
 	matrix worldMatrix;
 	matrix wvMatrixInvT;
+	uint drawCall;
 };

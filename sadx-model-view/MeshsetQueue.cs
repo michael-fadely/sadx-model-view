@@ -77,6 +77,9 @@ namespace sadx_model_view
 			alphaSets.Clear();
 		}
 
+		/// <summary>
+		/// Sort opaque geometry by nearest to furthest.
+		/// </summary>
 		public void SortOpaque()
 		{
 			opaqueSets.Sort((a, b) =>
@@ -100,6 +103,9 @@ namespace sadx_model_view
 			});
 		}
 
+		/// <summary>
+		/// Sort transparent geometry by furthest to nearest.
+		/// </summary>
 		public void SortAlpha()
 		{
 			alphaSets.Sort((a, b) =>

@@ -449,6 +449,8 @@ namespace sadx_model_view.Forms
 				return;
 			}
 
+			enableOITToolStripMenuItem.Enabled = renderer.OitCapable;
+
 			UpdateProjection();
 			scene.SizeChanged += OnSizeChanged;
 		}
@@ -760,7 +762,6 @@ namespace sadx_model_view.Forms
 				try
 				{
 					renderer?.LoadShaders();
-					renderer?.LoadDebugShaders();
 					break;
 				}
 				catch (Exception ex)

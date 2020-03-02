@@ -15,4 +15,5 @@ cbuffer PerSceneBuffer : register(b0)
 	matrix viewMatrix;
 	matrix projectionMatrix;
 	float3 cameraPos;
+	uint bufferLength;
 };

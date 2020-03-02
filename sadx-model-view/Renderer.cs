@@ -63,7 +63,7 @@ namespace sadx_model_view
 		readonly Device              device;
 		readonly SwapChain           swapChain;
 		RenderTargetView             backBuffer;
-		Viewport                     viewPort;
+		Viewport                     viewport;
 		Texture2D                    depthTexture;
 		DepthStencilStateDescription depthDesc;
 		DepthStencilState            depthStateRW;
@@ -90,9 +90,12 @@ namespace sadx_model_view
 		readonly List<DebugWireCube> debugWireCubes = new List<DebugWireCube>();
 
 		ShaderMaterial lastMaterial;
-		VertexShader   vertexShader;
-		PixelShader    pixelShader;
-		InputLayout    inputLayout;
+		VertexShader   sceneVertexShader;
+		PixelShader    scenePixelShader;
+		InputLayout    sceneInputLayout;
+
+		VertexShader oitCompositeVertexShader;
+		PixelShader  oitCompositePixelShader;
 
 		VertexShader debugVertexShader;
 		PixelShader  debugPixelShader;
@@ -103,6 +106,30 @@ namespace sadx_model_view
 		RasterizerState lastRasterizerState;
 		SamplerState    lastSamplerState;
 		SceneTexture    lastTexture;
+
+		public bool OitCapable { get; private set; }
+
+		bool oitEnabled;
+
+		public bool OitEnabled
+		{
+			get => oitEnabled;
+			set
+			{
+				if (value && !OitCapable)
+				{
+					throw new Exception("Device not OIT-capable!");
+				}
+
+				if (value == oitEnabled)
+				{
+					return;
+				}
+
+				oitEnabled = value;
+				LoadShaders();
+			}
+		}
 
 		public Renderer(int w, int h, IntPtr sceneHandle)
 		{
@@ -139,6 +166,9 @@ namespace sadx_model_view
 				throw new InsufficientFeatureLevelException(device.FeatureLevel, FeatureLevel.Level_10_0);
 			}
 
+			OitCapable = device.FeatureLevel >= FeatureLevel.Level_11_1;
+			oitEnabled = OitCapable;
+
 			var bufferDesc = new BufferDescription(PerSceneBuffer.SizeInBytes.RoundToMultiple(16),
 			                                       ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write,
 			                                       ResourceOptionFlags.None, PerSceneBuffer.SizeInBytes);
@@ -161,7 +191,6 @@ namespace sadx_model_view
 			materialBuffer = new Buffer(device, bufferDesc);
 
 			LoadShaders();
-			LoadDebugShaders();
 
 			device.ImmediateContext.VertexShader.SetConstantBuffer(0, perSceneBuffer);
 			device.ImmediateContext.PixelShader.SetConstantBuffer(0, perSceneBuffer);
@@ -171,9 +200,6 @@ namespace sadx_model_view
 
 			device.ImmediateContext.VertexShader.SetConstantBuffer(2, perModelBuffer);
 			device.ImmediateContext.PixelShader.SetConstantBuffer(2, perModelBuffer);
-
-
-			device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
 
 			int helperBufferSize = DebugWireCube.SizeInBytes.RoundToMultiple(16);
 
@@ -188,31 +214,110 @@ namespace sadx_model_view
 			RefreshDevice(w, h);
 		}
 
-		public void LoadShaders()
+		void SetShaderToScene()
 		{
+			device.ImmediateContext.VertexShader.Set(sceneVertexShader);
+			device.ImmediateContext.PixelShader.Set(scenePixelShader);
+			device.ImmediateContext.InputAssembler.InputLayout = sceneInputLayout;
+
+			device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
+		}
+
+		void SetShaderToOitComposite()
+		{
+			if (!OitCapable)
+			{
+				return;
+			}
+
+			device.ImmediateContext.VertexShader.Set(oitCompositeVertexShader);
+			device.ImmediateContext.PixelShader.Set(oitCompositePixelShader);
+
+			device.ImmediateContext.InputAssembler.InputLayout = null;
+			device.ImmediateContext.InputAssembler.SetIndexBuffer(null, Format.Unknown, 0);
+			device.ImmediateContext.InputAssembler.SetVertexBuffers(0, 0, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+
+			lastVertexBuffer = null;
+		}
+
+		void SetShaderToDebug()
+		{
+			device.ImmediateContext.VertexShader.Set(debugVertexShader);
+			device.ImmediateContext.PixelShader.Set(debugPixelShader);
+			device.ImmediateContext.InputAssembler.InputLayout = debugInputLayout;
+
+			var binding = new VertexBufferBinding(debugHelperVertexBuffer, DebugPoint.SizeInBytes, 0);
+
+			device.ImmediateContext.InputAssembler.SetVertexBuffers(0, binding);
+			device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.LineList;
+		}
+
+		void LoadOitCompositeShader()
+		{
+			oitCompositeVertexShader?.Dispose();
+			oitCompositePixelShader?.Dispose();
+
+			oitCompositeVertexShader = null;
+			oitCompositePixelShader = null;
+
+			if (!oitEnabled)
+			{
+				return;
+			}
+
 			using var includeMan = new DefaultIncludeHandler();
 
-			vertexShader?.Dispose();
-			pixelShader?.Dispose();
-			inputLayout?.Dispose();
-
-			CompilationResult vs_result = ShaderBytecode.CompileFromFile("Shaders\\scene_vs.hlsl", "main", "vs_4_0", include: includeMan);
+			CompilationResult vs_result = ShaderBytecode.CompileFromFile("Shaders\\oit_composite.hlsl", "vs_main", "vs_5_0", include: includeMan);
 
 			if (vs_result.HasErrors || !string.IsNullOrEmpty(vs_result.Message))
 			{
 				throw new Exception(vs_result.Message);
 			}
 
-			vertexShader = new VertexShader(device, vs_result.Bytecode);
+			oitCompositeVertexShader = new VertexShader(device, vs_result.Bytecode);
 
-			CompilationResult ps_result = ShaderBytecode.CompileFromFile("Shaders\\scene_ps.hlsl", "main", "ps_4_0", include: includeMan);
+			CompilationResult ps_result = ShaderBytecode.CompileFromFile("Shaders\\oit_composite.hlsl", "ps_main", "ps_5_0", include: includeMan);
 
 			if (ps_result.HasErrors || !string.IsNullOrEmpty(ps_result.Message))
 			{
 				throw new Exception(ps_result.Message);
 			}
 
-			pixelShader = new PixelShader(device, ps_result.Bytecode);
+			oitCompositePixelShader = new PixelShader(device, ps_result.Bytecode);
+		}
+
+		void LoadSceneShaders()
+		{
+			using var includeMan = new DefaultIncludeHandler();
+
+			sceneVertexShader?.Dispose();
+			scenePixelShader?.Dispose();
+			sceneInputLayout?.Dispose();
+
+			var macros = new ShaderMacro[]
+			{
+				new ShaderMacro("RS_OIT", (OitCapable && oitEnabled) ? "1" : "0")
+			};
+
+			CompilationResult vs_result = ShaderBytecode.CompileFromFile("Shaders\\scene_vs.hlsl", "main", "vs_5_0",
+			                                                             include: includeMan, defines: macros);
+
+			if (vs_result.HasErrors || !string.IsNullOrEmpty(vs_result.Message))
+			{
+				throw new Exception(vs_result.Message);
+			}
+
+			sceneVertexShader = new VertexShader(device, vs_result.Bytecode);
+
+			CompilationResult ps_result = ShaderBytecode.CompileFromFile("Shaders\\scene_ps.hlsl", "main", "ps_5_0",
+			                                                             include: includeMan, defines: macros);
+
+			if (ps_result.HasErrors || !string.IsNullOrEmpty(ps_result.Message))
+			{
+				throw new Exception(ps_result.Message);
+			}
+
+			scenePixelShader = new PixelShader(device, ps_result.Bytecode);
 
 			var layout = new InputElement[]
 			{
@@ -222,21 +327,19 @@ namespace sadx_model_view
 				new InputElement("TEXCOORD", 0, Format.R32G32_Float,    InputElement.AppendAligned, 0, InputClassification.PerVertexData, 0)
 			};
 
-			inputLayout = new InputLayout(device, vs_result.Bytecode, layout);
+			sceneInputLayout = new InputLayout(device, vs_result.Bytecode, layout);
 
-			device.ImmediateContext.VertexShader.Set(vertexShader);
-			device.ImmediateContext.PixelShader.Set(pixelShader);
-			device.ImmediateContext.InputAssembler.InputLayout = inputLayout;
+			SetShaderToScene();
 		}
 
-		public void LoadDebugShaders()
+		void LoadDebugShaders()
 		{
 			using var includeMan = new DefaultIncludeHandler();
 			debugVertexShader?.Dispose();
 			debugPixelShader?.Dispose();
 			debugInputLayout?.Dispose();
 
-			CompilationResult vs_result = ShaderBytecode.CompileFromFile("Shaders\\debug_vs.hlsl", "main", "vs_4_0", include: includeMan);
+			CompilationResult vs_result = ShaderBytecode.CompileFromFile("Shaders\\debug_vs.hlsl", "main", "vs_5_0", include: includeMan);
 
 			if (vs_result.HasErrors || !string.IsNullOrEmpty(vs_result.Message))
 			{
@@ -245,7 +348,7 @@ namespace sadx_model_view
 
 			debugVertexShader = new VertexShader(device, vs_result.Bytecode);
 
-			CompilationResult ps_result = ShaderBytecode.CompileFromFile("Shaders\\debug_ps.hlsl", "main", "ps_4_0", include: includeMan);
+			CompilationResult ps_result = ShaderBytecode.CompileFromFile("Shaders\\debug_ps.hlsl", "main", "ps_5_0", include: includeMan);
 
 			if (ps_result.HasErrors || !string.IsNullOrEmpty(ps_result.Message))
 			{
@@ -261,6 +364,241 @@ namespace sadx_model_view
 			};
 
 			debugInputLayout = new InputLayout(device, vs_result.Bytecode, layout);
+		}
+
+		public void LoadShaders()
+		{
+			OitInitialize();
+
+			LoadSceneShaders();
+			LoadOitCompositeShader();
+			LoadDebugShaders();
+		}
+
+		void FragListHead_Init()
+		{
+			CoreExtensions.DisposeAndNullify(ref FragListHead);
+			CoreExtensions.DisposeAndNullify(ref FragListHeadSRV);
+			CoreExtensions.DisposeAndNullify(ref FragListHeadUAV);
+
+			if (!oitEnabled)
+			{
+				return;
+			}
+
+			var textureDescription = new Texture2DDescription
+			{
+				ArraySize         = 1,
+				BindFlags         = BindFlags.UnorderedAccess | BindFlags.ShaderResource,
+				Usage             = ResourceUsage.Default,
+				Format            = Format.R32_UInt,
+				Width             = viewport.Width,
+				Height            = viewport.Height,
+				MipLevels         = 1,
+				SampleDescription = { Count = 1, Quality = 0 }
+			};
+
+
+			FragListHead = new Texture2D(device, textureDescription);
+
+			var resourceViewDescription = new ShaderResourceViewDescription
+			{
+				Format    = textureDescription.Format,
+				Dimension = ShaderResourceViewDimension.Texture2D,
+				Texture2D = { MipLevels = 1, MostDetailedMip = 0 }
+			};
+
+			FragListHeadSRV = new ShaderResourceView(device, FragListHead, resourceViewDescription);
+
+			var uavDescription = new UnorderedAccessViewDescription
+			{
+				Format    = textureDescription.Format,
+				Dimension = UnorderedAccessViewDimension.Texture2D,
+				Buffer =
+				{
+					FirstElement = 0,
+					ElementCount = viewport.Width * viewport.Height,
+					Flags        = 0
+				}
+			};
+
+			FragListHeadUAV = new UnorderedAccessView(device, FragListHead, uavDescription);
+		}
+
+		ShaderResourceView  FragListHeadSRV;
+		Texture2D           FragListHead;
+		UnorderedAccessView FragListHeadUAV;
+
+		Texture2D           FragListCount;
+		ShaderResourceView  FragListCountSRV;
+		UnorderedAccessView FragListCountUAV;
+
+		Buffer              FragListNodes;
+		ShaderResourceView  FragListNodesSRV;
+		UnorderedAccessView FragListNodesUAV;
+
+		void FragListCount_Init()
+		{
+			CoreExtensions.DisposeAndNullify(ref FragListCount);
+			CoreExtensions.DisposeAndNullify(ref FragListCountSRV);
+			CoreExtensions.DisposeAndNullify(ref FragListCountUAV);
+
+			if (!oitEnabled)
+			{
+				return;
+			}
+
+			var textureDescription = new Texture2DDescription
+			{
+				ArraySize         = 1,
+				BindFlags         = BindFlags.UnorderedAccess | BindFlags.ShaderResource,
+				Usage             = ResourceUsage.Default,
+				Format            = Format.R32_UInt,
+				Width             = viewport.Width,
+				Height            = viewport.Height,
+				MipLevels         = 1,
+				SampleDescription = { Count = 1, Quality = 0 }
+			};
+
+			FragListCount = new Texture2D(device, textureDescription);
+
+			var resourceViewDescription = new ShaderResourceViewDescription
+			{
+				Format    = textureDescription.Format,
+				Dimension = ShaderResourceViewDimension.Texture2D,
+				Texture2D =
+				{
+					MipLevels       = 1,
+					MostDetailedMip = 0
+				}
+			};
+
+			FragListCountSRV = new ShaderResourceView(device, FragListCount, resourceViewDescription);
+
+			var uavDescription = new UnorderedAccessViewDescription
+			{
+				Format    = textureDescription.Format,
+				Dimension = UnorderedAccessViewDimension.Texture2D,
+				Buffer =
+				{
+					FirstElement = 0,
+					ElementCount = viewport.Width * viewport.Height,
+					Flags        = 0
+				}
+			};
+
+			FragListCountUAV = new UnorderedAccessView(device, FragListCount, uavDescription);
+		}
+
+		void FragListNodes_Init()
+		{
+			CoreExtensions.DisposeAndNullify(ref FragListNodes);
+			CoreExtensions.DisposeAndNullify(ref FragListNodesSRV);
+			CoreExtensions.DisposeAndNullify(ref FragListNodesUAV);
+
+			if (!oitEnabled)
+			{
+				return;
+			}
+
+			const int maxFragments = 32; // UNDONE
+			const int sizeOfOitNode = 4 * 4; // UNDONE
+
+			perSceneData.BufferLength.Value = (uint)viewport.Width * (uint)viewport.Height * maxFragments;
+
+			var bufferDescription = new BufferDescription
+			{
+				OptionFlags         = ResourceOptionFlags.BufferStructured,
+				BindFlags           = BindFlags.UnorderedAccess | BindFlags.ShaderResource,
+				SizeInBytes         = sizeOfOitNode * viewport.Width * viewport.Height * maxFragments,
+				StructureByteStride = sizeOfOitNode
+			};
+
+			FragListNodes = new Buffer(device, bufferDescription);
+
+			var resourceViewDescription = new ShaderResourceViewDescription
+			{
+				Format    = Format.Unknown,
+				Dimension = ShaderResourceViewDimension.Buffer,
+				Buffer =
+				{
+					ElementCount = viewport.Width * viewport.Height * maxFragments
+				}
+			};
+
+			FragListNodesSRV = new ShaderResourceView(device, FragListNodes, resourceViewDescription);
+
+			var uavDescription = new UnorderedAccessViewDescription
+			{
+				Format    = Format.Unknown,
+				Dimension = UnorderedAccessViewDimension.Buffer,
+				Buffer =
+				{
+					FirstElement = 0,
+					ElementCount = viewport.Width * viewport.Height * maxFragments,
+					Flags        = UnorderedAccessViewBufferFlags.Counter
+				}
+			};
+
+			FragListNodesUAV = new UnorderedAccessView(device, FragListNodes, uavDescription);
+		}
+
+		void OitRead()
+		{
+			if (!oitEnabled)
+			{
+				return;
+			}
+
+			// UNDONE
+			throw new NotImplementedException();
+		}
+
+		void OitWrite()
+		{
+			if (!oitEnabled)
+			{
+				return;
+			}
+
+			// UNDONE
+			throw new NotImplementedException();
+		}
+
+		void OitInitialize()
+		{
+			if (!oitEnabled)
+			{
+				return;
+			}
+
+			FragListHead_Init();
+			FragListCount_Init();
+			FragListNodes_Init();
+
+			OitWrite();
+		}
+
+		void OitComposite()
+		{
+			if (!oitEnabled)
+			{
+				return;
+			}
+
+			// UNDONE: disable culling
+			// UNDONE: disable z-test, z-write
+
+			SetShaderToOitComposite();
+
+			// Draw 3 points. The composite shader will use SV_VertexID to
+			// automatically produce a triangle that fills the whole screen.
+			device.ImmediateContext.Draw(3, 0);
+
+			// UNDONE: restore culling
+			// UNDONE: restore z-test, z-write
+
+			SetShaderToScene();
 		}
 
 		public void Clear()
@@ -440,7 +778,10 @@ namespace sadx_model_view
 
 			if (EnableAlpha && meshQueue.AlphaSets.Count > 1)
 			{
-				meshQueue.SortAlpha();
+				if (!oitEnabled)
+				{
+					meshQueue.SortAlpha();
+				}
 
 				// First draw with depth writes enabled & alpha threshold (in shader)
 				foreach (MeshsetQueueElement e in meshQueue.AlphaSets)
@@ -474,7 +815,7 @@ namespace sadx_model_view
 			if (visibleCount != lastVisibleCount)
 			{
 				lastVisibleCount = visibleCount;
-				//Debug.WriteLine(visibleCount);
+				Debug.WriteLine($"Visible: {visibleCount}");
 			}
 
 			lastVertexBuffer = null;
@@ -515,14 +856,7 @@ namespace sadx_model_view
 
 			CommitPerSceneData();
 
-			device.ImmediateContext.VertexShader.Set(debugVertexShader);
-			device.ImmediateContext.PixelShader.Set(debugPixelShader);
-			device.ImmediateContext.InputAssembler.InputLayout = debugInputLayout;
-
-			var binding = new VertexBufferBinding(debugHelperVertexBuffer, DebugPoint.SizeInBytes, 0);
-
-			device.ImmediateContext.InputAssembler.SetVertexBuffers(0, binding);
-			device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.LineList;
+			SetShaderToDebug();
 
 			// TODO: make debug z-writes (and tests) configurable
 			device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
@@ -568,11 +902,7 @@ namespace sadx_model_view
 			debugWireCubes.Clear();
 			debugLines.Clear();
 
-			// restore default shaders, input layout and topology
-			device.ImmediateContext.VertexShader.Set(vertexShader);
-			device.ImmediateContext.PixelShader.Set(pixelShader);
-			device.ImmediateContext.InputAssembler.InputLayout = inputLayout;
-			device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
+			SetShaderToScene();
 		}
 
 		void DrawMeshsetQueueElement(MeshsetQueueElement e)
@@ -601,23 +931,23 @@ namespace sadx_model_view
 
 		void SetViewPort(int x, int y, int width, int height)
 		{
-			viewPort.MinDepth = 0f;
-			viewPort.MaxDepth = 1f;
+			viewport.MinDepth = 0f;
+			viewport.MaxDepth = 1f;
 
-			Viewport vp = viewPort;
+			Viewport vp = viewport;
 
 			vp.X      = x;
 			vp.Y      = y;
 			vp.Width  = width;
 			vp.Height = height;
 
-			if (vp == viewPort)
+			if (vp == viewport)
 			{
 				return;
 			}
 
-			viewPort = vp;
-			device.ImmediateContext.Rasterizer.SetViewport(viewPort);
+			viewport = vp;
+			device.ImmediateContext.Rasterizer.SetViewport(viewport);
 		}
 
 		public void Draw(IEnumerable<MeshsetQueueElementBase> visible, Camera camera)
@@ -1052,23 +1382,43 @@ namespace sadx_model_view
 		{
 			swapChain?.Dispose();
 			backBuffer?.Dispose();
+
 			depthTexture?.Dispose();
 			depthStateRW?.Dispose();
 			depthStateRO?.Dispose();
 			depthView?.Dispose();
+
 			rasterizerState?.Dispose();
+
 			materialBuffer?.Dispose();
-			vertexShader?.Dispose();
-			pixelShader?.Dispose();
+
+			sceneVertexShader?.Dispose();
+			scenePixelShader?.Dispose();
+
+			oitCompositeVertexShader?.Dispose();
+			oitCompositePixelShader?.Dispose();
+
 			debugVertexShader?.Dispose();
 			debugPixelShader?.Dispose();
-			inputLayout?.Dispose();
+
+			sceneInputLayout?.Dispose();
+
 			debugInputLayout?.Dispose();
 			debugHelperVertexBuffer?.Dispose();
 
 			perSceneBuffer?.Dispose();
 			perModelBuffer?.Dispose();
 			materialBuffer?.Dispose();
+
+			CoreExtensions.DisposeAndNullify(ref FragListHeadSRV);
+			CoreExtensions.DisposeAndNullify(ref FragListHead);
+			CoreExtensions.DisposeAndNullify(ref FragListHeadUAV);
+			CoreExtensions.DisposeAndNullify(ref FragListCount);
+			CoreExtensions.DisposeAndNullify(ref FragListCountSRV);
+			CoreExtensions.DisposeAndNullify(ref FragListCountUAV);
+			CoreExtensions.DisposeAndNullify(ref FragListNodes);
+			CoreExtensions.DisposeAndNullify(ref FragListNodesSRV);
+			CoreExtensions.DisposeAndNullify(ref FragListNodesUAV);
 
 			ClearTexturePool();
 			ClearDisplayStates();

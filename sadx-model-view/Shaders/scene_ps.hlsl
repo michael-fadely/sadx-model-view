@@ -1,5 +1,9 @@
 #include "scene_common.hlsli"
 
+#ifdef RS_OIT
+#include "oit.hlsli"
+#endif
+
 Texture2D<float4> DiffuseMap : register(t0);
 
 SamplerState DiffuseSampler
