@@ -52,5 +52,7 @@ VS_OUTPUT main(VS_INPUT input)
 		result.specular = float4(0, 0, 0, 0);
 	}
 
+	result.depth = result.position.zw;
+
 	return result;
 }

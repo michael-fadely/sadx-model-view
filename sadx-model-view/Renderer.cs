@@ -195,6 +195,8 @@ namespace sadx_model_view
 
 			materialBuffer = new Buffer(device, bufferDesc);
 
+			RefreshDevice(w, h);
+
 			LoadShaders();
 
 			device.ImmediateContext.VertexShader.SetConstantBuffer(0, perSceneBuffer);
@@ -216,7 +218,6 @@ namespace sadx_model_view
 
 			debugHelperVertexBuffer = new Buffer(device, debugHelperDescription);
 
-			RefreshDevice(w, h);
 		}
 
 		void SetShaderToScene()
@@ -374,9 +375,9 @@ namespace sadx_model_view
 		public void LoadShaders()
 		{
 			OitInitialize();
+			LoadOitCompositeShader();
 
 			LoadSceneShaders();
-			LoadOitCompositeShader();
 			LoadDebugShaders();
 		}
 
@@ -402,7 +403,6 @@ namespace sadx_model_view
 				MipLevels         = 1,
 				SampleDescription = { Count = 1, Quality = 0 }
 			};
-
 
 			FragListHead = new Texture2D(device, textureDescription);
 
@@ -769,6 +769,18 @@ namespace sadx_model_view
 				lastRasterizerState = state.Raster;
 			}
 
+			RenderTargetBlendDescription desc = state.Blend.Description.RenderTarget[0];
+
+			perModelData.DrawCall.Value += 1;
+			perModelData.DrawCall.Value %= ushort.MaxValue + 1;
+
+			perModelData.SourceBlend.Value      = (uint)desc.SourceBlend;
+			perModelData.DestinationBlend.Value = (uint)desc.DestinationBlend;
+			perModelData.BlendOperation.Value   = (uint)desc.BlendOperation;
+
+			perModelData.IsStandardBlending.Value = (desc.SourceBlend == BlendOption.SourceAlpha || desc.SourceBlend == BlendOption.One) &&
+			                                        (desc.DestinationBlend == BlendOption.InverseSourceAlpha || desc.DestinationBlend == BlendOption.Zero);
+
 			CommitPerModelData();
 
 			if (parent.VertexBuffer != lastVertexBuffer)
@@ -1101,16 +1113,21 @@ namespace sadx_model_view
 		{
 			backBuffer?.Dispose();
 			swapChain?.ResizeBuffers(1, w, h, Format.Unknown, 0);
+
 			SetViewPort(0, 0, w, h);
 
 			CreateRenderTarget();
 			CreateRasterizerState();
 			CreateDepthStencil(w, h);
+
+			OitRelease();
+			OitInitialize();
 		}
 
 		void CreateDepthStencil(int w, int h)
 		{
 			const Format textureFormat = Format.R24G8_Typeless;
+			const Format viewFormat    = Format.R24_UNorm_X8_Typeless;
 			const Format depthFormat   = Format.D24_UNorm_S8_UInt;
 
 			CoreExtensions.DisposeAndNullify(ref depthTexture);
@@ -1128,7 +1145,7 @@ namespace sadx_model_view
 				Format            = textureFormat,
 				SampleDescription = new SampleDescription(1, 0),
 				Usage             = ResourceUsage.Default,
-				BindFlags         = BindFlags.DepthStencil,
+				BindFlags         = BindFlags.DepthStencil | BindFlags.ShaderResource,
 				CpuAccessFlags    = CpuAccessFlags.None,
 				OptionFlags       = ResourceOptionFlags.None
 			};
@@ -1183,7 +1200,7 @@ namespace sadx_model_view
 
 			var resourceViewDescription = new ShaderResourceViewDescription
 			{
-				Format    = textureFormat,
+				Format    = viewFormat,
 				Dimension = ShaderResourceViewDimension.Texture2D,
 				Texture2D = new ShaderResourceViewDescription.Texture2DResource
 				{

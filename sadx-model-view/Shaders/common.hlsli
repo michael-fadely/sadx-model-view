@@ -1,3 +1,6 @@
+#ifndef COMMON_HLSLI
+#define COMMON_HLSLI
+
 struct Material
 {
 	float4 diffuse;
@@ -15,5 +18,7 @@ cbuffer PerSceneBuffer : register(b0)
 	matrix viewMatrix;
 	matrix projectionMatrix;
 	float3 cameraPos;
-	uint bufferLength;
+	uint   bufferLength;
 };
+
+#endif

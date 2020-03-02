@@ -1,4 +1,8 @@
+#ifndef OIT_HLSLI
+#define OIT_HLSLI
+
 #include "scene_common.hlsli"
+#include "include.hlsli"
 
 void do_oit(inout float4 result, in VS_OUTPUT input, bool standard_blending)
 {
@@ -30,7 +34,7 @@ void do_oit(inout float4 result, in VS_OUTPUT input, bool standard_blending)
 
 	uint new_index = FragListNodes.IncrementCounter();
 
-	if (new_index >= buffer_len)
+	if (new_index >= bufferLength)
 	{
 		clip(-1);
 	}
@@ -42,10 +46,12 @@ void do_oit(inout float4 result, in VS_OUTPUT input, bool standard_blending)
 
 	n.depth = input.depth.x / input.depth.y;
 	n.color = float4_to_unorm(result);
-	n.flags = ((draw_call & 0xFFFF) << 16) | (blend_op << 8) | (src_blend << 4) | dst_blend;
+	n.flags = ((drawCall & 0xFFFF) << 16) | (blend_op << 8) | (src_blend << 4) | dst_blend;
 	n.next  = old_index;
 
 	FragListNodes[new_index] = n;
 	clip(-1);
 #endif
 }
+
+#endif

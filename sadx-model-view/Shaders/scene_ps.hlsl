@@ -1,6 +1,7 @@
 #include "scene_common.hlsli"
 
 #ifdef RS_OIT
+#define NODE_WRITE
 #include "oit.hlsli"
 #endif
 
@@ -32,7 +33,8 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 	if (material.useAlpha)
 	{
 	#ifdef RS_OIT
-		do_oit(result, input, )
+		do_oit(result, input, isStandardBlending);
+	#else
 		if (writeDepth == true)
 		{
 			clip(result.a == 0 ? -1 : 1);
@@ -41,6 +43,7 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 		{
 			clip(result.a > 0 ? -1 : 1);
 		}
+	#endif
 	}
 
 	return result;
