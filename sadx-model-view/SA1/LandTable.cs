@@ -103,7 +103,13 @@ namespace sadx_model_view.SA1
 		{
 			foreach (Col c in ColList)
 			{
-				foreach (var pair in c.GetTriangles())
+				// HACK: since we're only displaying visible COL elements, only get triangles for visible
+				if ((c.Flags & ColFlags.Visible) == 0)
+				{
+					continue;
+				}
+
+				foreach (ObjectTriangles pair in c.GetTriangles())
 				{
 					yield return pair;
 				}

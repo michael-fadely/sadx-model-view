@@ -120,7 +120,7 @@ namespace sadx_model_view.Forms
 
 					List<ObjectTriangles> triangles = new List<ObjectTriangles>();
 
-					foreach (var o in obj)
+					foreach (NJS_OBJECT o in obj)
 					{
 						if (o.Model == null)
 						{
@@ -130,10 +130,10 @@ namespace sadx_model_view.Forms
 						triangles.Add(o.GetTriangles());
 					}
 
-					var bb = BoundingBox.FromPoints(triangles.SelectMany(x => x.Triangles).SelectMany(x => x.ToArray()).ToArray());
+					BoundingBox bb = BoundingBox.FromPoints(triangles.SelectMany(x => x.Triangles).SelectMany(x => x.ToArray()).ToArray());
 					triangleTree = new BoundsOctree<ObjectTriangles>(bb, 0.1f, 1.0f);
 
-					foreach (var pair in triangles)
+					foreach (ObjectTriangles pair in triangles)
 					{
 						if (pair.Triangles.Count == 0)
 						{
@@ -155,10 +155,10 @@ namespace sadx_model_view.Forms
 					landTableTree = new VisibilityTree(landTable);
 
 					List<ObjectTriangles> triangles = landTable.GetTriangles().ToList();
-					var bb = BoundingBox.FromPoints(triangles.SelectMany(x => x.Triangles).SelectMany(x => x.ToArray()).ToArray());
+					BoundingBox bb = BoundingBox.FromPoints(triangles.SelectMany(x => x.Triangles).SelectMany(x => x.ToArray()).ToArray());
 					triangleTree = new BoundsOctree<ObjectTriangles>(bb, 0.1f, 1.0f);
 
-					foreach (var pair in triangles)
+					foreach (ObjectTriangles pair in triangles)
 					{
 						if (pair.Triangles.Count == 0)
 						{
@@ -520,7 +520,7 @@ namespace sadx_model_view.Forms
 		}
 
 		Ray lastRay;
-		RayHit lastHit;
+		RayHit? lastHit;
 
 		// TODO: conditional render (only render when the scene has been invalidated)
 		public void MainLoop()
@@ -541,11 +541,16 @@ namespace sadx_model_view.Forms
 
 			renderer.Clear();
 
-			renderer.DrawDebugLine(new DebugLine(new DebugPoint(lastRay.Position, Color.Blue),
-			                                     new DebugPoint(lastRay.Position + (lastRay.Direction * 16777215f), Color.Blue)));
-
-			renderer.DrawDebugLine(new DebugLine(new DebugPoint(lastRay.Position, Color.DarkGreen),
-			                                     new DebugPoint(lastRay.Position + (lastRay.Direction * lastHit.Distance), Color.DarkGreen)));
+			if (lastHit != null)
+			{
+				renderer.DrawDebugLine(new DebugLine(new DebugPoint(lastRay.Position, Color.DarkGreen),
+				                                     new DebugPoint(lastRay.Position + (lastRay.Direction * lastHit.Value.Distance), Color.DarkGreen)));
+			}
+			else
+			{
+				renderer.DrawDebugLine(new DebugLine(new DebugPoint(lastRay.Position, Color.Blue),
+				                                     new DebugPoint(lastRay.Position + (lastRay.Direction * 16777215f), Color.Blue)));
+			}
 
 			if (obj != null)
 			{
@@ -779,7 +784,7 @@ namespace sadx_model_view.Forms
 			triangleTree.GetColliding(colliding, in ray);
 
 			lastRay = ray;
-			lastHit = default;
+			lastHit = null;
 
 			RayCollisionResult<ObjectTriangles>? closestObject = null;
 			RayHit closestTriHit = new RayHit(Vector3.Zero, 16777215f);
