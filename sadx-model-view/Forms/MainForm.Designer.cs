@@ -42,6 +42,7 @@ namespace sadx_model_view.Forms
 			this.openModelDialog = new System.Windows.Forms.OpenFileDialog();
 			this.openTexturesDialog = new System.Windows.Forms.OpenFileDialog();
 			this.scene = new sadx_model_view.Controls.Scene();
+			this.enableOITToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.menuStrip.SuspendLayout();
 			this.SuspendLayout();
 			// 
@@ -100,6 +101,7 @@ namespace sadx_model_view.Forms
 			// 
 			this.viewToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.enableAlphaToolStripMenuItem,
+            this.enableOITToolStripMenuItem,
             this.showOctreeToolStripMenuItem});
 			this.viewToolStripMenuItem.Name = "viewToolStripMenuItem";
 			this.viewToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
@@ -111,7 +113,7 @@ namespace sadx_model_view.Forms
 			this.enableAlphaToolStripMenuItem.CheckOnClick = true;
 			this.enableAlphaToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
 			this.enableAlphaToolStripMenuItem.Name = "enableAlphaToolStripMenuItem";
-			this.enableAlphaToolStripMenuItem.Size = new System.Drawing.Size(143, 22);
+			this.enableAlphaToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
 			this.enableAlphaToolStripMenuItem.Text = "Enable Alpha";
 			this.enableAlphaToolStripMenuItem.CheckedChanged += new System.EventHandler(this.enableAlphaToolStripMenuItem_CheckedChanged);
 			// 
@@ -119,7 +121,7 @@ namespace sadx_model_view.Forms
 			// 
 			this.showOctreeToolStripMenuItem.CheckOnClick = true;
 			this.showOctreeToolStripMenuItem.Name = "showOctreeToolStripMenuItem";
-			this.showOctreeToolStripMenuItem.Size = new System.Drawing.Size(143, 22);
+			this.showOctreeToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
 			this.showOctreeToolStripMenuItem.Text = "Show Octree";
 			// 
 			// openModelDialog
@@ -149,6 +151,13 @@ namespace sadx_model_view.Forms
 			this.scene.KeyUp += new System.Windows.Forms.KeyEventHandler(this.scene_KeyUp);
 			this.scene.MouseMove += new System.Windows.Forms.MouseEventHandler(this.scene_MouseMove);
 			this.scene.MouseUp += new System.Windows.Forms.MouseEventHandler(this.scene_MouseUp);
+			// 
+			// enableOITToolStripMenuItem
+			// 
+			this.enableOITToolStripMenuItem.Name = "enableOITToolStripMenuItem";
+			this.enableOITToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+			this.enableOITToolStripMenuItem.Text = "Enable OIT";
+			this.enableOITToolStripMenuItem.CheckedChanged += new System.EventHandler(this.enableOITToolStripMenuItem_CheckedChanged);
 			// 
 			// MainForm
 			// 
@@ -187,6 +196,7 @@ namespace sadx_model_view.Forms
 		private System.Windows.Forms.ToolStripMenuItem viewToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem enableAlphaToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem showOctreeToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem enableOITToolStripMenuItem;
 	}
 }
 

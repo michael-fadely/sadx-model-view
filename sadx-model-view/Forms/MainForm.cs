@@ -822,6 +822,11 @@ namespace sadx_model_view.Forms
 			closestObject.Value.Collider.Object.SkipDraw = true;
 		}
 
+		private void enableOITToolStripMenuItem_CheckedChanged(object sender, EventArgs e)
+		{
+			// UNDONE: toggle OIT
+		}
+
 		void enableAlphaToolStripMenuItem_CheckedChanged(object sender, EventArgs e)
 		{
 			if (renderer != null)
