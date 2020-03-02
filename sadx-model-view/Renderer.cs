@@ -69,8 +69,13 @@ namespace sadx_model_view
 		DepthStencilState            depthStateRW;
 		DepthStencilState            depthStateRO;
 		DepthStencilView             depthView;
+		ShaderResourceView           depthShaderResource;
 		RasterizerState              rasterizerState;
 		RasterizerStateDescription   rasterizerDescription;
+
+		Texture2D          compositeTexture;
+		RenderTargetView   compositeView;
+		ShaderResourceView compositeSRV;
 
 		readonly Buffer debugHelperVertexBuffer;
 		readonly Buffer perSceneBuffer;
@@ -501,8 +506,8 @@ namespace sadx_model_view
 				return;
 			}
 
-			const int maxFragments = 32; // UNDONE
-			const int sizeOfOitNode = 4 * 4; // UNDONE
+			const int maxFragments  = 32;    // TODO: configurable maxFragments
+			const int sizeOfOitNode = 4 * 4; // TODO: sizeof(OitNode)
 
 			perSceneData.BufferLength.Value = (uint)viewport.Width * (uint)viewport.Height * maxFragments;
 
@@ -543,6 +548,9 @@ namespace sadx_model_view
 			FragListNodesUAV = new UnorderedAccessView(device, FragListNodes, uavDescription);
 		}
 
+		readonly UnorderedAccessView[] nullUavs = new UnorderedAccessView[3];
+		readonly int[] uavZeroCounts = { 0, 0, 0 };
+
 		void OitRead()
 		{
 			if (!oitEnabled)
@@ -550,19 +558,62 @@ namespace sadx_model_view
 				return;
 			}
 
-			// UNDONE
-			throw new NotImplementedException();
+			DeviceContext context = device.ImmediateContext;
+
+			// SharpDX does not have SetRenderTargetsAndUnorderedAccessViews
+			context.OutputMerger.SetUnorderedAccessViews(startSlot: 1, unorderedAccessViews: nullUavs, uavInitialCounts: uavZeroCounts);
+			context.OutputMerger.SetRenderTargets(depthStencilView: null, renderTargetView: backBuffer);
+
+			ShaderResourceView[] srvs =
+			{
+				FragListHeadSRV,
+				FragListCountSRV,
+				FragListNodesSRV,
+				compositeSRV,
+				depthShaderResource
+			};
+
+			context.PixelShader.SetShaderResources(0, srvs);
 		}
 
 		void OitWrite()
 		{
-			if (!oitEnabled)
+			DeviceContext context = device.ImmediateContext;
+
+			// Unbinds the shader resource views for our fragment list and list head.
+			// UAVs cannot be bound as standard resource views and UAVs simultaneously.
+
+			var resourceViews = new ShaderResourceView[5];
+			context.PixelShader.SetShaderResources(0, resourceViews);
+
+			var unorderedViews = new UnorderedAccessView[]
 			{
-				return;
+				FragListHeadUAV,
+				FragListCountUAV,
+				FragListNodesUAV
+			};
+
+			// This is used to set the hidden counter of FragListNodes to 0.
+			// It only works on FragListNodes, but the number of elements here
+			// must match the number of UAVs given.
+			var zero = new int[] { 0, 0, 0 };
+
+			// Binds our fragment list & list head UAVs for read/write operations.
+			//context->OMSetRenderTargetsAndUnorderedAccessViews(1, oit_actually_enabled ? composite_view.GetAddressOf() : render_target_view.GetAddressOf(),
+			//                                                   current_depth_stencil->depth_stencil.Get(), 1, unorderedViews.size(), &unorderedViews[0], &zero[0]);
+
+			context.OutputMerger.SetRenderTargets(depthView, oitEnabled ? compositeView : backBuffer);
+			context.OutputMerger.SetUnorderedAccessViews(1, unorderedViews, zero);
+
+			// Resets the list head indices to FRAGMENT_LIST_NULL.
+			// 4 elements are required as this can be used to clear a texture
+			// with 4 color channels, even though our list head only has one.
+			unchecked
+			{
+				context.ClearUnorderedAccessView(FragListHeadUAV, new RawInt4((int)uint.MaxValue, (int)uint.MaxValue, (int)uint.MaxValue, (int)uint.MaxValue));
 			}
 
-			// UNDONE
-			throw new NotImplementedException();
+			context.ClearUnorderedAccessView(FragListCountUAV, new RawInt4(0, 0, 0, 0));
 		}
 
 		void OitInitialize()
@@ -586,19 +637,40 @@ namespace sadx_model_view
 				return;
 			}
 
-			// UNDONE: disable culling
-			// UNDONE: disable z-test, z-write
+			using DepthStencilState depthState = device.ImmediateContext.OutputMerger.GetDepthStencilState(out int stencilRefRef);
+			// TODO: disable culling
 
 			SetShaderToOitComposite();
+			OitRead();
 
 			// Draw 3 points. The composite shader will use SV_VertexID to
 			// automatically produce a triangle that fills the whole screen.
 			device.ImmediateContext.Draw(3, 0);
 
-			// UNDONE: restore culling
-			// UNDONE: restore z-test, z-write
+			device.ImmediateContext.OutputMerger.SetDepthStencilState(depthState, stencilRefRef);
+			// TODO: restore culling
 
 			SetShaderToScene();
+		}
+
+		void OitRelease()
+		{
+			UnorderedAccessView[] nullViews = { null, null, null, null, null };
+
+			DeviceContext context = device.ImmediateContext;
+
+			context.OutputMerger.SetRenderTargets(null, backBuffer);
+			context.OutputMerger.SetUnorderedAccessViews(1, nullViews);
+
+			CoreExtensions.DisposeAndNullify(ref FragListHeadSRV);
+			CoreExtensions.DisposeAndNullify(ref FragListHead);
+			CoreExtensions.DisposeAndNullify(ref FragListHeadUAV);
+			CoreExtensions.DisposeAndNullify(ref FragListCount);
+			CoreExtensions.DisposeAndNullify(ref FragListCountSRV);
+			CoreExtensions.DisposeAndNullify(ref FragListCountUAV);
+			CoreExtensions.DisposeAndNullify(ref FragListNodes);
+			CoreExtensions.DisposeAndNullify(ref FragListNodesSRV);
+			CoreExtensions.DisposeAndNullify(ref FragListNodesUAV);
 		}
 
 		public void Clear()
@@ -760,7 +832,7 @@ namespace sadx_model_view
 			device.ImmediateContext.UnmapSubresource(perSceneBuffer, 0);
 		}
 
-		public void Present(Camera camera)
+		public void Present(Camera camera) // TODO: don't pass camera to present - maybe store the camera as part of the draw queue
 		{
 			var visibleCount = 0;
 			zWrite = true;
@@ -778,34 +850,59 @@ namespace sadx_model_view
 
 			if (EnableAlpha && meshQueue.AlphaSets.Count > 1)
 			{
-				if (!oitEnabled)
+				if (oitEnabled)
+				{
+					// Enable z-write so that if we find "transparent" geometry which
+					// is actually opaque, we can force it into the opaque back buffer
+					// to avoid extra work in the composite stage.
+					device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
+					zWrite = true;
+
+					// Now simply draw
+					foreach (MeshsetQueueElement e in meshQueue.AlphaSets)
+					{
+						DrawMeshsetQueueElement(e);
+					}
+				}
+				else
 				{
 					meshQueue.SortAlpha();
+
+					// First draw with depth writes enabled & alpha threshold (in shader)
+					foreach (MeshsetQueueElement e in meshQueue.AlphaSets)
+					{
+						DrawMeshsetQueueElement(e);
+					}
+
+					// Now draw with depth writes disabled
+					device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRO);
+					zWrite = false;
+
+					foreach (MeshsetQueueElement e in meshQueue.AlphaSets)
+					{
+						++visibleCount;
+						DrawMeshsetQueueElement(e);
+					}
+
+					device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
+					zWrite = true;
 				}
-
-				// First draw with depth writes enabled & alpha threshold (in shader)
-				foreach (MeshsetQueueElement e in meshQueue.AlphaSets)
-				{
-					DrawMeshsetQueueElement(e);
-				}
-
-				// Now draw with depth writes disabled
-				device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRO);
-				zWrite = false;
-
-				foreach (MeshsetQueueElement e in meshQueue.AlphaSets)
-				{
-					++visibleCount;
-					DrawMeshsetQueueElement(e);
-				}
-
-				device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
-				zWrite = true;
 			}
 
 			DrawDebugHelpers();
 			meshQueue.Clear();
+
+			if (oitEnabled)
+			{
+				OitComposite();
+			}
+
 			swapChain.Present(0, 0);
+
+			if (oitEnabled)
+			{
+				OitWrite();
+			}
 
 			if (!MatrixStack.Empty)
 			{
@@ -918,12 +1015,54 @@ namespace sadx_model_view
 			}
 		}
 
+		void CreateOitCompositeTexture(Texture2DDescription tex_desc)
+		{
+			CoreExtensions.DisposeAndNullify(ref compositeTexture);
+			CoreExtensions.DisposeAndNullify(ref compositeView);
+			CoreExtensions.DisposeAndNullify(ref compositeSRV);
+
+			tex_desc.Usage     = ResourceUsage.Default;
+			tex_desc.BindFlags = BindFlags.RenderTarget | BindFlags.ShaderResource;
+
+			compositeTexture = new Texture2D(device, tex_desc);
+
+			var view_desc = new RenderTargetViewDescription
+			{
+				Format    = tex_desc.Format,
+				Dimension = RenderTargetViewDimension.Texture2D,
+				Texture2D = { MipSlice = 0 }
+			};
+
+			compositeView = new RenderTargetView(device, compositeTexture, view_desc);
+
+			//std::string composite_view_name = "composite_view";
+			//compositeView->SetPrivateData(WKPDID_D3DDebugObjectName, composite_view_name.size(), composite_view_name.data());
+
+			var srv_desc = new ShaderResourceViewDescription
+			{
+				Format    = tex_desc.Format,
+				Dimension = ShaderResourceViewDimension.Texture2D,
+				Texture2D =
+				{
+					MostDetailedMip = 0,
+					MipLevels       = 1
+				}
+			};
+
+			compositeSRV = new ShaderResourceView(device, compositeTexture, srv_desc);
+
+			//std::string composite_srv_name = "composite_srv";
+			//composite_srv->SetPrivateData(WKPDID_D3DDebugObjectName, composite_srv_name.size(), composite_srv_name.data());
+		}
+
 		void CreateRenderTarget()
 		{
 			using (var pBackBuffer = Resource.FromSwapChain<Texture2D>(swapChain, 0))
 			{
-				backBuffer?.Dispose();
+				CoreExtensions.DisposeAndNullify(ref backBuffer);
 				backBuffer = new RenderTargetView(device, pBackBuffer);
+
+				CreateOitCompositeTexture(pBackBuffer.Description);
 			}
 
 			device.ImmediateContext.OutputMerger.SetRenderTargets(backBuffer);
@@ -971,15 +1110,22 @@ namespace sadx_model_view
 
 		void CreateDepthStencil(int w, int h)
 		{
-			// TODO: shader resource?
+			const Format textureFormat = Format.R24G8_Typeless;
+			const Format depthFormat   = Format.D24_UNorm_S8_UInt;
 
-			var depthBufferDesc = new Texture2DDescription
+			CoreExtensions.DisposeAndNullify(ref depthTexture);
+			CoreExtensions.DisposeAndNullify(ref depthStateRW);
+			CoreExtensions.DisposeAndNullify(ref depthStateRO);
+			CoreExtensions.DisposeAndNullify(ref depthView);
+			CoreExtensions.DisposeAndNullify(ref depthShaderResource);
+
+			var depthTextureDesc = new Texture2DDescription
 			{
 				Width             = w,
 				Height            = h,
 				MipLevels         = 1,
 				ArraySize         = 1,
-				Format            = Format.D24_UNorm_S8_UInt,
+				Format            = textureFormat,
 				SampleDescription = new SampleDescription(1, 0),
 				Usage             = ResourceUsage.Default,
 				BindFlags         = BindFlags.DepthStencil,
@@ -987,8 +1133,7 @@ namespace sadx_model_view
 				OptionFlags       = ResourceOptionFlags.None
 			};
 
-			depthTexture?.Dispose();
-			depthTexture = new Texture2D(device, depthBufferDesc);
+			depthTexture = new Texture2D(device, depthTextureDesc);
 
 			depthDesc = new DepthStencilStateDescription
 			{
@@ -1015,16 +1160,15 @@ namespace sadx_model_view
 				}
 			};
 
-			depthStateRW?.Dispose();
 			depthStateRW = new DepthStencilState(device, depthDesc);
 
 			depthDesc.DepthWriteMask = DepthWriteMask.Zero;
-			depthStateRO?.Dispose();
+
 			depthStateRO = new DepthStencilState(device, depthDesc);
 
 			var depthViewDesc = new DepthStencilViewDescription
 			{
-				Format    = Format.D24_UNorm_S8_UInt,
+				Format    = depthFormat,
 				Dimension = DepthStencilViewDimension.Texture2D,
 				Texture2D = new DepthStencilViewDescription.Texture2DResource
 				{
@@ -1032,11 +1176,23 @@ namespace sadx_model_view
 				}
 			};
 
-			depthView?.Dispose();
 			depthView = new DepthStencilView(device, depthTexture, depthViewDesc);
 
-			device?.ImmediateContext.OutputMerger.SetTargets(depthView, backBuffer);
-			device?.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
+			device.ImmediateContext.OutputMerger.SetTargets(depthView, backBuffer);
+			device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
+
+			var resourceViewDescription = new ShaderResourceViewDescription
+			{
+				Format    = textureFormat,
+				Dimension = ShaderResourceViewDimension.Texture2D,
+				Texture2D = new ShaderResourceViewDescription.Texture2DResource
+				{
+					MipLevels       = 1,
+					MostDetailedMip = 0
+				}
+			};
+
+			depthShaderResource = new ShaderResourceView(device, depthTexture, resourceViewDescription);
 		}
 
 		void CreateRasterizerState()

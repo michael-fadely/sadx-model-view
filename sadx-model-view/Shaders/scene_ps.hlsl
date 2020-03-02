@@ -31,6 +31,8 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 
 	if (material.useAlpha)
 	{
+	#ifdef RS_OIT
+		do_oit(result, input, )
 		if (writeDepth == true)
 		{
 			clip(result.a == 0 ? -1 : 1);
