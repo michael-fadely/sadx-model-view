@@ -40,10 +40,6 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 		{
 			clip(isStandardBlending && alpha < 255 ? -1 : 1);
 		}
-		else
-		{
-			clip(isStandardBlending && alpha > 254 ? -1 : 1);
-		}
 	#endif
 	}
 
