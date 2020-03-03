@@ -96,6 +96,7 @@
     <Compile Include="DebugLine.cs" />
     <Compile Include="DebugPoint.cs" />
     <Compile Include="DebugWireCube.cs" />
+    <Compile Include="Extensions\SharpDX\CBufferWriter.cs" />
     <Compile Include="Extensions\SharpDX\Mathematics\Collision\RayExtensions.cs" />
     <Compile Include="Extensions\SharpDX\Mathematics\Collision\RayHit.cs" />
     <Compile Include="GlobalSuppressions.cs" />
@@ -148,7 +149,7 @@
     </Compile>
     <Compile Include="VisibilityTree.cs" />
     <Compile Include="SceneTexture.cs" />
-    <Compile Include="ShaderMaterial.cs" />
+    <Compile Include="SceneMaterial.cs" />
     <Compile Include="TransformState.cs" />
     <EmbeddedResource Include="Forms\MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>

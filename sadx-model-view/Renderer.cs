@@ -5,6 +5,7 @@ using System.Drawing.Imaging;
 using System.Linq;
 using System.Runtime.InteropServices;
 using sadx_model_view.Extensions;
+using sadx_model_view.Extensions.SharpDX;
 using sadx_model_view.Ninja;
 using SharpDX;
 using SharpDX.D3DCompiler;
@@ -94,7 +95,7 @@ namespace sadx_model_view
 		readonly List<DebugLine>     debugLines     = new List<DebugLine>();
 		readonly List<DebugWireCube> debugWireCubes = new List<DebugWireCube>();
 
-		ShaderMaterial lastMaterial;
+		SceneMaterial lastMaterial;
 		VertexShader   sceneVertexShader;
 		PixelShader    scenePixelShader;
 		InputLayout    sceneInputLayout;
@@ -174,24 +175,27 @@ namespace sadx_model_view
 			OitCapable = device.FeatureLevel >= FeatureLevel.Level_11_1;
 			oitEnabled = OitCapable;
 
-			var bufferDesc = new BufferDescription(PerSceneBuffer.SizeInBytes.RoundToMultiple(16),
+			int bufferSize = (int)CBuffer.CalculateSize(perSceneData);
+
+			var bufferDesc = new BufferDescription(bufferSize,
 			                                       ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write,
-			                                       ResourceOptionFlags.None, PerSceneBuffer.SizeInBytes);
+			                                       ResourceOptionFlags.None, bufferSize);
 
 			perSceneBuffer = new Buffer(device, bufferDesc);
 
-			bufferDesc = new BufferDescription(PerModelBuffer.SizeInBytes.RoundToMultiple(16),
+			bufferSize = (int)CBuffer.CalculateSize(perModelData);
+
+			bufferDesc = new BufferDescription(bufferSize,
 			                                   ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write,
-			                                   ResourceOptionFlags.None, PerModelBuffer.SizeInBytes);
+			                                   ResourceOptionFlags.None, bufferSize);
 
 			perModelBuffer = new Buffer(device, bufferDesc);
 
 			// Size must be divisible by 16, so this is just padding.
-			int size   = Math.Max(ShaderMaterial.SizeInBytes, 80);
-			int stride = ShaderMaterial.SizeInBytes + sizeof(uint);
+			int size = (int)CBuffer.CalculateSize(lastMaterial);
 
 			bufferDesc = new BufferDescription(size, ResourceUsage.Dynamic, BindFlags.ConstantBuffer,
-			                                   CpuAccessFlags.Write, ResourceOptionFlags.None, stride);
+			                                   CpuAccessFlags.Write, ResourceOptionFlags.None, structureByteStride: size);
 
 			materialBuffer = new Buffer(device, bufferDesc);
 
@@ -744,8 +748,8 @@ namespace sadx_model_view
 				FlowControl.Set(FlowControl.AndFlags & ~NJD_FLAG.UseTexture, FlowControl.OrFlags);
 			}
 
-			ShaderMaterial shaderMaterial = NJS_MODEL.GetSADXMaterial(this, njMaterial);
-			SetShaderMaterial(in shaderMaterial);
+			SceneMaterial sceneMaterial = NJS_MODEL.GetSADXMaterial(this, njMaterial);
+			SetSceneMaterial(in sceneMaterial);
 
 			DisplayState state = GetSADXDisplayState(njMaterial);
 
@@ -804,17 +808,16 @@ namespace sadx_model_view
 			device.ImmediateContext.MapSubresource(perModelBuffer, MapMode.WriteDiscard,
 			                                       MapFlags.None, out DataStream stream);
 
+			Matrix wvMatrixInvT = perModelData.World.Value * perSceneData.View.Value;
+			Matrix.Invert(ref wvMatrixInvT, out wvMatrixInvT);
+
+			perModelData.wvMatrixInvT.Value = wvMatrixInvT;
+
 			using (stream)
 			{
-				Matrix wvMatrixInvT = perModelData.World.Value * perSceneData.View.Value;
-				Matrix.Invert(ref wvMatrixInvT, out wvMatrixInvT);
-
-				perModelData.wvMatrixInvT.Value = wvMatrixInvT;
-
-				stream.Write(perModelData.World.Value);
-				stream.Write(wvMatrixInvT);
-
-				Debug.Assert(stream.RemainingLength == 0);
+				var writer = new CBufferStreamWriter(stream);
+				perModelData.Write(writer);
+				//Debug.Assert(stream.RemainingLength == 0);
 			}
 
 			device.ImmediateContext.UnmapSubresource(perModelBuffer, 0);
@@ -833,11 +836,9 @@ namespace sadx_model_view
 
 			using (stream)
 			{
-				stream.Write(perSceneData.View.Value);
-				stream.Write(perSceneData.Projection.Value);
-				stream.Write(perSceneData.CameraPosition.Value);
-
-				//Debug.Assert(stream.RemainingLength == 0);
+				var writer = new CBufferStreamWriter(stream);
+				perSceneData.Write(writer);
+				Debug.Assert(stream.RemainingLength == 0);
 			}
 
 			perSceneData.Clear();
@@ -1523,7 +1524,7 @@ namespace sadx_model_view
 			return result;
 		}
 
-		public void SetShaderMaterial(in ShaderMaterial material)
+		public void SetSceneMaterial(in SceneMaterial material)
 		{
 			if (material == lastMaterial && zWrite == lastZwrite)
 			{
@@ -1537,15 +1538,8 @@ namespace sadx_model_view
 
 			using (stream)
 			{
-				stream.Write(material.Diffuse);
-				stream.Write(material.Specular);
-				stream.Write(material.Exponent);
-				stream.Write(material.UseLight ? 1 : 0);
-				stream.Write(material.UseAlpha ? 1 : 0);
-				stream.Write(material.UseEnv ? 1 : 0);
-				stream.Write(material.UseTexture ? 1 : 0);
-				stream.Write(material.UseSpecular ? 1 : 0);
-				stream.Write(zWrite ? 1 : 0);
+				var writer = new CBufferStreamWriter(stream);
+				material.Write(writer);
 			}
 
 			device.ImmediateContext.UnmapSubresource(materialBuffer, 0);

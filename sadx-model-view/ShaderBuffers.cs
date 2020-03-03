@@ -1,25 +1,22 @@
 using System.Runtime.InteropServices;
+using sadx_model_view.Extensions.SharpDX;
 using sadx_model_view.Interfaces;
 using SharpDX;
 
 namespace sadx_model_view
 {
-	public class PerSceneBuffer : IModifiable
+	public class PerSceneBuffer : CBuffer, IModifiable
 	{
-		// TODO: do this with reflection
-		public static int SizeInBytes => (Vector3.SizeInBytes + 2 * Matrix.SizeInBytes)
-		                                 + Marshal.SizeOf<uint>();
-
 		// TODO: do this with reflection
 		public bool Modified => View.Modified ||
 		                        Projection.Modified ||
 		                        CameraPosition.Modified ||
 		                        BufferLength.Modified;
 
-		public readonly Modifiable<Matrix>  View               = new Modifiable<Matrix>();
-		public readonly Modifiable<Matrix>  Projection         = new Modifiable<Matrix>();
-		public readonly Modifiable<Vector3> CameraPosition     = new Modifiable<Vector3>();
-		public readonly Modifiable<uint>    BufferLength       = new Modifiable<uint>(0);
+		public readonly Modifiable<Matrix>  View           = new Modifiable<Matrix>();
+		public readonly Modifiable<Matrix>  Projection     = new Modifiable<Matrix>();
+		public readonly Modifiable<Vector3> CameraPosition = new Modifiable<Vector3>();
+		public readonly Modifiable<uint>    BufferLength   = new Modifiable<uint>(0);
 
 		// TODO: do this with reflection
 		public void Clear()
@@ -29,13 +26,19 @@ namespace sadx_model_view
 			CameraPosition.Clear();
 			BufferLength.Clear();
 		}
+
+		/// <inheritdoc />
+		public override void Write(CBufferWriter writer)
+		{
+			writer.Add(View);
+			writer.Add(Projection);
+			writer.Add(CameraPosition);
+			writer.Add(BufferLength);
+		}
 	}
 
-	public class PerModelBuffer : IModifiable
+	public class PerModelBuffer : CBuffer, IModifiable
 	{
-		// TODO: do this with reflection
-		public static int SizeInBytes => (2 * Matrix.SizeInBytes) + (Marshal.SizeOf<uint>() * 5);
-
 		// TODO: do this with reflection
 		public bool Modified => World.Modified ||
 		                        wvMatrixInvT.Modified ||
@@ -63,6 +66,18 @@ namespace sadx_model_view
 			DestinationBlend.Clear();
 			BlendOperation.Clear();
 			IsStandardBlending.Clear();
+		}
+
+		/// <inheritdoc />
+		public override void Write(CBufferWriter writer)
+		{
+			writer.Add(World);
+			writer.Add(wvMatrixInvT);
+			writer.Add(DrawCall);
+			writer.Add(SourceBlend);
+			writer.Add(DestinationBlend);
+			writer.Add(BlendOperation);
+			writer.Add(IsStandardBlending);
 		}
 	}
 }
