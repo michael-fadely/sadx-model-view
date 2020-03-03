@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using sadx_model_view.Extensions.SharpDX;
 using sadx_model_view.Interfaces;
 using SharpDX;
@@ -78,6 +77,30 @@ namespace sadx_model_view
 			writer.Add(DestinationBlend);
 			writer.Add(BlendOperation);
 			writer.Add(IsStandardBlending);
+		}
+	}
+
+	public class MaterialBuffer : CBuffer, IModifiable
+	{
+		public readonly Modifiable<SceneMaterial> Material = new Modifiable<SceneMaterial>();
+		public readonly Modifiable<bool> WriteDepth = new Modifiable<bool>(true);
+
+		/// <inheritdoc />
+		public override void Write(CBufferWriter writer)
+		{
+			Material.Value.Write(writer);
+			writer.Align();
+			writer.Add(WriteDepth.Value);
+		}
+
+		/// <inheritdoc />
+		public bool Modified => Material.Modified || WriteDepth.Modified;
+
+		/// <inheritdoc />
+		public void Clear()
+		{
+			Material.Clear();
+			WriteDepth.Clear();
 		}
 	}
 }

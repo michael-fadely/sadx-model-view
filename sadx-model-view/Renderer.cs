@@ -85,9 +85,7 @@ namespace sadx_model_view
 
 		readonly PerSceneBuffer perSceneData = new PerSceneBuffer();
 		readonly PerModelBuffer perModelData = new PerModelBuffer();
-
-		bool zWrite = true;
-		bool lastZwrite;
+		readonly MaterialBuffer materialData = new MaterialBuffer();
 
 		readonly MeshsetQueue meshQueue = new MeshsetQueue();
 		readonly Dictionary<NJD_FLAG, DisplayState> displayStates = new Dictionary<NJD_FLAG, DisplayState>();
@@ -95,7 +93,6 @@ namespace sadx_model_view
 		readonly List<DebugLine>     debugLines     = new List<DebugLine>();
 		readonly List<DebugWireCube> debugWireCubes = new List<DebugWireCube>();
 
-		SceneMaterial lastMaterial;
 		VertexShader   sceneVertexShader;
 		PixelShader    scenePixelShader;
 		InputLayout    sceneInputLayout;
@@ -191,8 +188,7 @@ namespace sadx_model_view
 
 			perModelBuffer = new Buffer(device, bufferDesc);
 
-			// Size must be divisible by 16, so this is just padding.
-			int size = (int)CBuffer.CalculateSize(lastMaterial);
+			int size = (int)CBuffer.CalculateSize(materialData);
 
 			bufferDesc = new BufferDescription(size, ResourceUsage.Dynamic, BindFlags.ConstantBuffer,
 			                                   CpuAccessFlags.Write, ResourceOptionFlags.None, structureByteStride: size);
@@ -850,7 +846,7 @@ namespace sadx_model_view
 		public void Present(Camera camera) // TODO: don't pass camera to present - maybe store the camera as part of the draw queue
 		{
 			var visibleCount = 0;
-			zWrite = true;
+			materialData.WriteDepth.Value = true;
 
 			perSceneData.CameraPosition.Value = camera.Position;
 			CommitPerSceneData();
@@ -871,7 +867,7 @@ namespace sadx_model_view
 					// is actually opaque, we can force it into the opaque back buffer
 					// to avoid extra work in the composite stage.
 					device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
-					zWrite = true;
+					materialData.WriteDepth.Value = true;
 
 					// Now simply draw
 					foreach (MeshsetQueueElement e in meshQueue.AlphaSets)
@@ -891,7 +887,7 @@ namespace sadx_model_view
 
 					// Now draw with depth writes disabled
 					device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRO);
-					zWrite = false;
+					materialData.WriteDepth.Value = false;
 
 					foreach (MeshsetQueueElement e in meshQueue.AlphaSets)
 					{
@@ -900,7 +896,7 @@ namespace sadx_model_view
 					}
 
 					device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
-					zWrite = true;
+					materialData.WriteDepth.Value = true;
 				}
 			}
 
@@ -971,7 +967,7 @@ namespace sadx_model_view
 
 			// TODO: make debug z-writes (and tests) configurable
 			device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStateRW);
-			zWrite = true;
+			materialData.WriteDepth.Value = true;
 
 			// using these variables we're able to batch lines into
 			// the cube-sized vertex buffer to reduce draw calls.
@@ -1525,20 +1521,21 @@ namespace sadx_model_view
 
 		public void SetSceneMaterial(in SceneMaterial material)
 		{
-			if (material == lastMaterial && zWrite == lastZwrite)
+			materialData.Material.Value = material;
+
+			if (!materialData.Modified)
 			{
 				return;
 			}
 
-			lastMaterial = material;
-			lastZwrite = zWrite;
+			materialData.Clear();
 
 			device.ImmediateContext.MapSubresource(materialBuffer, MapMode.WriteDiscard, MapFlags.None, out DataStream stream);
 
 			using (stream)
 			{
 				var writer = new CBufferStreamWriter(stream);
-				material.Write(writer);
+				materialData.Write(writer);
 			}
 
 			device.ImmediateContext.UnmapSubresource(materialBuffer, 0);

@@ -32,12 +32,12 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 
 	if (material.useAlpha)
 	{
-	#ifdef RS_OIT
+	#if RS_OIT == 1
 		do_oit(result, input, isStandardBlending);
 	#else
 		if (writeDepth == true)
 		{
-			clip(result.a == 0 ? -1 : 1);
+			clip(!isStandardBlending || result.a == 0 ? -1 : 1);
 		}
 		else if (result.a >= THRESHOLD)
 		{
