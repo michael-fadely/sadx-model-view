@@ -169,7 +169,7 @@ namespace sadx_model_view
 				throw new InsufficientFeatureLevelException(device.FeatureLevel, FeatureLevel.Level_10_0);
 			}
 
-			OitCapable = device.FeatureLevel >= FeatureLevel.Level_11_1;
+			OitCapable = device.FeatureLevel >= FeatureLevel.Level_11_0;
 			oitEnabled = OitCapable;
 
 			int bufferSize = (int)CBuffer.CalculateSize(perSceneData);
