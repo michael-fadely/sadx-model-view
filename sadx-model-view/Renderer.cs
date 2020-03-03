@@ -565,8 +565,8 @@ namespace sadx_model_view
 			DeviceContext context = device.ImmediateContext;
 
 			// SharpDX does not have SetRenderTargetsAndUnorderedAccessViews
-			context.OutputMerger.SetUnorderedAccessViews(startSlot: 1, unorderedAccessViews: nullUavs, uavInitialCounts: uavZeroCounts);
 			context.OutputMerger.SetRenderTargets(depthStencilView: null, renderTargetView: backBuffer);
+			context.OutputMerger.SetUnorderedAccessViews(startSlot: 1, unorderedAccessViews: nullUavs);
 
 			ShaderResourceView[] srvs =
 			{
@@ -586,7 +586,6 @@ namespace sadx_model_view
 
 			// Unbinds the shader resource views for our fragment list and list head.
 			// UAVs cannot be bound as standard resource views and UAVs simultaneously.
-
 			var resourceViews = new ShaderResourceView[5];
 			context.PixelShader.SetShaderResources(0, resourceViews);
 
@@ -612,16 +611,15 @@ namespace sadx_model_view
 			// Resets the list head indices to FRAGMENT_LIST_NULL.
 			// 4 elements are required as this can be used to clear a texture
 			// with 4 color channels, even though our list head only has one.
-			unchecked
-			{
-				context.ClearUnorderedAccessView(FragListHeadUAV, new RawInt4((int)uint.MaxValue, (int)uint.MaxValue, (int)uint.MaxValue, (int)uint.MaxValue));
-			}
+			context.ClearUnorderedAccessView(FragListHeadUAV, new RawInt4(-1, -1, -1, -1));
 
 			context.ClearUnorderedAccessView(FragListCountUAV, new RawInt4(0, 0, 0, 0));
 		}
 
 		void OitInitialize()
 		{
+			OitRelease();
+
 			if (!oitEnabled)
 			{
 				return;
@@ -644,6 +642,9 @@ namespace sadx_model_view
 			using DepthStencilState depthState = device.ImmediateContext.OutputMerger.GetDepthStencilState(out int stencilRefRef);
 			// TODO: disable culling
 
+			using var blendState = device.ImmediateContext.OutputMerger.BlendState;
+			device.ImmediateContext.OutputMerger.BlendState = null;
+
 			SetShaderToOitComposite();
 			OitRead();
 
@@ -653,6 +654,7 @@ namespace sadx_model_view
 
 			device.ImmediateContext.OutputMerger.SetDepthStencilState(depthState, stencilRefRef);
 			// TODO: restore culling
+			device.ImmediateContext.OutputMerger.BlendState = blendState;
 
 			SetShaderToScene();
 		}
@@ -663,7 +665,7 @@ namespace sadx_model_view
 
 			DeviceContext context = device.ImmediateContext;
 
-			context.OutputMerger.SetRenderTargets(null, backBuffer);
+			context.OutputMerger.SetRenderTargets(depthView, backBuffer);
 			context.OutputMerger.SetUnorderedAccessViews(1, nullViews);
 
 			CoreExtensions.DisposeAndNullify(ref FragListHeadSRV);
@@ -687,7 +689,7 @@ namespace sadx_model_view
 			meshQueue.Clear();
 
 			device.ImmediateContext.Rasterizer.State = rasterizerState;
-			device.ImmediateContext.ClearRenderTargetView(backBuffer, new RawColor4(0.0f, 1.0f, 1.0f, 1.0f));
+			device.ImmediateContext.ClearRenderTargetView(oitEnabled ? compositeView : backBuffer, new RawColor4(0.0f, 1.0f, 1.0f, 1.0f));
 
 #if REVERSE_Z
 			device.ImmediateContext.ClearDepthStencilView(depthView, DepthStencilClearFlags.Depth, 0.0f, 0);
@@ -908,13 +910,12 @@ namespace sadx_model_view
 			if (oitEnabled)
 			{
 				OitComposite();
-			}
-
-			swapChain.Present(0, 0);
-
-			if (oitEnabled)
-			{
+				swapChain.Present(0, 0);
 				OitWrite();
+			}
+			else
+			{
+				swapChain.Present(0, 0);
 			}
 
 			if (!MatrixStack.Empty)
@@ -1048,9 +1049,6 @@ namespace sadx_model_view
 
 			compositeView = new RenderTargetView(device, compositeTexture, view_desc);
 
-			//std::string composite_view_name = "composite_view";
-			//compositeView->SetPrivateData(WKPDID_D3DDebugObjectName, composite_view_name.size(), composite_view_name.data());
-
 			var srv_desc = new ShaderResourceViewDescription
 			{
 				Format    = tex_desc.Format,
@@ -1063,20 +1061,21 @@ namespace sadx_model_view
 			};
 
 			compositeSRV = new ShaderResourceView(device, compositeTexture, srv_desc);
-
-			//std::string composite_srv_name = "composite_srv";
-			//composite_srv->SetPrivateData(WKPDID_D3DDebugObjectName, composite_srv_name.size(), composite_srv_name.data());
 		}
 
 		void CreateRenderTarget()
 		{
+			Texture2DDescription description;
+
 			using (var pBackBuffer = Resource.FromSwapChain<Texture2D>(swapChain, 0))
 			{
 				CoreExtensions.DisposeAndNullify(ref backBuffer);
 				backBuffer = new RenderTargetView(device, pBackBuffer);
 
-				CreateOitCompositeTexture(pBackBuffer.Description);
+				description = pBackBuffer.Description;
 			}
+
+			CreateOitCompositeTexture(description);
 
 			device.ImmediateContext.OutputMerger.SetRenderTargets(backBuffer);
 		}
