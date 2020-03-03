@@ -38,11 +38,11 @@ namespace sadx_model_view.Forms
 			this.recompileShadersToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.enableAlphaToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.enableOITToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.showOctreeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.openModelDialog = new System.Windows.Forms.OpenFileDialog();
 			this.openTexturesDialog = new System.Windows.Forms.OpenFileDialog();
 			this.scene = new sadx_model_view.Controls.Scene();
-			this.enableOITToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.menuStrip.SuspendLayout();
 			this.SuspendLayout();
 			// 
@@ -117,6 +117,14 @@ namespace sadx_model_view.Forms
 			this.enableAlphaToolStripMenuItem.Text = "Enable Alpha";
 			this.enableAlphaToolStripMenuItem.CheckedChanged += new System.EventHandler(this.enableAlphaToolStripMenuItem_CheckedChanged);
 			// 
+			// enableOITToolStripMenuItem
+			// 
+			this.enableOITToolStripMenuItem.CheckOnClick = true;
+			this.enableOITToolStripMenuItem.Name = "enableOITToolStripMenuItem";
+			this.enableOITToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+			this.enableOITToolStripMenuItem.Text = "Enable OIT";
+			this.enableOITToolStripMenuItem.CheckedChanged += new System.EventHandler(this.enableOITToolStripMenuItem_CheckedChanged);
+			// 
 			// showOctreeToolStripMenuItem
 			// 
 			this.showOctreeToolStripMenuItem.CheckOnClick = true;
@@ -151,13 +159,6 @@ namespace sadx_model_view.Forms
 			this.scene.KeyUp += new System.Windows.Forms.KeyEventHandler(this.scene_KeyUp);
 			this.scene.MouseMove += new System.Windows.Forms.MouseEventHandler(this.scene_MouseMove);
 			this.scene.MouseUp += new System.Windows.Forms.MouseEventHandler(this.scene_MouseUp);
-			// 
-			// enableOITToolStripMenuItem
-			// 
-			this.enableOITToolStripMenuItem.Name = "enableOITToolStripMenuItem";
-			this.enableOITToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-			this.enableOITToolStripMenuItem.Text = "Enable OIT";
-			this.enableOITToolStripMenuItem.CheckedChanged += new System.EventHandler(this.enableOITToolStripMenuItem_CheckedChanged);
 			// 
 			// MainForm
 			// 

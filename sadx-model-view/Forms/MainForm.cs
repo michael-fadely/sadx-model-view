@@ -449,7 +449,7 @@ namespace sadx_model_view.Forms
 				return;
 			}
 
-			enableOITToolStripMenuItem.Enabled = renderer.OitCapable;
+			enableOITToolStripMenuItem.Checked = renderer.OitCapable;
 
 			UpdateProjection();
 			scene.SizeChanged += OnSizeChanged;
@@ -825,7 +825,10 @@ namespace sadx_model_view.Forms
 
 		private void enableOITToolStripMenuItem_CheckedChanged(object sender, EventArgs e)
 		{
-			// UNDONE: toggle OIT
+			if (renderer != null)
+			{
+				renderer.OitEnabled = enableOITToolStripMenuItem.Checked;
+			}
 		}
 
 		void enableAlphaToolStripMenuItem_CheckedChanged(object sender, EventArgs e)
