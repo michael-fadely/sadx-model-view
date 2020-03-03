@@ -38,9 +38,9 @@ cbuffer PerModelBuffer : register(b2)
 	matrix worldMatrix;
 	matrix wvMatrixInvT;
 	uint   drawCall;
-	uint   src_blend;
-	uint   dst_blend;
-	uint   blend_op;
+	uint   sourceBlend;
+	uint   destinationBlend;
+	uint   blendOp;
 	bool   isStandardBlending;
 };
 
