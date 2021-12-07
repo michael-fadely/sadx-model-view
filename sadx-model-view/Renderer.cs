@@ -110,26 +110,26 @@ namespace sadx_model_view
 		SamplerState    lastSamplerState;
 		SceneTexture    lastTexture;
 
-		public bool OitCapable { get; private set; }
+		public bool OITCapable { get; private set; }
 
-		bool oitEnabled;
+		private bool _oitEnabled;
 
-		public bool OitEnabled
+		public bool OITEnabled
 		{
-			get => oitEnabled;
+			get => _oitEnabled;
 			set
 			{
-				if (value && !OitCapable)
+				if (value && !OITCapable)
 				{
 					throw new Exception("Device not OIT-capable!");
 				}
 
-				if (value == oitEnabled)
+				if (value == _oitEnabled)
 				{
 					return;
 				}
 
-				oitEnabled = value;
+				_oitEnabled = value;
 				LoadShaders();
 			}
 		}
@@ -169,8 +169,8 @@ namespace sadx_model_view
 				throw new InsufficientFeatureLevelException(device.FeatureLevel, FeatureLevel.Level_10_0);
 			}
 
-			OitCapable = device.FeatureLevel >= FeatureLevel.Level_11_0;
-			oitEnabled = OitCapable;
+			OITCapable = device.FeatureLevel >= FeatureLevel.Level_11_0;
+			_oitEnabled = OITCapable;
 
 			int bufferSize = (int)CBuffer.CalculateSize(perSceneData);
 
@@ -229,9 +229,9 @@ namespace sadx_model_view
 			device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
 		}
 
-		void SetShaderToOitComposite()
+		void SetShaderToOITComposite()
 		{
-			if (!OitCapable)
+			if (!OITCapable)
 			{
 				return;
 			}
@@ -258,7 +258,7 @@ namespace sadx_model_view
 			device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.LineList;
 		}
 
-		void LoadOitCompositeShader()
+		void LoadOITCompositeShader()
 		{
 			oitCompositeVertexShader?.Dispose();
 			oitCompositePixelShader?.Dispose();
@@ -266,7 +266,7 @@ namespace sadx_model_view
 			oitCompositeVertexShader = null;
 			oitCompositePixelShader = null;
 
-			if (!oitEnabled)
+			if (!_oitEnabled)
 			{
 				return;
 			}
@@ -302,7 +302,7 @@ namespace sadx_model_view
 
 			var macros = new ShaderMacro[]
 			{
-				new ShaderMacro("RS_OIT", (OitCapable && oitEnabled) ? "1" : "0")
+				new ShaderMacro("RS_OIT", (OITCapable && _oitEnabled) ? "1" : "0")
 			};
 
 			CompilationResult vs_result = ShaderBytecode.CompileFromFile("Shaders\\scene_vs.hlsl", "main", "vs_5_0",
@@ -374,12 +374,24 @@ namespace sadx_model_view
 
 		public void LoadShaders()
 		{
-			OitInitialize();
-			LoadOitCompositeShader();
+			OITInitialize();
+			LoadOITCompositeShader();
 
 			LoadSceneShaders();
 			LoadDebugShaders();
 		}
+
+		ShaderResourceView  FragListHeadSRV;
+		Texture2D           FragListHead;
+		UnorderedAccessView FragListHeadUAV;
+
+		Texture2D           FragListCount;
+		ShaderResourceView  FragListCountSRV;
+		UnorderedAccessView FragListCountUAV;
+
+		Buffer              FragListNodes;
+		ShaderResourceView  FragListNodesSRV;
+		UnorderedAccessView FragListNodesUAV;
 
 		void FragListHead_Init()
 		{
@@ -387,7 +399,7 @@ namespace sadx_model_view
 			CoreExtensions.DisposeAndNullify(ref FragListHeadSRV);
 			CoreExtensions.DisposeAndNullify(ref FragListHeadUAV);
 
-			if (!oitEnabled)
+			if (!_oitEnabled)
 			{
 				return;
 			}
@@ -430,25 +442,13 @@ namespace sadx_model_view
 			FragListHeadUAV = new UnorderedAccessView(device, FragListHead, uavDescription);
 		}
 
-		ShaderResourceView  FragListHeadSRV;
-		Texture2D           FragListHead;
-		UnorderedAccessView FragListHeadUAV;
-
-		Texture2D           FragListCount;
-		ShaderResourceView  FragListCountSRV;
-		UnorderedAccessView FragListCountUAV;
-
-		Buffer              FragListNodes;
-		ShaderResourceView  FragListNodesSRV;
-		UnorderedAccessView FragListNodesUAV;
-
 		void FragListCount_Init()
 		{
 			CoreExtensions.DisposeAndNullify(ref FragListCount);
 			CoreExtensions.DisposeAndNullify(ref FragListCountSRV);
 			CoreExtensions.DisposeAndNullify(ref FragListCountUAV);
 
-			if (!oitEnabled)
+			if (!_oitEnabled)
 			{
 				return;
 			}
@@ -501,13 +501,13 @@ namespace sadx_model_view
 			CoreExtensions.DisposeAndNullify(ref FragListNodesSRV);
 			CoreExtensions.DisposeAndNullify(ref FragListNodesUAV);
 
-			if (!oitEnabled)
+			if (!_oitEnabled)
 			{
 				return;
 			}
 
 			const int maxFragments  = 32;    // TODO: configurable maxFragments
-			const int sizeOfOitNode = 4 * 4; // TODO: sizeof(OitNode)
+			const int sizeOfOITNode = 4 * 4; // TODO: sizeof(OITNode)
 
 			perSceneData.BufferLength.Value = (uint)viewport.Width * (uint)viewport.Height * maxFragments;
 
@@ -515,8 +515,8 @@ namespace sadx_model_view
 			{
 				OptionFlags         = ResourceOptionFlags.BufferStructured,
 				BindFlags           = BindFlags.UnorderedAccess | BindFlags.ShaderResource,
-				SizeInBytes         = sizeOfOitNode * viewport.Width * viewport.Height * maxFragments,
-				StructureByteStride = sizeOfOitNode
+				SizeInBytes         = sizeOfOITNode * viewport.Width * viewport.Height * maxFragments,
+				StructureByteStride = sizeOfOITNode
 			};
 
 			FragListNodes = new Buffer(device, bufferDescription);
@@ -548,12 +548,11 @@ namespace sadx_model_view
 			FragListNodesUAV = new UnorderedAccessView(device, FragListNodes, uavDescription);
 		}
 
-		readonly UnorderedAccessView[] nullUavs = new UnorderedAccessView[3];
-		readonly int[] uavZeroCounts = { 0, 0, 0 };
+		readonly UnorderedAccessView[] nullUAVs = new UnorderedAccessView[3];
 
-		void OitRead()
+		void OITRead()
 		{
-			if (!oitEnabled)
+			if (!_oitEnabled)
 			{
 				return;
 			}
@@ -562,7 +561,7 @@ namespace sadx_model_view
 
 			// SharpDX does not have SetRenderTargetsAndUnorderedAccessViews
 			context.OutputMerger.SetRenderTargets(depthStencilView: null, renderTargetView: backBuffer);
-			context.OutputMerger.SetUnorderedAccessViews(startSlot: 1, unorderedAccessViews: nullUavs);
+			context.OutputMerger.SetUnorderedAccessViews(startSlot: 1, unorderedAccessViews: nullUAVs);
 
 			ShaderResourceView[] srvs =
 			{
@@ -576,7 +575,7 @@ namespace sadx_model_view
 			context.PixelShader.SetShaderResources(0, srvs);
 		}
 
-		void OitWrite()
+		void OITWrite()
 		{
 			DeviceContext context = device.ImmediateContext;
 
@@ -595,16 +594,13 @@ namespace sadx_model_view
 			// This is used to set the hidden counter of FragListNodes to 0.
 			// It only works on FragListNodes, but the number of elements here
 			// must match the number of UAVs given.
-			var zero = new int[] { 0, 0, 0 };
+			int[] zero = { 0, 0, 0 };
 
-			// Binds our fragment list & list head UAVs for read/write operations.
-			//context->OMSetRenderTargetsAndUnorderedAccessViews(1, oit_actually_enabled ? composite_view.GetAddressOf() : render_target_view.GetAddressOf(),
-			//                                                   current_depth_stencil->depth_stencil.Get(), 1, unorderedViews.size(), &unorderedViews[0], &zero[0]);
-
-			context.OutputMerger.SetRenderTargets(depthView, oitEnabled ? compositeView : backBuffer);
+			// Bind our fragment list & list head UAVs for read/write operations.
+			context.OutputMerger.SetRenderTargets(depthView, _oitEnabled ? compositeView : backBuffer);
 			context.OutputMerger.SetUnorderedAccessViews(1, unorderedViews, zero);
 
-			// Resets the list head indices to FRAGMENT_LIST_NULL.
+			// Resets the list head indices to OIT_FRAGMENT_LIST_NULL.
 			// 4 elements are required as this can be used to clear a texture
 			// with 4 color channels, even though our list head only has one.
 			context.ClearUnorderedAccessView(FragListHeadUAV, new RawInt4(-1, -1, -1, -1));
@@ -612,11 +608,11 @@ namespace sadx_model_view
 			context.ClearUnorderedAccessView(FragListCountUAV, new RawInt4(0, 0, 0, 0));
 		}
 
-		void OitInitialize()
+		void OITInitialize()
 		{
-			OitRelease();
+			OITRelease();
 
-			if (!oitEnabled)
+			if (!_oitEnabled)
 			{
 				return;
 			}
@@ -625,12 +621,12 @@ namespace sadx_model_view
 			FragListCount_Init();
 			FragListNodes_Init();
 
-			OitWrite();
+			OITWrite();
 		}
 
-		void OitComposite()
+		void OITComposite()
 		{
-			if (!oitEnabled)
+			if (!_oitEnabled)
 			{
 				return;
 			}
@@ -638,11 +634,11 @@ namespace sadx_model_view
 			using DepthStencilState depthState = device.ImmediateContext.OutputMerger.GetDepthStencilState(out int stencilRefRef);
 			// TODO: disable culling
 
-			using var blendState = device.ImmediateContext.OutputMerger.BlendState;
+			using BlendState blendState = device.ImmediateContext.OutputMerger.BlendState;
 			device.ImmediateContext.OutputMerger.BlendState = null;
 
-			SetShaderToOitComposite();
-			OitRead();
+			SetShaderToOITComposite();
+			OITRead();
 
 			// Draw 3 points. The composite shader will use SV_VertexID to
 			// automatically produce a triangle that fills the whole screen.
@@ -655,7 +651,7 @@ namespace sadx_model_view
 			SetShaderToScene();
 		}
 
-		void OitRelease()
+		void OITRelease()
 		{
 			UnorderedAccessView[] nullViews = { null, null, null, null, null };
 
@@ -685,7 +681,7 @@ namespace sadx_model_view
 			meshQueue.Clear();
 
 			device.ImmediateContext.Rasterizer.State = rasterizerState;
-			device.ImmediateContext.ClearRenderTargetView(oitEnabled ? compositeView : backBuffer, new RawColor4(0.0f, 1.0f, 1.0f, 1.0f));
+			device.ImmediateContext.ClearRenderTargetView(_oitEnabled ? compositeView : backBuffer, new RawColor4(0.0f, 1.0f, 1.0f, 1.0f));
 
 #if REVERSE_Z
 			device.ImmediateContext.ClearDepthStencilView(depthView, DepthStencilClearFlags.Depth, 0.0f, 0);
@@ -861,7 +857,7 @@ namespace sadx_model_view
 
 			if (EnableAlpha && meshQueue.AlphaSets.Count > 1)
 			{
-				if (oitEnabled)
+				if (_oitEnabled)
 				{
 					// Enable z-write so that if we find "transparent" geometry which
 					// is actually opaque, we can force it into the opaque back buffer
@@ -903,11 +899,11 @@ namespace sadx_model_view
 			DrawDebugHelpers();
 			meshQueue.Clear();
 
-			if (oitEnabled)
+			if (_oitEnabled)
 			{
-				OitComposite();
+				OITComposite();
 				swapChain.Present(0, 0);
-				OitWrite();
+				OITWrite();
 			}
 			else
 			{
@@ -1027,29 +1023,29 @@ namespace sadx_model_view
 			}
 		}
 
-		void CreateOitCompositeTexture(Texture2DDescription tex_desc)
+		void CreateOITCompositeTexture(Texture2DDescription textureDescription)
 		{
 			CoreExtensions.DisposeAndNullify(ref compositeTexture);
 			CoreExtensions.DisposeAndNullify(ref compositeView);
 			CoreExtensions.DisposeAndNullify(ref compositeSRV);
 
-			tex_desc.Usage     = ResourceUsage.Default;
-			tex_desc.BindFlags = BindFlags.RenderTarget | BindFlags.ShaderResource;
+			textureDescription.Usage     = ResourceUsage.Default;
+			textureDescription.BindFlags = BindFlags.RenderTarget | BindFlags.ShaderResource;
 
-			compositeTexture = new Texture2D(device, tex_desc);
+			compositeTexture = new Texture2D(device, textureDescription);
 
-			var view_desc = new RenderTargetViewDescription
+			var viewDescription = new RenderTargetViewDescription
 			{
-				Format    = tex_desc.Format,
+				Format    = textureDescription.Format,
 				Dimension = RenderTargetViewDimension.Texture2D,
 				Texture2D = { MipSlice = 0 }
 			};
 
-			compositeView = new RenderTargetView(device, compositeTexture, view_desc);
+			compositeView = new RenderTargetView(device, compositeTexture, viewDescription);
 
-			var srv_desc = new ShaderResourceViewDescription
+			var srvDescription = new ShaderResourceViewDescription
 			{
-				Format    = tex_desc.Format,
+				Format    = textureDescription.Format,
 				Dimension = ShaderResourceViewDimension.Texture2D,
 				Texture2D =
 				{
@@ -1058,7 +1054,7 @@ namespace sadx_model_view
 				}
 			};
 
-			compositeSRV = new ShaderResourceView(device, compositeTexture, srv_desc);
+			compositeSRV = new ShaderResourceView(device, compositeTexture, srvDescription);
 		}
 
 		void CreateRenderTarget()
@@ -1073,7 +1069,7 @@ namespace sadx_model_view
 				description = pBackBuffer.Description;
 			}
 
-			CreateOitCompositeTexture(description);
+			CreateOITCompositeTexture(description);
 
 			device.ImmediateContext.OutputMerger.SetRenderTargets(backBuffer);
 		}
@@ -1118,8 +1114,8 @@ namespace sadx_model_view
 			CreateRasterizerState();
 			CreateDepthStencil(w, h);
 
-			OitRelease();
-			OitInitialize();
+			OITRelease();
+			OITInitialize();
 		}
 
 		void CreateDepthStencil(int w, int h)

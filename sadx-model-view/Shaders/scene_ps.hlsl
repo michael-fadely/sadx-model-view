@@ -1,7 +1,7 @@
 #include "scene_common.hlsli"
 
 #ifdef RS_OIT
-#define NODE_WRITE
+#define OIT_NODE_WRITE
 #include "oit.hlsli"
 #endif
 

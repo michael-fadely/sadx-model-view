@@ -66,16 +66,22 @@ float4 blend_colors(uint blendOp, uint srcBlend, uint dstBlend, float4 sourceCol
 
 		case BLENDOP_ADD:
 			return srcResult + dstResult;
-
-		case BLENDOP_REVSUBTRACT: // TODO: BLENDOP_REVSUBTRACT ???
+		case BLENDOP_REVSUBTRACT:
+			return dstResult - srcResult;
 		case BLENDOP_SUBTRACT:
 			return srcResult - dstResult;
-
 		case BLENDOP_MIN:
 			return min(srcResult, dstResult);
-
 		case BLENDOP_MAX:
 			return max(srcResult, dstResult);
+			/*
+		case BLENDOP_DIVIDE:
+			return srcResult / dstResult;
+		case BLENDOP_MULTIPLY:
+			return srcResult * dstResult;
+		case BLENDOP_DODGE:
+			return srcResult / (1.0 - dstResult);
+			*/
 	}
 }
 
@@ -83,7 +89,7 @@ float4 ps_main(VertexOutput input) : SV_TARGET
 {
 	int2 pos = int2(input.position.xy);
 
-#ifdef DEMO_MODE
+#ifdef OIT_DEMO_MODE
 	const int center = screen_dimensions.x / 2;
 	const bool should_sort = pos.x >= center;
 
@@ -93,23 +99,22 @@ float4 ps_main(VertexOutput input) : SV_TARGET
 	}
 #endif
 
-	float4 backBufferColor = BackBuffer[pos];
-	uint index = FragListHead[pos];
+	float4 back_buffer_color = back_buffer[pos];
+	uint index = frag_list_head[pos];
 
-	// TODO: LotR: RotK is bailing here!
-	if (index == FRAGMENT_LIST_NULL)
+	if (index == OIT_FRAGMENT_LIST_NULL)
 	{
-		return backBufferColor;
+		return back_buffer_color;
 	}
 
-	float opaque_depth = DepthBuffer[pos].r;
+	float opaque_depth = depth_buffer[pos].r;
 
-	uint indices[MAX_FRAGMENTS];
+	uint indices[OIT_MAX_FRAGMENTS];
 	uint count = 0;
 
-	while (index != FRAGMENT_LIST_NULL && count < MAX_FRAGMENTS)
+	while (index != OIT_FRAGMENT_LIST_NULL && count < OIT_MAX_FRAGMENTS)
 	{
-		const OitNode node_i = FragListNodes[index];
+		const OITNode node_i = frag_list_nodes[index];
 
 		if (node_i.depth > opaque_depth)
 		{
@@ -127,15 +132,14 @@ float4 ps_main(VertexOutput input) : SV_TARGET
 
 		int j = count;
 
-	//#define DISABLE_SORT
-	#ifndef DISABLE_SORT
-		OitNode node_j = FragListNodes[indices[j - 1]];
+	#ifndef OIT_DISABLE_SORT
+		OITNode node_j = frag_list_nodes[indices[j - 1]];
 
 		uint draw_call_i = (node_i.flags >> 16) & 0xFFFF;
 		uint draw_call_j = (node_j.flags >> 16) & 0xFFFF;
 
 		while (j > 0 &&
-		       #ifdef DEMO_MODE
+		       #ifdef OIT_DEMO_MODE
 		       ((should_sort && node_j.depth > node_i.depth) || ((!should_sort || node_j.depth == node_i.depth) && draw_call_j < draw_call_i))
 		       #else
 		       (node_j.depth > node_i.depth || (node_j.depth == node_i.depth && draw_call_j < draw_call_i))
@@ -145,7 +149,7 @@ float4 ps_main(VertexOutput input) : SV_TARGET
 			uint temp = indices[j];
 			indices[j] = indices[--j];
 			indices[j] = temp;
-			node_j = FragListNodes[indices[j - 1]];
+			node_j = frag_list_nodes[indices[j - 1]];
 			draw_call_j = (node_j.flags >> 16) & 0xFFFF;
 		}
 	#endif
@@ -157,14 +161,14 @@ float4 ps_main(VertexOutput input) : SV_TARGET
 
 	if (count == 0)
 	{
-		return backBufferColor;
+		return back_buffer_color;
 	}
 
-	float4 final = backBufferColor;
+	float4 final = back_buffer_color;
 
 	for (int i = count - 1; i >= 0; i--)
 	{
-		const OitNode fragment = FragListNodes[indices[i]];
+		const OITNode fragment = frag_list_nodes[indices[i]];
 		uint blend = fragment.flags;
 
 		uint blendOp   = (blend >> 8) & 0xF;

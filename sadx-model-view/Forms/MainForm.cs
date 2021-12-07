@@ -449,7 +449,7 @@ namespace sadx_model_view.Forms
 				return;
 			}
 
-			enableOITToolStripMenuItem.Checked = renderer.OitCapable;
+			enableOITToolStripMenuItem.Checked = renderer.OITCapable;
 
 			UpdateProjection();
 			scene.SizeChanged += OnSizeChanged;
@@ -830,7 +830,7 @@ namespace sadx_model_view.Forms
 		{
 			if (renderer != null)
 			{
-				renderer.OitEnabled = enableOITToolStripMenuItem.Checked;
+				renderer.OITEnabled = enableOITToolStripMenuItem.Checked;
 			}
 		}
 

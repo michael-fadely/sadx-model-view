@@ -1,13 +1,12 @@
 #ifndef INCLUDE_HLSLI
 #define INCLUDE_HLSLI
 
-//#define DEMO_MODE
-
-// Maximum number of fragments to be sorted per pixel
-#ifndef MAX_FRAGMENTS
-#define MAX_FRAGMENTS 32
+// Maximum number of fragments to be sorted per pixel for OIT.
+#ifndef OIT_MAX_FRAGMENTS
+	#define OIT_MAX_FRAGMENTS 32
 #endif
 
+// D3DCMPFUNC enum.
 #define CMP_NEVER        1
 #define CMP_LESS         2
 #define CMP_EQUAL        3
@@ -17,7 +16,7 @@
 #define CMP_GREATEREQUAL 7
 #define CMP_ALWAYS       8
 
-// D3DBLEND enum
+// D3DBLEND enum.
 #define BLEND_ZERO            1
 #define BLEND_ONE             2
 #define BLEND_SRCCOLOR        3
@@ -30,13 +29,14 @@
 #define BLEND_INVDESTCOLOR    10
 #define BLEND_SRCALPHASAT     11
 
-// D3DBLENDOP
+// D3DBLENDOP enum.
 #define BLENDOP_ADD         1
 #define BLENDOP_SUBTRACT    2
 #define BLENDOP_REVSUBTRACT 3
 #define BLENDOP_MIN         4
 #define BLENDOP_MAX         5
 
+// D3DTA_ preprocessor definitions (TA = Texture Argument)
 #define TA_SELECTMASK        0x0000000f  // mask for arg selector
 #define TA_DIFFUSE           0x00000000  // select diffuse color (read only)
 #define TA_CURRENT           0x00000001  // select stage destination register (read/write)
@@ -47,6 +47,7 @@
 #define TA_COMPLEMENT        0x00000010  // take 1.0 - x (read modifier)
 #define TA_ALPHAREPLICATE    0x00000020  // replicate alpha to color components (read modifier)
 
+// D3DTEXTUREOP enum (TOP = Texture OP[eration]).
 #define TOP_DISABLE                    1
 #define TOP_SELECTARG1                 2
 #define TOP_SELECTARG2                 3
@@ -74,73 +75,70 @@
 #define TOP_MULTIPLYADD               25
 #define TOP_LERP                      26
 
-// Magic number to consider a null-entry.
-static const uint FRAGMENT_LIST_NULL = 0xFFFFFFFF;
+// Magic number to consider a null-entry in the OIT buffer.
+static const uint OIT_FRAGMENT_LIST_NULL = 0xFFFFFFFF;
 
-// Fragment list node.
-/*
- * TODO: replace "flags" with a "context" (index) -- see below
- *
- * rather than 32-bit flags, store a 32-bit index into an array
- * of structures that have all of the amenities described by the
- * current flags; this could potentially save on memory in the long-run
- */
-struct OitNode
+// OIT fragment linked list node.
+struct OITNode
 {
 	float depth; // fragment depth
 	uint  color; // 32-bit packed fragment color
 	uint  flags; // 16 bit draw call number, 4 bit blend op, 4 bit source blend, 4 bit destination blend
-	uint  next;  // index of the next entry, or FRAGMENT_LIST_NULL
+	uint  next;  // index of the next entry, or OIT_FRAGMENT_LIST_NULL
 };
 
-// TODO: per-pixel link count
-// TODO: test append buffer again, increase max fragments
+// TODO: Optional per-pixel link count (prevents over-saturating one pixel!)
 
-#ifdef NODE_WRITE
+#ifdef OIT_NODE_WRITE
 
 // Read/write mode.
 
-globallycoherent RWTexture2D<uint>           FragListHead  : register(u1);
-globallycoherent RWTexture2D<uint>           FragListCount : register(u2);
-globallycoherent RWStructuredBuffer<OitNode> FragListNodes : register(u3);
+globallycoherent RWTexture2D<uint>           frag_list_head  : register(u1);
+globallycoherent RWTexture2D<uint>           frag_list_count : register(u2);
+globallycoherent RWStructuredBuffer<OITNode> frag_list_nodes : register(u3);
 
 #else
 
 // Read-only mode.
 
-Texture2D<uint>           FragListHead  : register(t0);
-Texture2D<uint>           FragListCount : register(t1);
-StructuredBuffer<OitNode> FragListNodes : register(t2);
-Texture2D                 BackBuffer    : register(t3);
-Texture2D                 DepthBuffer   : register(t4);
+Texture2D<uint>           frag_list_head  : register(t0);
+Texture2D<uint>           frag_list_count : register(t1);
+StructuredBuffer<OITNode> frag_list_nodes : register(t2);
+Texture2D                 back_buffer     : register(t3);
+Texture2D                 depth_buffer    : register(t4);
 
 #endif
 
-// from D3DX_DXGIFormatConvert.inl
+// From D3DX_DXGIFormatConvert.inl
 
-uint float_to_uint(float _V, float _Scale)
+// Originally D3DX_FLOAT_to_UINT
+uint float_to_uint(float f, float scale)
 {
-	return (uint)floor(_V * _Scale + 0.5f);
+	return (uint)floor(f * scale + 0.5f);
 }
 
-float4 unorm_to_float4(uint packedInput)
+// Originally D3DX_R8G8B8A8_UNORM_to_FLOAT4
+float4 unorm_to_float4(uint packed)
 {
-	precise float4 unpackedOutput;
-	unpackedOutput.x = (float)(packedInput & 0x000000ff) / 255;
-	unpackedOutput.y = (float)(((packedInput >> 8) & 0x000000ff)) / 255;
-	unpackedOutput.z = (float)(((packedInput >> 16) & 0x000000ff)) / 255;
-	unpackedOutput.w = (float)(packedInput >> 24) / 255;
-	return unpackedOutput;
+	precise float4 unpacked;
+	unpacked.x = (float)(packed & 0x000000ff) / 255;
+	unpacked.y = (float)(((packed >> 8) & 0x000000ff)) / 255;
+	unpacked.z = (float)(((packed >> 16) & 0x000000ff)) / 255;
+	unpacked.w = (float)(packed >> 24) / 255;
+	return unpacked;
 }
 
-uint float4_to_unorm(precise float4 unpackedInput)
+// Originally D3DX_FLOAT4_to_R8G8B8A8_UNORM
+uint float4_to_unorm(precise float4 unpacked)
 {
-	uint packedOutput;
-	packedOutput = ((float_to_uint(saturate(unpackedInput.x), 255)) |
-		(float_to_uint(saturate(unpackedInput.y), 255) << 8) |
-		(float_to_uint(saturate(unpackedInput.z), 255) << 16) |
-		(float_to_uint(saturate(unpackedInput.w), 255) << 24));
-	return packedOutput;
+	uint packed;
+	packed = ((float_to_uint(saturate(unpacked.x), 255)) |
+	          (float_to_uint(saturate(unpacked.y), 255) << 8) |
+	          (float_to_uint(saturate(unpacked.z), 255) << 16) |
+	          (float_to_uint(saturate(unpacked.w), 255) << 24));
+	return packed;
 }
+
+// End D3DX_DXGIFormatConvert.inl
 
 #endif

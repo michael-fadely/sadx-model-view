@@ -21,18 +21,18 @@ void do_oit(inout float4 result, in VS_OUTPUT input, bool standard_blending)
 
 	#if 0
 		uint frag_count;
-		InterlockedAdd(FragListCount[input.position.xy], 1, frag_count);
+		InterlockedAdd(frag_list_count[input.position.xy], 1, frag_count);
 
-		float f = (float)frag_count / (float)MAX_FRAGMENTS;
+		float f = (float)frag_count / (float)OIT_MAX_FRAGMENTS;
 		result = float4(f, f, f, 1);
 
-		if (frag_count >= MAX_FRAGMENTS)
+		if (frag_count >= OIT_MAX_FRAGMENTS)
 		{
 			clip(-1);
 		}
 	#endif
 
-	uint new_index = FragListNodes.IncrementCounter();
+	uint new_index = frag_list_nodes.IncrementCounter();
 
 	if (new_index >= bufferLength)
 	{
@@ -40,16 +40,16 @@ void do_oit(inout float4 result, in VS_OUTPUT input, bool standard_blending)
 	}
 
 	uint old_index;
-	InterlockedExchange(FragListHead[input.position.xy], new_index, old_index);
+	InterlockedExchange(frag_list_head[input.position.xy], new_index, old_index);
 
-	OitNode n;
+	OITNode n;
 
 	n.depth = input.depth.x / input.depth.y;
 	n.color = float4_to_unorm(result);
 	n.flags = ((drawCall & 0xFFFF) << 16) | (blendOp << 8) | (sourceBlend << 4) | destinationBlend;
 	n.next  = old_index;
 
-	FragListNodes[new_index] = n;
+	frag_list_nodes[new_index] = n;
 	clip(-1);
 #endif
 }
