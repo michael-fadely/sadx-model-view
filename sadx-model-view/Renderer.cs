@@ -424,7 +424,7 @@ namespace sadx_model_view
 
 		public void Present(Camera camera)
 		{
-			var visibleCount = 0;
+			int visibleCount = 0;
 			zWrite = true;
 
 			perSceneData.CameraPosition.Value = camera.Position;
@@ -471,6 +471,8 @@ namespace sadx_model_view
 				throw new Exception("Matrix stack still contains data");
 			}
 
+			// Used for debugging.
+			// ReSharper disable once RedundantCheckBeforeAssignment
 			if (visibleCount != lastVisibleCount)
 			{
 				lastVisibleCount = visibleCount;
@@ -500,7 +502,7 @@ namespace sadx_model_view
 
 		void WriteToStream(in DebugWireCube cube, DataStream stream)
 		{
-			foreach (var line in cube.Lines)
+			foreach (DebugLine line in cube.Lines)
 			{
 				WriteToStream(in line, stream);
 			}
@@ -735,7 +737,7 @@ namespace sadx_model_view
 		{
 			BitmapData bmpData = bitmap.LockBits(new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
 
-			var buffer = new byte[bmpData.Stride * bitmap.Height];
+			byte[] buffer = new byte[bmpData.Stride * bitmap.Height];
 
 			Marshal.Copy(bmpData.Scan0, buffer, 0, buffer.Length);
 
@@ -763,7 +765,7 @@ namespace sadx_model_view
 
 			if (mipmaps?.Length > 0)
 			{
-				for (var i = 0; i < levels; i++)
+				for (int i = 0; i < levels; i++)
 				{
 					CopyToTexture(texture, mipmaps[i], i);
 				}

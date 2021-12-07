@@ -121,7 +121,7 @@ namespace sadx_model_view
 		/// <returns><value>true</value> if the object was removed successfully.</returns>
 		public bool Remove(T obj)
 		{
-			var removed = false;
+			bool removed = false;
 
 			for (int i = 0; i < objects.Count; i++)
 			{

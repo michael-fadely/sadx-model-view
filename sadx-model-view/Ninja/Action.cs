@@ -26,24 +26,29 @@ namespace sadx_model_view.Ninja
 	{
 		public static int SizeInBytes => 0x8;
 
-		public NJS_OBJECT _object;
+		public NJS_OBJECT @object;
 		public NJS_MOTION motion;
 
 		public NJS_ACTION(Stream stream)
 		{
-			var buffer = new byte[SizeInBytes];
-			stream.Read(buffer, 0, buffer.Length);
-			long position = stream.Position;
+			byte[] buffer = new byte[SizeInBytes];
 
-			uint object_ptr = BitConverter.ToUInt32(buffer, 0);
-			uint motion_ptr = BitConverter.ToUInt32(buffer, 4);
-
-			if (object_ptr > 0)
+			if (stream.Read(buffer, 0, buffer.Length) < SizeInBytes)
 			{
-				_object = ObjectCache.FromStream(stream, object_ptr);
+				throw new InvalidOperationException();
 			}
 
-			if (motion_ptr > 0)
+			long position = stream.Position;
+
+			uint objectOffset = BitConverter.ToUInt32(buffer, 0);
+			uint motionOffset = BitConverter.ToUInt32(buffer, 4);
+
+			if (objectOffset > 0)
+			{
+				@object = ObjectCache.FromStream(stream, objectOffset);
+			}
+
+			if (motionOffset > 0)
 			{
 				// TODO: actually implement
 				motion = new NJS_MOTION();
@@ -54,13 +59,13 @@ namespace sadx_model_view.Ninja
 
 		public NJS_ACTION()
 		{
-			_object = null;
+			@object = null;
 			motion  = new NJS_MOTION();
 		}
 
 		public void Dispose()
 		{
-			_object?.Dispose();
+			@object?.Dispose();
 		}
 	}
 }

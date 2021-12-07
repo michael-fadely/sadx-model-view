@@ -8,14 +8,15 @@ namespace sadx_model_view
 		public static double   DeltaD { get; private set; }
 		public static float    Delta  => (float)DeltaD;
 
-		static DateTime lastTime = DateTime.Now;
+		static DateTime _lastTime = DateTime.Now;
 
 		public static void Update()
 		{
 			DateTime now  = DateTime.Now;
-			TimeSpan span = now - lastTime;
-			lastTime = now;
-			DeltaD   = span.TotalMilliseconds / Target.TotalMilliseconds;
+			TimeSpan span = now - _lastTime;
+
+			_lastTime = now;
+			DeltaD    = span.TotalMilliseconds / Target.TotalMilliseconds;
 		}
 	}
 }

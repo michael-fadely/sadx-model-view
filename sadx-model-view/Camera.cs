@@ -5,7 +5,7 @@ namespace sadx_model_view
 {
 	public class Camera
 	{
-		const float pitchThreshold = MathUtil.PiOverTwo - 0.0017453292519943296f;
+		const float PitchThreshold = MathUtil.PiOverTwo - 0.0017453292519943296f;
 
 		public bool Invalid { get; private set; } = true;
 
@@ -152,7 +152,7 @@ namespace sadx_model_view
 
 		static void LimitRotation(ref Vector3 v)
 		{
-			v.X = MathUtil.Clamp(v.X, -pitchThreshold, pitchThreshold);
+			v.X = MathUtil.Clamp(v.X, -PitchThreshold, PitchThreshold);
 			v.Y = MathUtil.Wrap(v.Y, 0, MathUtil.TwoPi);
 			v.Z = MathUtil.Wrap(v.Z, 0, MathUtil.TwoPi);
 		}

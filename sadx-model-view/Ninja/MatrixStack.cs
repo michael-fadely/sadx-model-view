@@ -1,35 +1,36 @@
 ﻿using System;
 using System.Collections.Generic;
+
 using SharpDX;
 
 namespace sadx_model_view.Ninja
 {
 	public static class MatrixStack
 	{
-		static readonly Stack<Matrix> stack = new Stack<Matrix>();
-		public static bool Empty => stack.Count == 0;
+		private static readonly Stack<Matrix> Stack = new Stack<Matrix>();
 
-		const int M00 = 0x0;
-		const int M01 = 0x1;
-		const int M02 = 0x2;
-		const int M03 = 0x3;
-		const int M10 = 0x4;
-		const int M11 = 0x5;
-		const int M12 = 0x6;
-		const int M13 = 0x7;
-		const int M20 = 0x8;
-		const int M21 = 0x9;
-		const int M22 = 0xA;
-		const int M23 = 0xB;
-		const int M30 = 0xC;
-		const int M31 = 0xD;
-		const int M32 = 0xE;
-		const int M33 = 0xF;
+		public static bool Empty => Stack.Count == 0;
 
+		private const int M00 = 0x0;
+		private const int M01 = 0x1;
+		private const int M02 = 0x2;
+		private const int M03 = 0x3;
+		private const int M10 = 0x4;
+		private const int M11 = 0x5;
+		private const int M12 = 0x6;
+		private const int M13 = 0x7;
+		private const int M20 = 0x8;
+		private const int M21 = 0x9;
+		private const int M22 = 0xA;
+		private const int M23 = 0xB;
+		private const int M30 = 0xC;
+		private const int M31 = 0xD;
+		private const int M32 = 0xE;
+		private const int M33 = 0xF;
 
 		public static void Push(in Matrix m)
 		{
-			stack.Push(m);
+			Stack.Push(m);
 		}
 
 		public static void Push()
@@ -40,7 +41,7 @@ namespace sadx_model_view.Ninja
 			}
 			else
 			{
-				Matrix m = stack.Peek();
+				Matrix m = Stack.Peek();
 				Push(in m);
 			}
 		}
@@ -53,7 +54,7 @@ namespace sadx_model_view.Ninja
 
 		public static void Pop(int n)
 		{
-			if (stack.Count < 1)
+			if (Stack.Count < 1)
 			{
 				return;
 			}
@@ -65,23 +66,23 @@ namespace sadx_model_view.Ninja
 
 			do
 			{
-				stack.Pop();
-			} while (--n > 0 && stack.Count > 0);
+				Stack.Pop();
+			} while (--n > 0 && Stack.Count > 0);
 		}
 
 		public static Matrix Pop()
 		{
-			return stack.Pop();
+			return Stack.Pop();
 		}
 
 		public static void Clear()
 		{
-			stack.Clear();
+			Stack.Clear();
 		}
 
 		public static Matrix Peek()
 		{
-			return stack.Peek();
+			return Stack.Peek();
 		}
 
 		public static void Translate(in Vector3 v)
@@ -108,8 +109,8 @@ namespace sadx_model_view.Ninja
 			{
 				if (v.Y != 0)
 				{
-					var   sin = (float)Math.Sin(v.Y);
-					var   cos = (float)Math.Cos(v.Y);
+					float sin = (float)Math.Sin(v.Y);
+					float cos = (float)Math.Cos(v.Y);
 					float m00 = m[M00];
 					float m01 = m[M01];
 					float m02 = m[M02];
@@ -127,8 +128,8 @@ namespace sadx_model_view.Ninja
 
 				if (v.X != 0)
 				{
-					var   sin = (float)Math.Sin(v.X);
-					var   cos = (float)Math.Cos(v.X);
+					float sin = (float)Math.Sin(v.X);
+					float cos = (float)Math.Cos(v.X);
 					float m10 = m[M10];
 					float m11 = m[M11];
 					float m12 = m[M12];
@@ -146,8 +147,8 @@ namespace sadx_model_view.Ninja
 
 				if (v.Z != 0)
 				{
-					var   sin = (float)Math.Sin(v.Z);
-					var   cos = (float)Math.Cos(v.Z);
+					float sin = (float)Math.Sin(v.Z);
+					float cos = (float)Math.Cos(v.Z);
 					float m00 = m[M00];
 					float m01 = m[M01];
 					float m02 = m[M02];
@@ -167,8 +168,8 @@ namespace sadx_model_view.Ninja
 			{
 				if (v.Z != 0)
 				{
-					var   sin = (float)Math.Sin(v.Z);
-					var   cos = (float)Math.Cos(v.Z);
+					float sin = (float)Math.Sin(v.Z);
+					float cos = (float)Math.Cos(v.Z);
 					float m00 = m[M00];
 					float m01 = m[M01];
 					float m02 = m[M02];
@@ -186,8 +187,8 @@ namespace sadx_model_view.Ninja
 
 				if (v.Y != 0)
 				{
-					var   sin = (float)Math.Sin(v.Y);
-					var   cos = (float)Math.Cos(v.Y);
+					float sin = (float)Math.Sin(v.Y);
+					float cos = (float)Math.Cos(v.Y);
 					float m00 = m[M00];
 					float m01 = m[M01];
 					float m02 = m[M02];
@@ -205,8 +206,8 @@ namespace sadx_model_view.Ninja
 
 				if (v.X != 0)
 				{
-					var   sin = (float)Math.Sin(v.X);
-					var   cos = (float)Math.Cos(v.X);
+					float sin = (float)Math.Sin(v.X);
+					float cos = (float)Math.Cos(v.X);
 					float m10 = m[M10];
 					float m11 = m[M11];
 					float m12 = m[M12];
@@ -260,9 +261,9 @@ namespace sadx_model_view.Ninja
 		public static void CalcPoint(in Vector3 vs, out Vector3 vd)
 		{
 			Matrix m = Peek();
-			float  x = vs.X;
-			float  y = vs.Y;
-			float  z = vs.Z;
+			float x = vs.X;
+			float y = vs.Y;
+			float z = vs.Z;
 
 			vd.X = z * m[M20] + y * m[M10] + x * m[M00] + m[M30];
 			vd.Y = z * m[M21] + y * m[M11] + x * m[M01] + m[M31];
@@ -272,9 +273,9 @@ namespace sadx_model_view.Ninja
 		public static void CalcVector(in Vector3 vs, out Vector3 vd)
 		{
 			Matrix m = Peek();
-			float  x = vs.X;
-			float  y = vs.Y;
-			float  z = vs.Z;
+			float x = vs.X;
+			float y = vs.Y;
+			float z = vs.Z;
 
 			vd.X = z * m[M20] + y * m[M10] + x * m[M00];
 			vd.Y = z * m[M21] + y * m[M11] + x * m[M01];

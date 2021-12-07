@@ -23,17 +23,17 @@ namespace sadx_model_view.Forms
 	public partial class MainForm : Form
 	{
 		float speed = 0.5f;
-		System.Drawing.Point last_mouse = System.Drawing.Point.Empty;
-		CamControls camcontrols = CamControls.None;
+		System.Drawing.Point lastMouse = System.Drawing.Point.Empty;
+		CameraControls cameraControls = CameraControls.None;
 
 		VisibilityTree objectTree, landTableTree;
 		BoundsOctree<ObjectTriangles> triangleTree;
 		Renderer renderer;
 
 		// SADX's default horizontal field of view.
-		static readonly float fov_h = MathUtil.DegreesToRadians(70);
+		static readonly float fovX = MathUtil.DegreesToRadians(70);
 		// SADX's default vertical field of view (55.412927352596554 degrees)
-		static readonly float fov_v = 2.0f * (float)Math.Atan(Math.Tan(fov_h / 2.0f) * (3.0f / 4.0f));
+		static readonly float fovY = 2.0f * (float)Math.Atan(Math.Tan(fovX / 2.0f) * (3.0f / 4.0f));
 
 		NJS_OBJECT obj;
 		LandTable landTable;
@@ -70,7 +70,7 @@ namespace sadx_model_view.Forms
 			renderer.ClearTexturePool();
 
 			using var file = new FileStream(dialog.FileName, FileMode.Open);
-			var signature = new byte[6];
+			byte[] signature = new byte[6];
 			file.Read(signature, 0, 6);
 			string signatureStr = Encoding.UTF8.GetString(signature);
 
@@ -79,7 +79,7 @@ namespace sadx_model_view.Forms
 				throw new NotImplementedException();
 			}
 
-			var buffer = new byte[4096];
+			byte[] buffer = new byte[4096];
 			file.Position += 1;
 			file.Read(buffer, 0, 1);
 
@@ -118,7 +118,7 @@ namespace sadx_model_view.Forms
 
 					objectTree = new VisibilityTree(obj);
 
-					List<ObjectTriangles> triangles = new List<ObjectTriangles>();
+					var triangles = new List<ObjectTriangles>();
 
 					foreach (NJS_OBJECT o in obj)
 					{
@@ -186,7 +186,7 @@ namespace sadx_model_view.Forms
 			}
 
 			file.Position = metadata_ptr;
-			var done = false;
+			bool done = false;
 
 			// ReSharper disable once CollectionNeverQueried.Local
 			var labels = new List<KeyValuePair<uint, string>>();
@@ -338,7 +338,7 @@ namespace sadx_model_view.Forms
 			string   directory = Path.GetDirectoryName(fileName) ?? string.Empty;
 			string[] index     = File.ReadAllLines(fileName);
 
-			var lineNumber = 0;
+			int lineNumber = 0;
 			foreach (string line in index)
 			{
 				++lineNumber;
@@ -396,7 +396,7 @@ namespace sadx_model_view.Forms
 				Bitmap[] mipmaps = null;
 				Bitmap bitmap;
 
-				var levels = 1;
+				int levels = 1;
 
 				if (pvr.HasMipmaps)
 				{
@@ -459,12 +459,12 @@ namespace sadx_model_view.Forms
 			float height = scene.ClientRectangle.Height;
 			float ratio = width / height;
 
-			float fov = fov_v;
-			float h = 2 * (float)Math.Atan(Math.Tan(fov_v / 2.0f) * ratio);
+			float fov = fovY;
+			float h = 2 * (float)Math.Atan(Math.Tan(fovY / 2.0f) * ratio);
 
-			if (h < fov_h)
+			if (h < fovX)
 			{
-				fov = 2 * (float)Math.Atan(Math.Tan(fov_h / 2.0f) * (height / width));
+				fov = 2 * (float)Math.Atan(Math.Tan(fovX / 2.0f) * (height / width));
 			}
 
 			camera.SetProjection(fov, ratio, 1.0f, 100000.0f);
@@ -472,33 +472,36 @@ namespace sadx_model_view.Forms
 
 		void UpdateCamera()
 		{
-			if (camcontrols != CamControls.None)
+			if (cameraControls != CameraControls.None)
 			{
 				var v = new Vector3();
 
-				if (camcontrols.HasFlag(CamControls.Forward))
+				if (cameraControls.HasFlag(CameraControls.Forward))
 				{
 					v.Z -= 1.0f;
 				}
-				if (camcontrols.HasFlag(CamControls.Backward))
+
+				if (cameraControls.HasFlag(CameraControls.Backward))
 				{
 					v.Z += 1.0f;
 				}
 
-				if (camcontrols.HasFlag(CamControls.Right))
+				if (cameraControls.HasFlag(CameraControls.Right))
 				{
 					v.X += 1.0f;
 				}
-				if (camcontrols.HasFlag(CamControls.Left))
+
+				if (cameraControls.HasFlag(CameraControls.Left))
 				{
 					v.X -= 1.0f;
 				}
 
-				if (camcontrols.HasFlag(CamControls.Up))
+				if (cameraControls.HasFlag(CameraControls.Up))
 				{
 					v.Y += 1.0f;
 				}
-				if (camcontrols.HasFlag(CamControls.Down))
+
+				if (cameraControls.HasFlag(CameraControls.Down))
 				{
 					v.Y -= 1.0f;
 				}
@@ -637,7 +640,7 @@ namespace sadx_model_view.Forms
 		}
 
 		[Flags]
-		enum CamControls
+		enum CameraControls
 		{
 			None,
 			Forward  = 1 << 0,
@@ -673,31 +676,31 @@ namespace sadx_model_view.Forms
 					break;
 
 				case Keys.W:
-					camcontrols |= CamControls.Forward;
+					cameraControls |= CameraControls.Forward;
 					break;
 
 				case Keys.S:
-					camcontrols |= CamControls.Backward;
+					cameraControls |= CameraControls.Backward;
 					break;
 
 				case Keys.A:
-					camcontrols |= CamControls.Left;
+					cameraControls |= CameraControls.Left;
 					break;
 
 				case Keys.D:
-					camcontrols |= CamControls.Right;
+					cameraControls |= CameraControls.Right;
 					break;
 
 				case Keys.Up:
-					camcontrols |= CamControls.Up;
+					cameraControls |= CameraControls.Up;
 					break;
 
 				case Keys.Down:
-					camcontrols |= CamControls.Down;
+					cameraControls |= CameraControls.Down;
 					break;
 
 				case Keys.Space:
-					camcontrols |= CamControls.Look;
+					cameraControls |= CameraControls.Look;
 					break;
 			}
 		}
@@ -707,41 +710,41 @@ namespace sadx_model_view.Forms
 			switch (e.KeyCode)
 			{
 				case Keys.W:
-					camcontrols &= ~CamControls.Forward;
+					cameraControls &= ~CameraControls.Forward;
 					break;
 
 				case Keys.S:
-					camcontrols &= ~CamControls.Backward;
+					cameraControls &= ~CameraControls.Backward;
 					break;
 
 				case Keys.A:
-					camcontrols &= ~CamControls.Left;
+					cameraControls &= ~CameraControls.Left;
 					break;
 
 				case Keys.D:
-					camcontrols &= ~CamControls.Right;
+					cameraControls &= ~CameraControls.Right;
 					break;
 
 				case Keys.Up:
-					camcontrols &= ~CamControls.Up;
+					cameraControls &= ~CameraControls.Up;
 					break;
 
 				case Keys.Down:
-					camcontrols &= ~CamControls.Down;
+					cameraControls &= ~CameraControls.Down;
 					break;
 
 				case Keys.Space:
-					camcontrols &= ~CamControls.Look;
+					cameraControls &= ~CameraControls.Look;
 					break;
 			}
 		}
 
 		void scene_MouseMove(object sender, MouseEventArgs e)
 		{
-			var delta = new System.Drawing.Point(e.Location.X - last_mouse.X, e.Location.Y - last_mouse.Y);
-			last_mouse = e.Location;
+			var delta = new System.Drawing.Point(e.Location.X - lastMouse.X, e.Location.Y - lastMouse.Y);
+			lastMouse = e.Location;
 
-			if (!camcontrols.HasFlag(CamControls.Look))
+			if (!cameraControls.HasFlag(CameraControls.Look))
 			{
 				return;
 			}
@@ -787,7 +790,7 @@ namespace sadx_model_view.Forms
 			lastHit = null;
 
 			RayCollisionResult<ObjectTriangles>? closestObject = null;
-			RayHit closestTriHit = new RayHit(Vector3.Zero, 16777215f);
+			var closestTriHit = new RayHit(Vector3.Zero, 16777215f);
 
 			foreach (RayCollisionResult<ObjectTriangles> collider in colliding)
 			{

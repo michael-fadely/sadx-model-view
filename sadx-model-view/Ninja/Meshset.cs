@@ -91,7 +91,7 @@ namespace sadx_model_view.Ninja
 		/// <summary>
 		/// <para>The actual number of vertices referenced by this meshset.</para>
 		/// <para>
-		/// The number of vertcies varies from <see cref="nbMesh"/> to different degrees
+		/// The number of vertices varies from <see cref="nbMesh"/> to different degrees
 		/// depending on the type of polygon managed by this meshset.
 		/// (see <seealso cref="Type"/>, <seealso cref="NJD_MESHSET"/>)
 		/// </para>
@@ -121,7 +121,7 @@ namespace sadx_model_view.Ninja
 		/// <param name="stream">A stream containing the data.</param>
 		public NJS_MESHSET(Stream stream)
 		{
-			var buffer = new byte[SizeInBytes];
+			byte[] buffer = new byte[SizeInBytes];
 			stream.Read(buffer, 0, buffer.Length);
 
 			IndexBuffer = null;
@@ -129,11 +129,11 @@ namespace sadx_model_view.Ninja
 			type_matId = BitConverter.ToUInt16(buffer, 0x00);
 			nbMesh     = BitConverter.ToUInt16(buffer, 0x02);
 
-			uint meshes_ptr    = BitConverter.ToUInt32(buffer, 0x04);
-			uint attrs_ptr     = BitConverter.ToUInt32(buffer, 0x08);
-			uint normals_ptr   = BitConverter.ToUInt32(buffer, 0x0C);
-			uint vertcolor_ptr = BitConverter.ToUInt32(buffer, 0x10);
-			uint vertuv_ptr    = BitConverter.ToUInt32(buffer, 0x14);
+			uint meshesOffset    = BitConverter.ToUInt32(buffer, 0x04);
+			uint attrsOffset     = BitConverter.ToUInt32(buffer, 0x08);
+			uint normalsOffset   = BitConverter.ToUInt32(buffer, 0x0C);
+			uint vertcolorOffset = BitConverter.ToUInt32(buffer, 0x10);
+			uint vertuvOffset    = BitConverter.ToUInt32(buffer, 0x14);
 
 			meshes    = new List<short>();
 			attrs     = new List<uint>();
@@ -145,10 +145,10 @@ namespace sadx_model_view.Ninja
 
 			VertexCount = 0;
 
-			if (meshes_ptr != 0)
+			if (meshesOffset != 0)
 			{
-				stream.Position = meshes_ptr;
-				var meshesBuffer = new byte[2];
+				stream.Position = meshesOffset;
+				byte[] meshesBuffer = new byte[2];
 
 				Type = Type;
 
@@ -188,7 +188,7 @@ namespace sadx_model_view.Ninja
 							// whether or not the polygon to follow is reversed.
 							n &= 0x3FFF;
 
-							for (var j = 0; j < n; j++)
+							for (int j = 0; j < n; j++)
 							{
 								stream.Read(meshesBuffer, 0, sizeof(short));
 								meshes.Add(BitConverter.ToInt16(meshesBuffer, 0));
@@ -209,10 +209,10 @@ namespace sadx_model_view.Ninja
 				}
 			}
 
-			if (attrs_ptr != 0)
+			if (attrsOffset != 0)
 			{
-				stream.Position = attrs_ptr;
-				var attrsBuffer = new byte[sizeof(uint) * VertexCount];
+				stream.Position = attrsOffset;
+				byte[] attrsBuffer = new byte[sizeof(uint) * VertexCount];
 				stream.Read(attrsBuffer, 0, attrsBuffer.Length);
 
 				for (int i = 0; i < VertexCount; i++)
@@ -222,10 +222,10 @@ namespace sadx_model_view.Ninja
 			}
 
 			// HACK: This is wrong.
-			if (normals_ptr != 0)
+			if (normalsOffset != 0)
 			{
-				stream.Position = normals_ptr;
-				var normalsBuffer = new byte[Vector3.SizeInBytes * VertexCount];
+				stream.Position = normalsOffset;
+				byte[] normalsBuffer = new byte[Vector3.SizeInBytes * VertexCount];
 				stream.Read(normalsBuffer, 0, normalsBuffer.Length);
 
 				for (int i = 0; i < VertexCount; i++)
@@ -235,10 +235,10 @@ namespace sadx_model_view.Ninja
 				}
 			}
 
-			if (vertcolor_ptr != 0)
+			if (vertcolorOffset != 0)
 			{
-				stream.Position = vertcolor_ptr;
-				var vertcolorBuffer = new byte[sizeof(int) * VertexCount];
+				stream.Position = vertcolorOffset;
+				byte[] vertcolorBuffer = new byte[sizeof(int) * VertexCount];
 				stream.Read(vertcolorBuffer, 0, vertcolorBuffer.Length);
 
 				for (int i = 0; i < VertexCount; i++)
@@ -247,10 +247,10 @@ namespace sadx_model_view.Ninja
 				}
 			}
 
-			if (vertuv_ptr != 0)
+			if (vertuvOffset != 0)
 			{
-				stream.Position = vertuv_ptr;
-				var vertuvBuffer = new byte[NJS_TEX.SizeInBytes * VertexCount];
+				stream.Position = vertuvOffset;
+				byte[] vertuvBuffer = new byte[NJS_TEX.SizeInBytes * VertexCount];
 				stream.Read(vertuvBuffer, 0, vertuvBuffer.Length);
 
 				for (int i = 0; i < VertexCount; i++)
@@ -292,16 +292,16 @@ namespace sadx_model_view.Ninja
 		}
 
 		/// <summary>
-		/// Updates the specified vertex with UV cooridnates and/or colors.
+		/// Updates the specified vertex with UV coordinates and/or colors.
 		/// Creates a new vertex if a vertex is used more than once with different colors or UVs.
 		/// </summary>
 		/// <param name="vertices">List of vertices to update.</param>
-		/// <param name="localIndex">Index of the current UV cooridnates and/or color to use.</param>
+		/// <param name="localIndex">Index of the current UV coordinates and/or color to use.</param>
 		/// <param name="vertexIndex">Index of the vertex in <paramref name="vertices"/>.</param>
 		/// <returns><paramref name="localIndex"/> if the vertex was updated, or a new index if a new vertex was added.</returns>
 		short UpdateVertex(IList<Vertex> vertices, int localIndex, int vertexIndex)
 		{
-			var added  = false;
+			bool added  = false;
 			int result = vertexIndex;
 
 			Vertex vertex = vertices[vertexIndex];
@@ -376,7 +376,7 @@ namespace sadx_model_view.Ninja
 				case NJD_MESHSET.NSided:
 				case NJD_MESHSET.Strip:
 				{
-					var index = 0;
+					int index = 0;
 					for (int i = 0; i < nbMesh; i++)
 					{
 						short n    = meshes[index++];
@@ -385,13 +385,13 @@ namespace sadx_model_view.Ninja
 
 						var tempIndices = new List<short>();
 
-						for (var j = 0; j < n; j++)
+						for (int j = 0; j < n; j++)
 						{
 							// i - (k + 1), where i = index and k = mesh number
 							tempIndices.Add(UpdateVertex(vertices, index - (i + 1), meshes[index++]));
 						}
 
-						for (var k = 0; k < tempIndices.Count - 2; k++)
+						for (int k = 0; k < tempIndices.Count - 2; k++)
 						{
 							short v0 = tempIndices[k + 0];
 							short v1 = tempIndices[k + 1];

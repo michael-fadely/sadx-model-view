@@ -82,7 +82,7 @@ namespace sadx_model_view.Ninja
 		/// <param name="stream">A stream containing the data.</param>
 		public NJS_OBJECT(Stream stream)
 		{
-			var buffer = new byte[SizeInBytes];
+			byte[] buffer = new byte[SizeInBytes];
 			stream.Read(buffer, 0, buffer.Length);
 
 			evalflags = BitConverter.ToUInt32(buffer, 0);

@@ -15,7 +15,7 @@ namespace sadx_model_view.Ninja
 		{
 			Vector3 vector;
 
-			var buffer = new byte[sizeof(float)];
+			byte[] buffer = new byte[sizeof(float)];
 			stream.Read(buffer, 0, buffer.Length);
 			vector.X = BitConverter.ToSingle(buffer, 0);
 
