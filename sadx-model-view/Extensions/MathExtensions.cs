@@ -1,5 +1,5 @@
-﻿using System;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
+
 using SharpDX;
 
 namespace sadx_model_view.Extensions
@@ -36,10 +36,38 @@ namespace sadx_model_view.Extensions
 			return MathUtil.Wrap(value, low, high);
 		}
 
-		public static int RoundToMultiple(this int value, int multiple)
+		public static int AlignUp(this int value, int alignment)
 		{
-			var m = (double)multiple;
-			return (int)(Math.Ceiling(value / m) * m);
+			if (value == 0 || alignment < 2)
+			{
+				return value;
+			}
+
+			value += alignment - (value % alignment);
+			return value;
+		}
+
+		public static int AlignDown(this int value, int alignment)
+		{
+			if (value == 0 || alignment < 2)
+			{
+				return value;
+			}
+
+			value -= value % alignment;
+			return value;
+		}
+
+		public static int RoundPow2(this int value)
+		{
+			--value;
+			value |= value >> 1;
+			value |= value >> 2;
+			value |= value >> 4;
+			value |= value >> 8;
+			value |= value >> 16;
+			++value;
+			return value;
 		}
 	}
 }

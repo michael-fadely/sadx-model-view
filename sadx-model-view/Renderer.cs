@@ -139,13 +139,13 @@ namespace sadx_model_view
 				throw new InsufficientFeatureLevelException(device.FeatureLevel, FeatureLevel.Level_10_0);
 			}
 
-			var bufferDesc = new BufferDescription(PerSceneBuffer.SizeInBytes.RoundToMultiple(16),
+			var bufferDesc = new BufferDescription(PerSceneBuffer.SizeInBytes.AlignUp(16),
 			                                       ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write,
 			                                       ResourceOptionFlags.None, PerSceneBuffer.SizeInBytes);
 
 			perSceneBuffer = new Buffer(device, bufferDesc);
 
-			bufferDesc = new BufferDescription(PerModelBuffer.SizeInBytes.RoundToMultiple(16),
+			bufferDesc = new BufferDescription(PerModelBuffer.SizeInBytes.AlignUp(16),
 			                                   ResourceUsage.Dynamic, BindFlags.ConstantBuffer, CpuAccessFlags.Write,
 			                                   ResourceOptionFlags.None, PerModelBuffer.SizeInBytes);
 
@@ -175,7 +175,7 @@ namespace sadx_model_view
 
 			device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
 
-			int helperBufferSize = DebugWireCube.SizeInBytes.RoundToMultiple(16);
+			int helperBufferSize = DebugWireCube.SizeInBytes.AlignUp(16);
 
 			var debugHelperDescription = new BufferDescription(helperBufferSize, BindFlags.VertexBuffer, ResourceUsage.Dynamic)
 			{
