@@ -28,6 +28,16 @@ namespace sadx_model_view.Extensions.SharpDX.Mathematics.Collision
 			return true;
 		}
 
+		/// <summary>
+		/// Determines whether there is an intersection between a <see cref="Ray"/> and a triangle.
+		/// </summary>
+		/// <param name="ray">The ray to test.</param>
+		/// <param name="vertex1">The first vertex of the triangle to test.</param>
+		/// <param name="vertex2">The second vertex of the triangle to test.</param>
+		/// <param name="vertex3">The third vertex of the triangle to test.</param>
+		/// <param name="distance">The distance from <paramref name="ray"/> to the hit location.</param>
+		/// <param name="doubleSided">Enable or disable hits on the back side of the triangle.</param>
+		/// <returns><c>true</c> on intersection; otherwise <c>false</c>.</returns>
 		public static bool RayIntersectsTriangle(in Ray ray,
 		                                         in Vector3 vertex1,
 		                                         in Vector3 vertex2,
@@ -153,7 +163,8 @@ namespace sadx_model_view.Extensions.SharpDX.Mathematics.Collision
 		/// <param name="vertex2">The second vertex of the triangle to test.</param>
 		/// <param name="vertex3">The third vertex of the triangle to test.</param>
 		/// <param name="hit">Result of the intersection test.</param>
-		/// <returns>Whether the two objects intersected.</returns>
+		/// <param name="doubleSided">Enable or disable hits on the back side of the triangle.</param>
+		/// <returns><c>true</c> on intersection; otherwise <c>false</c>.</returns>
 		public static bool IntersectsTriangle(this Ray ray, Vector3 vertex1, Vector3 vertex2, Vector3 vertex3, out RayHit hit, bool doubleSided = true)
 		{
 			hit = new RayHit();

@@ -134,7 +134,7 @@ namespace sadx_model_view.Ninja
 
 		public NJS_TEXNAME(Stream stream)
 		{
-			var buffer = new byte[SizeInBytes];
+			byte[] buffer = new byte[SizeInBytes];
 			stream.Read(buffer, 0, buffer.Length);
 			long position = stream.Position;
 
@@ -155,7 +155,7 @@ namespace sadx_model_view.Ninja
 			if (data_ptr > 0)
 			{
 				stream.Position = data_ptr;
-				var str = new byte[255];
+				byte[] str = new byte[255];
 				filename = Encoding.UTF8.GetString(str, 0, stream.ReadString(ref str));
 			}
 
@@ -172,7 +172,7 @@ namespace sadx_model_view.Ninja
 
 		public NJS_TEXLIST(Stream stream)
 		{
-			var buffer = new byte[SizeInBytes];
+			byte[] buffer = new byte[SizeInBytes];
 			stream.Read(buffer, 0, buffer.Length);
 			long position = stream.Position;
 
@@ -182,7 +182,7 @@ namespace sadx_model_view.Ninja
 			if (count > 0 && textures_ptr > 0)
 			{
 				stream.Position = textures_ptr;
-				for (var i = 0; i < count; i++)
+				for (int i = 0; i < count; i++)
 				{
 					textures.Add(new NJS_TEXNAME(stream));
 				}

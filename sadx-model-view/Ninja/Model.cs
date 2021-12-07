@@ -24,7 +24,7 @@ namespace sadx_model_view.Ninja
 		/// <param name="stream">A stream containing the data.</param>
 		public NJS_MODEL(Stream stream)
 		{
-			var buffer = new byte[SizeInBytes];
+			byte[] buffer = new byte[SizeInBytes];
 			stream.Read(buffer, 0, buffer.Length);
 
 			nbPoint   = BitConverter.ToInt32(buffer, 0x08);
@@ -43,11 +43,11 @@ namespace sadx_model_view.Ninja
 
 			if (nbPoint > 0)
 			{
-				uint points_ptr = BitConverter.ToUInt32(buffer, 0x00);
+				uint pointsOffset = BitConverter.ToUInt32(buffer, 0x00);
 
-				if (points_ptr > 0)
+				if (pointsOffset > 0)
 				{
-					stream.Position = points_ptr;
+					stream.Position = pointsOffset;
 
 					for (int i = 0; i < nbPoint; i++)
 					{
@@ -56,11 +56,11 @@ namespace sadx_model_view.Ninja
 					}
 				}
 
-				int normals_ptr = BitConverter.ToInt32(buffer, 0x04);
+				int normalsOffset = BitConverter.ToInt32(buffer, 0x04);
 
-				if (normals_ptr > 0)
+				if (normalsOffset > 0)
 				{
-					stream.Position = normals_ptr;
+					stream.Position = normalsOffset;
 
 					for (int i = 0; i < nbPoint; i++)
 					{
@@ -70,20 +70,20 @@ namespace sadx_model_view.Ninja
 				}
 			}
 
-			uint meshsets_ptr = BitConverter.ToUInt32(buffer, 0x0C);
-			if (nbMeshset > 0 && meshsets_ptr > 0)
+			uint meshsetsOffset = BitConverter.ToUInt32(buffer, 0x0C);
+			if (nbMeshset > 0 && meshsetsOffset > 0)
 			{
-				stream.Position = meshsets_ptr;
+				stream.Position = meshsetsOffset;
 				for (int i = 0; i < nbMeshset; i++)
 				{
 					meshsets.Add(new NJS_MESHSET(stream));
 				}
 			}
 
-			uint mats_ptr = BitConverter.ToUInt32(buffer, 0x10);
-			if (nbMat > 0 && mats_ptr > 0)
+			uint matsOffset = BitConverter.ToUInt32(buffer, 0x10);
+			if (nbMat > 0 && matsOffset > 0)
 			{
-				stream.Position = mats_ptr;
+				stream.Position = matsOffset;
 				for (int i = 0; i < nbMat; i++)
 				{
 					mats.Add(new NJS_MATERIAL(stream));
@@ -213,7 +213,7 @@ namespace sadx_model_view.Ninja
 			}
 			else
 			{
-				var n = (int)material.TextureIndex;
+				int n = (int)material.TextureIndex;
 				device.SetTexture(0, n);
 			}
 
@@ -255,15 +255,15 @@ namespace sadx_model_view.Ninja
 		{
 			Matrix m = MatrixStack.Peek();
 
-			foreach (var set in meshsets)
+			foreach (NJS_MESHSET set in meshsets)
 			{
-				foreach (var t in set.Triangles)
+				foreach (Triangle triangle in set.Triangles)
 				{
-					Triangle t_ = t;
-					Vector3.Transform(ref t_.A, ref m, out t_.A);
-					Vector3.Transform(ref t_.B, ref m, out t_.B);
-					Vector3.Transform(ref t_.C, ref m, out t_.C);
-					list.Add(t_);
+					Triangle transformedTriangle = triangle;
+					Vector3.Transform(ref transformedTriangle.A, ref m, out transformedTriangle.A);
+					Vector3.Transform(ref transformedTriangle.B, ref m, out transformedTriangle.B);
+					Vector3.Transform(ref transformedTriangle.C, ref m, out transformedTriangle.C);
+					list.Add(transformedTriangle);
 				}
 			}
 		}

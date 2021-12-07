@@ -21,7 +21,7 @@ namespace sadx_model_view.Ninja
 				//}
 
 				stream.Position = offset;
-				NJS_MODEL result = new NJS_MODEL(stream);
+				var result = new NJS_MODEL(stream);
 				//modelCache[offset] = result;
 				return result;
 			}

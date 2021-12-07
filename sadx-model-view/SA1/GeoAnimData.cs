@@ -24,7 +24,7 @@ namespace sadx_model_view.SA1
 
 		public GeoAnimData(Stream stream)
 		{
-			var buffer = new byte[SizeInBytes];
+			byte[] buffer = new byte[SizeInBytes];
 			stream.Read(buffer, 0, buffer.Length);
 			long position = stream.Position;
 

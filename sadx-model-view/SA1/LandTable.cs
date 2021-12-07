@@ -40,7 +40,7 @@ namespace sadx_model_view.SA1
 			AnimData = new List<GeoAnimData>();
 			TexList = null;
 
-			var buffer = new byte[SizeInBytes];
+			byte[] buffer = new byte[SizeInBytes];
 			stream.Read(buffer, 0, buffer.Length);
 
 			short col_count = BitConverter.ToInt16(buffer, 0x00);
@@ -79,7 +79,7 @@ namespace sadx_model_view.SA1
 
 			if (name_ptr > 0)
 			{
-				var str = new byte[255];
+				byte[] str = new byte[255];
 				stream.Position = name_ptr;
 				TexName = Encoding.UTF8.GetString(str, 0, stream.ReadString(ref str));
 			}
