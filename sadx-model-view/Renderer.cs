@@ -170,7 +170,6 @@ namespace sadx_model_view
 			}
 
 			OITCapable = device.FeatureLevel >= FeatureLevel.Level_11_0;
-			_oitEnabled = OITCapable;
 
 			int bufferSize = (int)CBuffer.CalculateSize(perSceneData);
 
@@ -260,20 +259,22 @@ namespace sadx_model_view
 
 		void LoadOITCompositeShader()
 		{
-			oitCompositeVertexShader?.Dispose();
-			oitCompositePixelShader?.Dispose();
+			CoreExtensions.DisposeAndNullify(ref oitCompositeVertexShader);
+			CoreExtensions.DisposeAndNullify(ref oitCompositePixelShader);
 
-			oitCompositeVertexShader = null;
-			oitCompositePixelShader = null;
-
-			if (!_oitEnabled)
+			if (!OITCapable || !_oitEnabled)
 			{
 				return;
 			}
 
+			var macros = new ShaderMacro[]
+			{
+				new ShaderMacro("RS_OIT", (OITCapable && _oitEnabled) ? "1" : "0")
+			};
+
 			using var includeMan = new DefaultIncludeHandler();
 
-			CompilationResult vs_result = ShaderBytecode.CompileFromFile("Shaders\\oit_composite.hlsl", "vs_main", "vs_5_0", include: includeMan);
+			CompilationResult vs_result = ShaderBytecode.CompileFromFile("Shaders\\oit_composite.hlsl", "vs_main", "vs_5_0", include: includeMan, defines: macros);
 
 			if (vs_result.HasErrors || !string.IsNullOrEmpty(vs_result.Message))
 			{
@@ -282,7 +283,7 @@ namespace sadx_model_view
 
 			oitCompositeVertexShader = new VertexShader(device, vs_result.Bytecode);
 
-			CompilationResult ps_result = ShaderBytecode.CompileFromFile("Shaders\\oit_composite.hlsl", "ps_main", "ps_5_0", include: includeMan);
+			CompilationResult ps_result = ShaderBytecode.CompileFromFile("Shaders\\oit_composite.hlsl", "ps_main", "ps_5_0", include: includeMan, defines: macros);
 
 			if (ps_result.HasErrors || !string.IsNullOrEmpty(ps_result.Message))
 			{
@@ -345,7 +346,12 @@ namespace sadx_model_view
 			debugPixelShader?.Dispose();
 			debugInputLayout?.Dispose();
 
-			CompilationResult vs_result = ShaderBytecode.CompileFromFile("Shaders\\debug_vs.hlsl", "main", "vs_5_0", include: includeMan);
+			var macros = new ShaderMacro[]
+			{
+				new ShaderMacro("RS_OIT", (OITCapable && _oitEnabled) ? "1" : "0")
+			};
+
+			CompilationResult vs_result = ShaderBytecode.CompileFromFile("Shaders\\debug_vs.hlsl", "main", "vs_5_0", include: includeMan, defines: macros);
 
 			if (vs_result.HasErrors || !string.IsNullOrEmpty(vs_result.Message))
 			{
@@ -354,7 +360,7 @@ namespace sadx_model_view
 
 			debugVertexShader = new VertexShader(device, vs_result.Bytecode);
 
-			CompilationResult ps_result = ShaderBytecode.CompileFromFile("Shaders\\debug_ps.hlsl", "main", "ps_5_0", include: includeMan);
+			CompilationResult ps_result = ShaderBytecode.CompileFromFile("Shaders\\debug_ps.hlsl", "main", "ps_5_0", include: includeMan, defines: macros);
 
 			if (ps_result.HasErrors || !string.IsNullOrEmpty(ps_result.Message))
 			{
@@ -552,7 +558,7 @@ namespace sadx_model_view
 
 		void OITRead()
 		{
-			if (!_oitEnabled)
+			if (!OITCapable || !_oitEnabled)
 			{
 				return;
 			}
@@ -577,6 +583,11 @@ namespace sadx_model_view
 
 		void OITWrite()
 		{
+			if (!OITCapable)
+			{
+				return;
+			}
+
 			DeviceContext context = device.ImmediateContext;
 
 			// Unbinds the shader resource views for our fragment list and list head.
@@ -610,6 +621,11 @@ namespace sadx_model_view
 
 		void OITInitialize()
 		{
+			if (!OITCapable)
+			{
+				return;
+			}
+
 			OITRelease();
 
 			if (!_oitEnabled)
@@ -626,7 +642,7 @@ namespace sadx_model_view
 
 		void OITComposite()
 		{
-			if (!_oitEnabled)
+			if (!OITCapable || !_oitEnabled)
 			{
 				return;
 			}
@@ -653,6 +669,11 @@ namespace sadx_model_view
 
 		void OITRelease()
 		{
+			if (!OITCapable)
+			{
+				return;
+			}
+
 			UnorderedAccessView[] nullViews = { null, null, null, null, null };
 
 			DeviceContext context = device.ImmediateContext;
