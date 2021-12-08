@@ -1,12 +1,11 @@
 using sadx_model_view.Extensions;
+using sadx_model_view.Extensions.SharpDX;
 using SharpDX;
 
 namespace sadx_model_view
 {
-	public struct ShaderMaterial
+	public struct SceneMaterial : ICBuffer
 	{
-		public static int SizeInBytes => 2 * Vector4.SizeInBytes + sizeof(float) + 5 * sizeof(int);
-
 		public Color4 Diffuse;
 		public Color4 Specular;
 		public float  Exponent;
@@ -16,7 +15,7 @@ namespace sadx_model_view
 		public bool   UseTexture;
 		public bool   UseSpecular;
 
-		public bool Equals(ShaderMaterial other)
+		public bool Equals(SceneMaterial other)
 		{
 			return Diffuse == other.Diffuse
 			       && Specular == other.Specular
@@ -35,15 +34,15 @@ namespace sadx_model_view
 				return false;
 			}
 
-			return obj is ShaderMaterial material && Equals(material);
+			return obj is SceneMaterial material && Equals(material);
 		}
 
-		public static bool operator ==(ShaderMaterial lhs, ShaderMaterial rhs)
+		public static bool operator ==(SceneMaterial lhs, SceneMaterial rhs)
 		{
 			return lhs.Equals(rhs);
 		}
 
-		public static bool operator !=(ShaderMaterial lhs, ShaderMaterial rhs)
+		public static bool operator !=(SceneMaterial lhs, SceneMaterial rhs)
 		{
 			return !(lhs == rhs);
 		}
@@ -51,6 +50,19 @@ namespace sadx_model_view
 		public override int GetHashCode()
 		{
 			return 1;
+		}
+
+		/// <inheritdoc />
+		public void Write(CBufferWriter writer)
+		{
+			writer.Add(Diffuse);
+			writer.Add(Specular);
+			writer.Add(Exponent);
+			writer.Add(UseLight);
+			writer.Add(UseAlpha);
+			writer.Add(UseEnv);
+			writer.Add(UseTexture);
+			writer.Add(UseSpecular);
 		}
 	}
 }

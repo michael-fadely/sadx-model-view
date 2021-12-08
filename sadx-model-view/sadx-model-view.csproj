@@ -92,9 +92,11 @@
   <ItemGroup>
     <Compile Include="BoundsOctree.cs" />
     <Compile Include="BoundsOctreeNode.cs" />
+    <Compile Include="CoreExtensions.cs" />
     <Compile Include="DebugLine.cs" />
     <Compile Include="DebugPoint.cs" />
     <Compile Include="DebugWireCube.cs" />
+    <Compile Include="Extensions\SharpDX\CBufferWriter.cs" />
     <Compile Include="Extensions\SharpDX\Mathematics\Collision\RayExtensions.cs" />
     <Compile Include="Extensions\SharpDX\Mathematics\Collision\RayHit.cs" />
     <Compile Include="GlobalSuppressions.cs" />
@@ -147,7 +149,7 @@
     </Compile>
     <Compile Include="VisibilityTree.cs" />
     <Compile Include="SceneTexture.cs" />
-    <Compile Include="ShaderMaterial.cs" />
+    <Compile Include="SceneMaterial.cs" />
     <Compile Include="TransformState.cs" />
     <EmbeddedResource Include="Forms\MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
@@ -186,6 +188,9 @@
     <Content Include="Shaders\debug_vs.hlsl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Shaders\include.hlsli" />
+    <Content Include="Shaders\oit.hlsli" />
+    <Content Include="Shaders\oit_composite.hlsl" />
     <Content Include="Shaders\scene_common.hlsli">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

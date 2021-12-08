@@ -449,6 +449,8 @@ namespace sadx_model_view.Forms
 				return;
 			}
 
+			enableOITToolStripMenuItem.Enabled = renderer.OITCapable;
+
 			UpdateProjection();
 			scene.SizeChanged += OnSizeChanged;
 		}
@@ -763,7 +765,6 @@ namespace sadx_model_view.Forms
 				try
 				{
 					renderer?.LoadShaders();
-					renderer?.LoadDebugShaders();
 					break;
 				}
 				catch (Exception ex)
@@ -823,6 +824,14 @@ namespace sadx_model_view.Forms
 
 			lastHit = closestTriHit;
 			closestObject.Value.Collider.Object.SkipDraw = true;
+		}
+
+		private void enableOITToolStripMenuItem_CheckedChanged(object sender, EventArgs e)
+		{
+			if (renderer != null)
+			{
+				renderer.OITEnabled = enableOITToolStripMenuItem.Checked;
+			}
 		}
 
 		void enableAlphaToolStripMenuItem_CheckedChanged(object sender, EventArgs e)

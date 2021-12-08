@@ -203,7 +203,7 @@ namespace sadx_model_view.Ninja
 			}
 		}
 
-		public static ShaderMaterial GetSADXMaterial(Renderer device, NJS_MATERIAL material)
+		public static SceneMaterial GetSADXMaterial(Renderer device, NJS_MATERIAL material)
 		{
 			NJD_FLAG flags = device.FlowControl.Apply(material.attrflags);
 
@@ -220,7 +220,7 @@ namespace sadx_model_view.Ninja
 			NJS_BGRA diffuse  = material.diffuse.argb;
 			NJS_BGRA specular = material.specular.argb;
 
-			var m = new ShaderMaterial
+			var m = new SceneMaterial
 			{
 				Diffuse     = new Color4(diffuse.r / 255.0f,  diffuse.g / 255.0f,  diffuse.b / 255.0f,  diffuse.a / 255.0f),
 				Specular    = new Color4(specular.r / 255.0f, specular.g / 255.0f, specular.b / 255.0f, specular.a / 255.0f),

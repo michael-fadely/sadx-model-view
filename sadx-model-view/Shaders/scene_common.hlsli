@@ -1,3 +1,6 @@
+#ifndef SCENE_COMMON_HLSLI
+#define SCENE_COMMON_HLSLI
+
 #include "common.hlsli"
 
 struct VS_INPUT
@@ -14,6 +17,7 @@ struct VS_OUTPUT
 	float2 tex      : TEXCOORD;
 	float4 diffuse  : COLOR0;
 	float4 specular : COLOR1;
+	float2 depth    : DEPTH;
 };
 
 static const matrix textureTransform = {
@@ -26,11 +30,18 @@ static const matrix textureTransform = {
 cbuffer MaterialBuffer : register(b1)
 {
 	Material material;
-	bool writeDepth;
+	bool     writeDepth;
 };
 
 cbuffer PerModelBuffer : register(b2)
 {
 	matrix worldMatrix;
 	matrix wvMatrixInvT;
+	uint   drawCall;
+	uint   sourceBlend;
+	uint   destinationBlend;
+	uint   blendOp;
+	bool   isStandardBlending;
 };
+
+#endif

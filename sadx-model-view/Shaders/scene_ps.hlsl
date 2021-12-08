@@ -1,5 +1,10 @@
 #include "scene_common.hlsli"
 
+#ifdef RS_OIT
+#define OIT_NODE_WRITE
+#include "oit.hlsli"
+#endif
+
 Texture2D<float4> DiffuseMap : register(t0);
 
 SamplerState DiffuseSampler
@@ -23,18 +28,19 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 	}
 
 	result = result * input.diffuse + input.specular;
-	const float THRESHOLD = 0.9;
 
 	if (material.useAlpha)
 	{
+	#if RS_OIT == 1
+		do_oit(result, input, isStandardBlending);
+	#else
+		float alpha = floor(result.a * 256.0f);
+
 		if (writeDepth == true)
 		{
-			clip(result.a == 0 ? -1 : 1);
+			clip(isStandardBlending && alpha < 255 ? -1 : 1);
 		}
-		else if (result.a >= THRESHOLD)
-		{
-			clip(result.a > 0 ? -1 : 1);
-		}
+	#endif
 	}
 
 	return result;
