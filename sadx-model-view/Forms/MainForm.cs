@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -34,9 +35,9 @@ namespace sadx_model_view.Forms
 		private Renderer?                      _renderer;
 
 		// SADX's default horizontal field of view.
-		private static readonly float fovX = MathUtil.DegreesToRadians(70);
+		private static readonly float _fovX = MathUtil.DegreesToRadians(70);
 		// SADX's default vertical field of view (55.412927352596554 degrees)
-		private static readonly float fovY = 2.0f * (float)Math.Atan(Math.Tan(fovX / 2.0f) * (3.0f / 4.0f));
+		private static readonly float _fovY = 2.0f * (float)Math.Atan(Math.Tan(_fovX / 2.0f) * (3.0f / 4.0f));
 
 		private NJS_OBJECT? _object;
 		private LandTable?  _landTable;
@@ -55,7 +56,7 @@ namespace sadx_model_view.Forms
 			End = 0x444E45
 		}
 
-		private readonly Camera camera = new Camera();
+		private readonly Camera _camera = new Camera();
 
 		public MainForm()
 		{
@@ -112,9 +113,9 @@ namespace sadx_model_view.Forms
 					_object.CommitVertexBuffer(_renderer);
 					_object.CalculateRadius();
 
-					camera.Position = _object.Position;
-					camera.Translate(Vector3.BackwardRH, _object.Radius * 2.0f);
-					camera.LookAt(_object.Position);
+					_camera.Position = _object.Position;
+					_camera.Translate(Vector3.BackwardRH, _object.Radius * 2.0f);
+					_camera.LookAt(_object.Position);
 
 					_objectTree = new VisibilityTree(_object);
 
@@ -212,28 +213,28 @@ namespace sadx_model_view.Forms
 						while (true)
 						{
 							file.Read(buffer, 0, 8);
-							uint addr = BitConverter.ToUInt32(buffer, 0);
+							uint labelOffset = BitConverter.ToUInt32(buffer, 0);
 
-							if (addr == 0xFFFFFFFF)
+							if (labelOffset == 0xFFFFFFFF)
 							{
 								break;
 							}
 
-							uint name_addr = BitConverter.ToUInt32(buffer, 4);
+							uint nameOffset = BitConverter.ToUInt32(buffer, 4);
 
-							if (name_addr == 0 || name_addr == 0xFFFFFFFF)
+							if (nameOffset == 0 || nameOffset == 0xFFFFFFFF)
 							{
 								break;
 							}
 
 							long pos = file.Position;
-							file.Position = offset + name_addr;
+							file.Position = offset + nameOffset;
 
 							int i = file.ReadString(ref buffer);
 
 							file.Position = pos;
 							string name = Encoding.UTF8.GetString(buffer, 0, i);
-							labels.Add(new KeyValuePair<uint, string>(addr, name));
+							labels.Add(new KeyValuePair<uint, string>(labelOffset, name));
 						}
 						break;
 
@@ -288,15 +289,25 @@ namespace sadx_model_view.Forms
 				file.Position = offset + size;
 			}
 
+#if DEBUG
+			string metadataText = $"Description: {description}" +
+			                      $"{Environment.NewLine}Tool: {tool}" +
+			                      $"{Environment.NewLine}Author: {author}" +
+			                      $"{Environment.NewLine}Animations: {animations}";
+
+			MessageBox.Show(this, metadataText);
+
 #if false
-				MessageBox.Show(this, $"Description: {description}"
-					+ $"\nTool: {tool}"
-					+ $"\nAuthor: {author}"
-					+ $"\nAnimations: {animations}");
+			if (labels.Count > 0)
+			{
+				Debug.WriteLine("Labels:");
 
-				var thing = string.Join(" | ", (from x in labels select $"{x.Key}: {x.Value}"));
-
-				MessageBox.Show(this, $"Labels:\n{thing}");
+				foreach (KeyValuePair<uint, string> pair in labels)
+				{
+					Debug.WriteLine($"\t{pair.Key}: {pair.Value}");
+				}
+			}
+#endif
 #endif
 		}
 
@@ -463,15 +474,15 @@ namespace sadx_model_view.Forms
 			float height = scene.ClientRectangle.Height;
 			float ratio = width / height;
 
-			float fov = fovY;
-			float h = 2 * (float)Math.Atan(Math.Tan(fovY / 2.0f) * ratio);
+			float fov = _fovY;
+			float h = 2 * (float)Math.Atan(Math.Tan(_fovY / 2.0f) * ratio);
 
-			if (h < fovX)
+			if (h < _fovX)
 			{
-				fov = 2 * (float)Math.Atan(Math.Tan(fovX / 2.0f) * (height / width));
+				fov = 2 * (float)Math.Atan(Math.Tan(_fovX / 2.0f) * (height / width));
 			}
 
-			camera.SetProjection(fov, ratio, 1.0f, 100000.0f);
+			_camera.SetProjection(fov, ratio, 1.0f, 100000.0f);
 		}
 
 		private void UpdateCamera()
@@ -510,24 +521,24 @@ namespace sadx_model_view.Forms
 					v.Y -= 1.0f;
 				}
 
-				camera.Translate(v, _speed * DeltaTime.SecondsElapsed);
+				_camera.Translate(v, _speed * DeltaTime.SecondsElapsed);
 			}
 
-			if (!camera.Invalid)
+			if (!_camera.Invalid)
 			{
 				return;
 			}
 
-			camera.Update();
+			_camera.Update();
 
-			Matrix m = camera.Projection;
+			Matrix m = _camera.Projection;
 			_renderer!.SetTransform(TransformState.Projection, in m);
-			m = camera.View;
+			m = _camera.View;
 			_renderer.SetTransform(TransformState.View, in m);
 		}
 
-		private Ray     lastRay;
-		private RayHit? lastHit;
+		private Ray     _lastRay;
+		private RayHit? _lastHit;
 
 		// TODO: conditional render (only render when the scene has been invalidated)
 		public void MainLoop()
@@ -548,15 +559,15 @@ namespace sadx_model_view.Forms
 
 			_renderer.Clear();
 
-			if (lastHit != null)
+			if (_lastHit != null)
 			{
-				_renderer.DrawDebugLine(new DebugLine(new DebugPoint(lastRay.Position, Color.DarkGreen),
-				                                     new DebugPoint(lastRay.Position + (lastRay.Direction * lastHit.Value.Distance), Color.DarkGreen)));
+				_renderer.DrawDebugLine(new DebugLine(new DebugPoint(_lastRay.Position, Color.DarkGreen),
+				                                     new DebugPoint(_lastRay.Position + (_lastRay.Direction * _lastHit.Value.Distance), Color.DarkGreen)));
 			}
 			else
 			{
-				_renderer.DrawDebugLine(new DebugLine(new DebugPoint(lastRay.Position, Color.Blue),
-				                                     new DebugPoint(lastRay.Position + (lastRay.Direction * 16777215f), Color.Blue)));
+				_renderer.DrawDebugLine(new DebugLine(new DebugPoint(_lastRay.Position, Color.Blue),
+				                                     new DebugPoint(_lastRay.Position + (_lastRay.Direction * 16777215f), Color.Blue)));
 			}
 
 			if (_object is not null && _objectTree is not null)
@@ -570,17 +581,17 @@ namespace sadx_model_view.Forms
 				{
 					foreach (BoundingBox bounds in _objectTree.GiveMeTheBounds())
 					{
-						Color4 color = camera.Frustum.Contains(bounds) == ContainmentType.Contains
+						Color4 color = _camera.Frustum.Contains(bounds) == ContainmentType.Contains
 							? new Color4(0f, 1f, 0f, 1f)
 							: new Color4(1f, 0f, 0f, 1f);
 						_renderer.DrawBounds(in bounds, color);
 					}
 				}
 
-				List<MeshsetQueueElementBase> visible = _objectTree.GetVisible(camera);
+				List<MeshsetQueueElementBase> visible = _objectTree.GetVisible(_camera);
 				base.Text = $"{visible.Count}";
 
-				_renderer.Draw(visible, camera);
+				_renderer.Draw(visible, _camera);
 			}
 
 			if (_landTable is not null && _landTableTree is not null)
@@ -603,7 +614,7 @@ namespace sadx_model_view.Forms
 
 						//renderer.DrawBounds(in bounds, color);
 
-						if (camera.Frustum.Contains(bounds) == ContainmentType.Contains)
+						if (_camera.Frustum.Contains(bounds) == ContainmentType.Contains)
 						{
 							_renderer.DrawBounds(in bounds, new Color4(1.0f, 0.0f, 1.0f, 1.0f));
 						}
@@ -614,14 +625,14 @@ namespace sadx_model_view.Forms
 					}
 				}
 
-				List<MeshsetQueueElementBase> visible = _landTableTree.GetVisible(camera);
+				List<MeshsetQueueElementBase> visible = _landTableTree.GetVisible(_camera);
 				base.Text = $"{visible.Count}";
 
-				_renderer.Draw(visible, camera);
+				_renderer.Draw(visible, _camera);
 				_renderer.FlowControl.Reset();
 			}
 
-			_renderer.Present(camera);
+			_renderer.Present(_camera);
 		}
 
 		private void OnSizeChanged(object? sender, EventArgs e)
@@ -671,7 +682,7 @@ namespace sadx_model_view.Forms
 				case Keys.F:
 					if (_object != null)
 					{
-						camera.LookAt(_object.Position);
+						_camera.LookAt(_object.Position);
 					}
 					break;
 
@@ -761,7 +772,7 @@ namespace sadx_model_view.Forms
 			rotation.Y = (float)(Math.PI * (delta.X / (float)ClientRectangle.Width));
 			rotation.X = (float)(Math.PI * (delta.Y / (float)ClientRectangle.Height));
 			rotation.Z = 0.0f;
-			camera.Rotate(rotation);
+			_camera.Rotate(rotation);
 		}
 
 		private void recompileShadersToolStripMenuItem_Click(object sender, EventArgs e)
@@ -788,13 +799,13 @@ namespace sadx_model_view.Forms
 			}
 
 			var viewport = new ViewportF(0f, 0f, scene.ClientRectangle.Width, scene.ClientRectangle.Height);
-			var ray = Ray.GetPickRay(e.X, e.Y, viewport, camera.Frustum.Matrix);
+			var ray = Ray.GetPickRay(e.X, e.Y, viewport, _camera.Frustum.Matrix);
 
 			var colliding = new List<RayCollisionResult<ObjectTriangles>>();
 			_triangleTree.GetColliding(colliding, in ray);
 
-			lastRay = ray;
-			lastHit = null;
+			_lastRay = ray;
+			_lastHit = null;
 
 			RayCollisionResult<ObjectTriangles>? closestObject = null;
 			var closestTriHit = new RayHit(Vector3.Zero, 16777215f);
@@ -828,7 +839,7 @@ namespace sadx_model_view.Forms
 				return;
 			}
 
-			lastHit = closestTriHit;
+			_lastHit = closestTriHit;
 			closestObject.Value.Collider.Object.SkipDraw = true;
 		}
 
