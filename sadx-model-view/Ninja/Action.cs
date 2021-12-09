@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
 
+using sadx_model_view.Extensions;
+
 namespace sadx_model_view.Ninja
 {
 	public class NJS_MOTION
@@ -69,7 +71,7 @@ namespace sadx_model_view.Ninja
 
 		public void Dispose()
 		{
-			@object?.Dispose();
+			DisposableExtensions.DisposeAndNullify(ref @object);
 		}
 	}
 }

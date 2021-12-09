@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+
+using sadx_model_view.Extensions;
 using sadx_model_view.Ninja;
+
 using SharpDX;
 
 namespace sadx_model_view.SA1
@@ -104,7 +107,7 @@ namespace sadx_model_view.SA1
 
 		public void Dispose()
 		{
-			Object?.Dispose();
+			DisposableExtensions.DisposeAndNullify(ref Object);
 		}
 
 		public void CommitVertexBuffer(Renderer device)

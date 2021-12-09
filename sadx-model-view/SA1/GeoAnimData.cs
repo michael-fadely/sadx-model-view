@@ -1,5 +1,7 @@
 ﻿using System;
 using System.IO;
+
+using sadx_model_view.Extensions;
 using sadx_model_view.Ninja;
 
 namespace sadx_model_view.SA1
@@ -68,8 +70,8 @@ namespace sadx_model_view.SA1
 
 		public void Dispose()
 		{
-			Model?.Dispose();
-			Animation?.Dispose();
+			DisposableExtensions.DisposeAndNullify(ref Model);
+			DisposableExtensions.DisposeAndNullify(ref Animation);
 		}
 	}
 }

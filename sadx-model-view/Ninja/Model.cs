@@ -2,8 +2,12 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+
+using sadx_model_view.Extensions;
 using sadx_model_view.Interfaces;
+
 using SharpDX;
+
 using Buffer = SharpDX.Direct3D11.Buffer;
 
 namespace sadx_model_view.Ninja
@@ -153,7 +157,7 @@ namespace sadx_model_view.Ninja
 			}
 
 			meshsets.Clear();
-			VertexBuffer?.Dispose();
+			DisposableExtensions.DisposeAndNullify(ref VertexBuffer);
 		}
 
 		public readonly List<Vector3>      points;    // vertex list

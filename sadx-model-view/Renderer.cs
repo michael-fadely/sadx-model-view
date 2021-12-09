@@ -4,9 +4,11 @@ using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.Linq;
 using System.Runtime.InteropServices;
+
 using sadx_model_view.Extensions;
 using sadx_model_view.Extensions.SharpDX;
 using sadx_model_view.Ninja;
+
 using SharpDX;
 using SharpDX.D3DCompiler;
 using SharpDX.Direct3D;
@@ -14,6 +16,7 @@ using SharpDX.Direct3D11;
 using SharpDX.DXGI;
 using SharpDX.Mathematics.Interop;
 using SharpDX.WIC;
+
 using Bitmap = System.Drawing.Bitmap;
 using Buffer = SharpDX.Direct3D11.Buffer;
 using Color = SharpDX.Color;
@@ -273,8 +276,8 @@ namespace sadx_model_view
 
 		private void LoadOITCompositeShader()
 		{
-			CoreExtensions.DisposeAndNullify(ref _oitCompositeVertexShader);
-			CoreExtensions.DisposeAndNullify(ref _oitCompositePixelShader);
+			DisposableExtensions.DisposeAndNullify(ref _oitCompositeVertexShader);
+			DisposableExtensions.DisposeAndNullify(ref _oitCompositePixelShader);
 
 			if (!OITCapable || !_oitEnabled)
 			{
@@ -311,9 +314,9 @@ namespace sadx_model_view
 		{
 			using var includeMan = new DefaultIncludeHandler();
 
-			_sceneVertexShader?.Dispose();
-			_scenePixelShader?.Dispose();
-			_sceneInputLayout?.Dispose();
+			DisposableExtensions.DisposeAndNullify(ref _sceneVertexShader);
+			DisposableExtensions.DisposeAndNullify(ref _scenePixelShader);
+			DisposableExtensions.DisposeAndNullify(ref _sceneInputLayout);
 
 			var macros = new ShaderMacro[]
 			{
@@ -356,9 +359,9 @@ namespace sadx_model_view
 		private void LoadDebugShaders()
 		{
 			using var includeMan = new DefaultIncludeHandler();
-			_debugVertexShader?.Dispose();
-			_debugPixelShader?.Dispose();
-			_debugInputLayout?.Dispose();
+			DisposableExtensions.DisposeAndNullify(ref _debugVertexShader);
+			DisposableExtensions.DisposeAndNullify(ref _debugPixelShader);
+			DisposableExtensions.DisposeAndNullify(ref _debugInputLayout);
 
 			var macros = new ShaderMacro[]
 			{
@@ -415,9 +418,9 @@ namespace sadx_model_view
 
 		private void FragListHead_Init()
 		{
-			CoreExtensions.DisposeAndNullify(ref _fragListHead);
-			CoreExtensions.DisposeAndNullify(ref _fragListHeadSRV);
-			CoreExtensions.DisposeAndNullify(ref _fragListHeadUAV);
+			DisposableExtensions.DisposeAndNullify(ref _fragListHead);
+			DisposableExtensions.DisposeAndNullify(ref _fragListHeadSRV);
+			DisposableExtensions.DisposeAndNullify(ref _fragListHeadUAV);
 
 			if (!_oitEnabled)
 			{
@@ -464,9 +467,9 @@ namespace sadx_model_view
 
 		private void FragListCount_Init()
 		{
-			CoreExtensions.DisposeAndNullify(ref _fragListCount);
-			CoreExtensions.DisposeAndNullify(ref _fragListCountSRV);
-			CoreExtensions.DisposeAndNullify(ref _fragListCountUAV);
+			DisposableExtensions.DisposeAndNullify(ref _fragListCount);
+			DisposableExtensions.DisposeAndNullify(ref _fragListCountSRV);
+			DisposableExtensions.DisposeAndNullify(ref _fragListCountUAV);
 
 			if (!_oitEnabled)
 			{
@@ -517,9 +520,9 @@ namespace sadx_model_view
 
 		private void FragListNodes_Init()
 		{
-			CoreExtensions.DisposeAndNullify(ref _fragListNodes);
-			CoreExtensions.DisposeAndNullify(ref _fragListNodesSRV);
-			CoreExtensions.DisposeAndNullify(ref _fragListNodesUAV);
+			DisposableExtensions.DisposeAndNullify(ref _fragListNodes);
+			DisposableExtensions.DisposeAndNullify(ref _fragListNodesSRV);
+			DisposableExtensions.DisposeAndNullify(ref _fragListNodesUAV);
 
 			if (!_oitEnabled)
 			{
@@ -695,15 +698,15 @@ namespace sadx_model_view
 			context.OutputMerger.SetRenderTargets(_depthView, _backBuffer);
 			context.OutputMerger.SetUnorderedAccessViews(1, nullViews);
 
-			CoreExtensions.DisposeAndNullify(ref _fragListHeadSRV);
-			CoreExtensions.DisposeAndNullify(ref _fragListHead);
-			CoreExtensions.DisposeAndNullify(ref _fragListHeadUAV);
-			CoreExtensions.DisposeAndNullify(ref _fragListCount);
-			CoreExtensions.DisposeAndNullify(ref _fragListCountSRV);
-			CoreExtensions.DisposeAndNullify(ref _fragListCountUAV);
-			CoreExtensions.DisposeAndNullify(ref _fragListNodes);
-			CoreExtensions.DisposeAndNullify(ref _fragListNodesSRV);
-			CoreExtensions.DisposeAndNullify(ref _fragListNodesUAV);
+			DisposableExtensions.DisposeAndNullify(ref _fragListHeadSRV);
+			DisposableExtensions.DisposeAndNullify(ref _fragListHead);
+			DisposableExtensions.DisposeAndNullify(ref _fragListHeadUAV);
+			DisposableExtensions.DisposeAndNullify(ref _fragListCount);
+			DisposableExtensions.DisposeAndNullify(ref _fragListCountSRV);
+			DisposableExtensions.DisposeAndNullify(ref _fragListCountUAV);
+			DisposableExtensions.DisposeAndNullify(ref _fragListNodes);
+			DisposableExtensions.DisposeAndNullify(ref _fragListNodesSRV);
+			DisposableExtensions.DisposeAndNullify(ref _fragListNodesUAV);
 		}
 
 		public void Clear()
@@ -1055,9 +1058,9 @@ namespace sadx_model_view
 
 		private void CreateOITCompositeTexture(Texture2DDescription textureDescription)
 		{
-			CoreExtensions.DisposeAndNullify(ref _compositeTexture);
-			CoreExtensions.DisposeAndNullify(ref _compositeView);
-			CoreExtensions.DisposeAndNullify(ref _compositeSRV);
+			DisposableExtensions.DisposeAndNullify(ref _compositeTexture);
+			DisposableExtensions.DisposeAndNullify(ref _compositeView);
+			DisposableExtensions.DisposeAndNullify(ref _compositeSRV);
 
 			textureDescription.Usage     = ResourceUsage.Default;
 			textureDescription.BindFlags = BindFlags.RenderTarget | BindFlags.ShaderResource;
@@ -1093,7 +1096,7 @@ namespace sadx_model_view
 
 			using (var pBackBuffer = Resource.FromSwapChain<Texture2D>(_swapChain, 0))
 			{
-				CoreExtensions.DisposeAndNullify(ref _backBuffer);
+				DisposableExtensions.DisposeAndNullify(ref _backBuffer);
 				_backBuffer = new RenderTargetView(_device, pBackBuffer);
 
 				description = pBackBuffer.Description;
@@ -1135,7 +1138,7 @@ namespace sadx_model_view
 
 		public void RefreshDevice(int w, int h)
 		{
-			_backBuffer?.Dispose();
+			DisposableExtensions.DisposeAndNullify(ref _backBuffer);
 			_swapChain.ResizeBuffers(1, w, h, Format.Unknown, 0);
 
 			SetViewPort(0, 0, w, h);
@@ -1154,11 +1157,11 @@ namespace sadx_model_view
 			const Format viewFormat    = Format.R24_UNorm_X8_Typeless;
 			const Format depthFormat   = Format.D24_UNorm_S8_UInt;
 
-			CoreExtensions.DisposeAndNullify(ref _depthTexture);
-			CoreExtensions.DisposeAndNullify(ref _depthStateRw);
-			CoreExtensions.DisposeAndNullify(ref _depthStateRo);
-			CoreExtensions.DisposeAndNullify(ref _depthView);
-			CoreExtensions.DisposeAndNullify(ref _depthShaderResource);
+			DisposableExtensions.DisposeAndNullify(ref _depthTexture);
+			DisposableExtensions.DisposeAndNullify(ref _depthStateRw);
+			DisposableExtensions.DisposeAndNullify(ref _depthStateRo);
+			DisposableExtensions.DisposeAndNullify(ref _depthView);
+			DisposableExtensions.DisposeAndNullify(ref _depthShaderResource);
 
 			var depthTextureDesc = new Texture2DDescription
 			{
@@ -1252,7 +1255,7 @@ namespace sadx_model_view
 				SlopeScaledDepthBias     = 0.0f
 			};
 
-			_rasterizerState?.Dispose();
+			DisposableExtensions.DisposeAndNullify(ref _rasterizerState);
 			_rasterizerState = new RasterizerState(_device, _rasterizerDescription);
 
 			_device.ImmediateContext.Rasterizer.State = _rasterizerState;
@@ -1596,44 +1599,44 @@ namespace sadx_model_view
 		public void Dispose()
 		{
 			_swapChain.Dispose();
-			_backBuffer?.Dispose();
+			DisposableExtensions.DisposeAndNullify(ref _backBuffer);
 
-			_depthTexture?.Dispose();
-			_depthStateRw?.Dispose();
-			_depthStateRo?.Dispose();
-			_depthView?.Dispose();
+			DisposableExtensions.DisposeAndNullify(ref _depthTexture);
+			DisposableExtensions.DisposeAndNullify(ref _depthStateRw);
+			DisposableExtensions.DisposeAndNullify(ref _depthStateRo);
+			DisposableExtensions.DisposeAndNullify(ref _depthView);
 
-			_rasterizerState?.Dispose();
+			DisposableExtensions.DisposeAndNullify(ref _rasterizerState);
 
 			_materialBuffer.Dispose();
 
-			_sceneVertexShader?.Dispose();
-			_scenePixelShader?.Dispose();
+			DisposableExtensions.DisposeAndNullify(ref _sceneVertexShader);
+			DisposableExtensions.DisposeAndNullify(ref _scenePixelShader);
 
-			_oitCompositeVertexShader?.Dispose();
-			_oitCompositePixelShader?.Dispose();
+			DisposableExtensions.DisposeAndNullify(ref _oitCompositeVertexShader);
+			DisposableExtensions.DisposeAndNullify(ref _oitCompositePixelShader);
 
-			_debugVertexShader?.Dispose();
-			_debugPixelShader?.Dispose();
+			DisposableExtensions.DisposeAndNullify(ref _debugVertexShader);
+			DisposableExtensions.DisposeAndNullify(ref _debugPixelShader);
 
-			_sceneInputLayout?.Dispose();
+			DisposableExtensions.DisposeAndNullify(ref _sceneInputLayout);
 
-			_debugInputLayout?.Dispose();
+			DisposableExtensions.DisposeAndNullify(ref _debugInputLayout);
 			_debugHelperVertexBuffer.Dispose();
 
 			_perSceneBuffer.Dispose();
 			_perModelBuffer.Dispose();
 			_materialBuffer.Dispose();
 
-			CoreExtensions.DisposeAndNullify(ref _fragListHeadSRV);
-			CoreExtensions.DisposeAndNullify(ref _fragListHead);
-			CoreExtensions.DisposeAndNullify(ref _fragListHeadUAV);
-			CoreExtensions.DisposeAndNullify(ref _fragListCount);
-			CoreExtensions.DisposeAndNullify(ref _fragListCountSRV);
-			CoreExtensions.DisposeAndNullify(ref _fragListCountUAV);
-			CoreExtensions.DisposeAndNullify(ref _fragListNodes);
-			CoreExtensions.DisposeAndNullify(ref _fragListNodesSRV);
-			CoreExtensions.DisposeAndNullify(ref _fragListNodesUAV);
+			DisposableExtensions.DisposeAndNullify(ref _fragListHeadSRV);
+			DisposableExtensions.DisposeAndNullify(ref _fragListHead);
+			DisposableExtensions.DisposeAndNullify(ref _fragListHeadUAV);
+			DisposableExtensions.DisposeAndNullify(ref _fragListCount);
+			DisposableExtensions.DisposeAndNullify(ref _fragListCountSRV);
+			DisposableExtensions.DisposeAndNullify(ref _fragListCountUAV);
+			DisposableExtensions.DisposeAndNullify(ref _fragListNodes);
+			DisposableExtensions.DisposeAndNullify(ref _fragListNodesSRV);
+			DisposableExtensions.DisposeAndNullify(ref _fragListNodesUAV);
 
 			ClearTexturePool();
 			ClearDisplayStates();

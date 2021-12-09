@@ -93,16 +93,13 @@ namespace sadx_model_view.Forms
 
 			file.Read(buffer, 0, sizeof(int) * 2);
 
-			uint object_ptr   = BitConverter.ToUInt32(buffer, 0);
-			uint metadata_ptr = BitConverter.ToUInt32(buffer, 4);
+			uint objectOffset   = BitConverter.ToUInt32(buffer, 0);
+			uint metadataOffset = BitConverter.ToUInt32(buffer, 4);
 
-			file.Position = object_ptr;
+			file.Position = objectOffset;
 
-			_object?.Dispose();
-			_object = null;
-
-			_landTable?.Dispose();
-			_landTable = null;
+			DisposableExtensions.DisposeAndNullify(ref _object);
+			DisposableExtensions.DisposeAndNullify(ref _landTable);
 
 			_objectTree    = null;
 			_landTableTree = null;
@@ -111,7 +108,7 @@ namespace sadx_model_view.Forms
 			{
 				case "SA1MDL":
 				{
-					_object = ObjectCache.FromStream(file, object_ptr);
+					_object = ObjectCache.FromStream(file, objectOffset);
 					_object.CommitVertexBuffer(_renderer);
 					_object.CalculateRadius();
 
@@ -183,12 +180,12 @@ namespace sadx_model_view.Forms
 			ObjectCache.Clear();
 			ModelCache.Clear();
 
-			if (metadata_ptr == 0)
+			if (metadataOffset == 0)
 			{
 				return;
 			}
 
-			file.Position = metadata_ptr;
+			file.Position = metadataOffset;
 			bool done = false;
 
 			// ReSharper disable once CollectionNeverQueried.Local
@@ -641,9 +638,9 @@ namespace sadx_model_view.Forms
 
 		private void OnClosed(object sender, FormClosedEventArgs e)
 		{
-			_object?.Dispose();
-			_landTable?.Dispose();
-			_renderer?.Dispose();
+			DisposableExtensions.DisposeAndNullify(ref _object);
+			DisposableExtensions.DisposeAndNullify(ref _landTable);
+			DisposableExtensions.DisposeAndNullify(ref _renderer);
 		}
 
 		[Flags]

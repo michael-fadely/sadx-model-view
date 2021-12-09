@@ -2,7 +2,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+
+using sadx_model_view.Extensions;
 using sadx_model_view.Interfaces;
+
 using SharpDX;
 
 namespace sadx_model_view.Ninja
@@ -143,9 +146,9 @@ namespace sadx_model_view.Ninja
 
 		public void Dispose()
 		{
-			Model?.Dispose();
-			Child?.Dispose();
-			Sibling?.Dispose();
+			DisposableExtensions.DisposeAndNullify(ref Model);
+			DisposableExtensions.DisposeAndNullify(ref Child);
+			DisposableExtensions.DisposeAndNullify(ref Sibling);
 		}
 
 		public uint       evalflags; /* evalation flags              */
@@ -365,6 +368,7 @@ namespace sadx_model_view.Ninja
 			return GetEnumerator(this);
 		}
 
+		// TODO: rename
 		private static IEnumerator<NJS_OBJECT> GetEnumerator(NJS_OBJECT o)
 		{
 			NJS_OBJECT? @object = o;
