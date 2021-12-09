@@ -14,6 +14,7 @@ namespace sadx_model_view
 		static void Main()
 		{
 			Application.EnableVisualStyles();
+			Application.SetHighDpiMode(HighDpiMode.SystemAware);
 			Application.SetCompatibleTextRenderingDefault(false);
 			MainForm form = new MainForm();
 			RenderLoop.Run(form, form.MainLoop);

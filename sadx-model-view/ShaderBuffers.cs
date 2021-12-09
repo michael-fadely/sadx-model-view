@@ -6,7 +6,7 @@ namespace sadx_model_view
 {
 	public class PerSceneBuffer : CBuffer, IModifiable
 	{
-		// TODO: do this with reflection
+		// TODO: do this code generator?
 		public bool Modified => View.Modified ||
 		                        Projection.Modified ||
 		                        CameraPosition.Modified ||
@@ -17,7 +17,7 @@ namespace sadx_model_view
 		public readonly Modifiable<Vector3> CameraPosition = new Modifiable<Vector3>();
 		public readonly Modifiable<uint>    BufferLength   = new Modifiable<uint>(0);
 
-		// TODO: do this with reflection
+		// TODO: do this code generator?
 		public void Clear()
 		{
 			View.Clear();
@@ -38,7 +38,7 @@ namespace sadx_model_view
 
 	public class PerModelBuffer : CBuffer, IModifiable
 	{
-		// TODO: do this with reflection
+		// TODO: do this code generator?
 		public bool Modified => World.Modified ||
 		                        wvMatrixInvT.Modified ||
 		                        DrawCall.Modified ||
@@ -55,7 +55,7 @@ namespace sadx_model_view
 		public readonly Modifiable<uint>   BlendOperation     = new Modifiable<uint>(0);
 		public readonly Modifiable<bool>   IsStandardBlending = new Modifiable<bool>(true);
 
-		// TODO: do this with reflection
+		// TODO: do this code generator?
 		public void Clear()
 		{
 			World.Clear();

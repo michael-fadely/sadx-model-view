@@ -4,17 +4,19 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
-using PuyoTools.Modules.Archive;
-using PuyoTools.Modules.Compression;
+
+using PuyoTools.Core.Archives;
+using PuyoTools.Core.Compression;
+using PuyoTools.Core.Textures.Pvr;
+
 using sadx_model_view.Extensions;
 using sadx_model_view.Extensions.SharpDX.Mathematics.Collision;
 using sadx_model_view.Ninja;
 using sadx_model_view.SA1;
+
 using SharpDX;
 using SharpDX.Direct3D11;
 using SharpDX.WIC;
-using VrSharp.PvrTexture;
-using Bitmap = System.Drawing.Bitmap;
 
 // TODO: Mipmap mode (From Texture, Always On, Always Off, Generate)
 
@@ -383,33 +385,35 @@ namespace sadx_model_view.Forms
 
 		void LoadPVM(Stream stream)
 		{
-			var pvm = new PvmArchive();
-
-			if (!pvm.Is(stream, string.Empty))
+			if (!PvmArchive.Identify(stream))
 			{
 				MessageBox.Show("nope");
+				return;
 			}
+
+			var pvm = new PvmArchive();
+			var rawTextures = new List<RawTexture>();
 
 			foreach (ArchiveEntry entry in pvm.Open(stream).Entries)
 			{
-				var pvr = new PvrTexture(entry.Open());
-				Bitmap[] mipmaps = null;
-				Bitmap bitmap;
+				using Stream entryStream = entry.Open();
 
-				int levels = 1;
-
-				if (pvr.HasMipmaps)
+				if (!PvrTextureDecoder.Is(entryStream))
 				{
-					mipmaps = pvr.MipmapsToBitmap();
-					levels = mipmaps.Length;
-					bitmap = mipmaps[0];
-				}
-				else
-				{
-					bitmap = pvr.ToBitmap();
+					continue;
 				}
 
-				renderer.CreateTextureFromBitMap(bitmap, mipmaps, levels);
+				PvrTextureDecoder decoder = new(entryStream);
+
+				rawTextures.Clear();
+				rawTextures.Add(new RawTexture(decoder.Width, decoder.Height, decoder.GetPixelData()));
+
+				foreach (PvrMipmapDecoder mipmapDecoder in decoder.Mipmaps)
+				{
+					rawTextures.Add(new RawTexture(mipmapDecoder.Width, mipmapDecoder.Height, mipmapDecoder.GetPixelData()));
+				}
+
+				renderer.CreateTextureFromRawTextures(rawTextures);
 			}
 		}
 
