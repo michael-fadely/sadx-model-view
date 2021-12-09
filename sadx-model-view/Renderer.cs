@@ -63,20 +63,20 @@ namespace sadx_model_view
 
 		private readonly Device                       _device;
 		private readonly SwapChain                    _swapChain;
-		private          RenderTargetView             _backBuffer;
+		private          RenderTargetView?            _backBuffer;
 		private          Viewport                     _viewport;
-		private          Texture2D                    _depthTexture;
+		private          Texture2D?                   _depthTexture;
 		private          DepthStencilStateDescription _depthDesc;
-		private          DepthStencilState            _depthStateRw;
-		private          DepthStencilState            _depthStateRo;
-		private          DepthStencilView             _depthView;
-		private          ShaderResourceView           _depthShaderResource;
-		private          RasterizerState              _rasterizerState;
+		private          DepthStencilState?           _depthStateRw;
+		private          DepthStencilState?           _depthStateRo;
+		private          DepthStencilView?            _depthView;
+		private          ShaderResourceView?          _depthShaderResource;
+		private          RasterizerState?             _rasterizerState;
 		private          RasterizerStateDescription   _rasterizerDescription;
 
-		private Texture2D          _compositeTexture;
-		private RenderTargetView   _compositeView;
-		private ShaderResourceView _compositeSRV;
+		private Texture2D?          _compositeTexture;
+		private RenderTargetView?   _compositeView;
+		private ShaderResourceView? _compositeSRV;
 
 		private readonly Buffer _debugHelperVertexBuffer;
 		private readonly Buffer _perSceneBuffer;
@@ -93,22 +93,22 @@ namespace sadx_model_view
 		private readonly List<DebugLine>     _debugLines     = new();
 		private readonly List<DebugWireCube> _debugWireCubes = new();
 
-		private VertexShader _sceneVertexShader;
-		private PixelShader  _scenePixelShader;
-		private InputLayout  _sceneInputLayout;
+		private VertexShader? _sceneVertexShader;
+		private PixelShader?  _scenePixelShader;
+		private InputLayout?  _sceneInputLayout;
 
-		private VertexShader _oitCompositeVertexShader;
-		private PixelShader  _oitCompositePixelShader;
+		private VertexShader? _oitCompositeVertexShader;
+		private PixelShader?  _oitCompositePixelShader;
 
-		private VertexShader _debugVertexShader;
-		private PixelShader  _debugPixelShader;
-		private InputLayout  _debugInputLayout;
+		private VertexShader? _debugVertexShader;
+		private PixelShader?  _debugPixelShader;
+		private InputLayout?  _debugInputLayout;
 
-		private Buffer          _lastVertexBuffer;
-		private BlendState      _lastBlend;
-		private RasterizerState _lastRasterizerState;
-		private SamplerState    _lastSamplerState;
-		private SceneTexture    _lastTexture;
+		private Buffer?          _lastVertexBuffer;
+		private BlendState?      _lastBlend;
+		private RasterizerState? _lastRasterizerState;
+		private SamplerState?    _lastSamplerState;
+		private SceneTexture?    _lastTexture;
 
 		public bool OITCapable { get; private set; }
 
@@ -401,17 +401,17 @@ namespace sadx_model_view
 			LoadDebugShaders();
 		}
 
-		private ShaderResourceView  _fragListHeadSRV;
-		private Texture2D           _fragListHead;
-		private UnorderedAccessView _fragListHeadUAV;
+		private ShaderResourceView?  _fragListHeadSRV;
+		private Texture2D?           _fragListHead;
+		private UnorderedAccessView? _fragListHeadUAV;
 
-		private Texture2D           _fragListCount;
-		private ShaderResourceView  _fragListCountSRV;
-		private UnorderedAccessView _fragListCountUAV;
+		private Texture2D?           _fragListCount;
+		private ShaderResourceView?  _fragListCountSRV;
+		private UnorderedAccessView? _fragListCountUAV;
 
-		private Buffer              _fragListNodes;
-		private ShaderResourceView  _fragListNodesSRV;
-		private UnorderedAccessView _fragListNodesUAV;
+		private Buffer?              _fragListNodes;
+		private ShaderResourceView?  _fragListNodesSRV;
+		private UnorderedAccessView? _fragListNodesUAV;
 
 		private void FragListHead_Init()
 		{
@@ -583,7 +583,7 @@ namespace sadx_model_view
 			context.OutputMerger.SetRenderTargets(depthStencilView: null, renderTargetView: _backBuffer);
 			context.OutputMerger.SetUnorderedAccessViews(startSlot: 1, unorderedAccessViews: _nullUaVs);
 
-			ShaderResourceView[] srvs =
+			ShaderResourceView?[] srvs =
 			{
 				_fragListHeadSRV,
 				_fragListCountSRV,
@@ -609,7 +609,7 @@ namespace sadx_model_view
 			var resourceViews = new ShaderResourceView[5];
 			context.PixelShader.SetShaderResources(0, resourceViews);
 
-			var unorderedViews = new UnorderedAccessView[]
+			var unorderedViews = new UnorderedAccessView?[]
 			{
 				_fragListHeadUAV,
 				_fragListCountUAV,
@@ -688,7 +688,7 @@ namespace sadx_model_view
 				return;
 			}
 
-			UnorderedAccessView[] nullViews = { null, null, null, null, null };
+			UnorderedAccessView?[] nullViews = { null, null, null, null, null };
 
 			DeviceContext context = _device.ImmediateContext;
 
@@ -708,11 +708,6 @@ namespace sadx_model_view
 
 		public void Clear()
 		{
-			if (_device == null)
-			{
-				return;
-			}
-
 			_meshQueue.Clear();
 
 			_device.ImmediateContext.Rasterizer.State = _rasterizerState;
@@ -725,7 +720,7 @@ namespace sadx_model_view
 #endif
 		}
 
-		public void Draw(Camera camera, NJS_OBJECT @object)
+		public void Draw(Camera camera, NJS_OBJECT? @object)
 		{
 			while (!(@object is null))
 			{
@@ -1141,7 +1136,7 @@ namespace sadx_model_view
 		public void RefreshDevice(int w, int h)
 		{
 			_backBuffer?.Dispose();
-			_swapChain?.ResizeBuffers(1, w, h, Format.Unknown, 0);
+			_swapChain.ResizeBuffers(1, w, h, Format.Unknown, 0);
 
 			SetViewPort(0, 0, w, h);
 
@@ -1498,7 +1493,7 @@ namespace sadx_model_view
 				flags |= NJD_FLAG.DoubleSide;
 			}
 
-			if (_displayStates.TryGetValue(flags, out DisplayState state))
+			if (_displayStates.TryGetValue(flags, out DisplayState? state))
 			{
 				return state;
 			}
@@ -1600,7 +1595,7 @@ namespace sadx_model_view
 
 		public void Dispose()
 		{
-			_swapChain?.Dispose();
+			_swapChain.Dispose();
 			_backBuffer?.Dispose();
 
 			_depthTexture?.Dispose();
@@ -1610,7 +1605,7 @@ namespace sadx_model_view
 
 			_rasterizerState?.Dispose();
 
-			_materialBuffer?.Dispose();
+			_materialBuffer.Dispose();
 
 			_sceneVertexShader?.Dispose();
 			_scenePixelShader?.Dispose();
@@ -1624,11 +1619,11 @@ namespace sadx_model_view
 			_sceneInputLayout?.Dispose();
 
 			_debugInputLayout?.Dispose();
-			_debugHelperVertexBuffer?.Dispose();
+			_debugHelperVertexBuffer.Dispose();
 
-			_perSceneBuffer?.Dispose();
-			_perModelBuffer?.Dispose();
-			_materialBuffer?.Dispose();
+			_perSceneBuffer.Dispose();
+			_perModelBuffer.Dispose();
+			_materialBuffer.Dispose();
 
 			CoreExtensions.DisposeAndNullify(ref _fragListHeadSRV);
 			CoreExtensions.DisposeAndNullify(ref _fragListHead);
@@ -1650,7 +1645,7 @@ namespace sadx_model_view
 			}
 #endif
 
-			_device?.Dispose();
+			_device.Dispose();
 		}
 
 		private void ClearDisplayStates()
@@ -1675,7 +1670,7 @@ namespace sadx_model_view
 
 		public void DrawBounds(in BoundingBox bounds, Color4 color)
 		{
-			_debugWireCubes.Add(new DebugWireCube(in bounds, color));
+			_debugWireCubes.Add(new DebugWireCube(bounds, color));
 		}
 	}
 

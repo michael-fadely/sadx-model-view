@@ -26,8 +26,8 @@ namespace sadx_model_view.Ninja
 	{
 		public static int SizeInBytes => 0x8;
 
-		public NJS_OBJECT @object;
-		public NJS_MOTION motion;
+		public NJS_OBJECT? @object;
+		public NJS_MOTION  motion;
 
 		public NJS_ACTION(Stream stream)
 		{
@@ -51,6 +51,10 @@ namespace sadx_model_view.Ninja
 			if (motionOffset > 0)
 			{
 				// TODO: actually implement
+				motion = new NJS_MOTION();
+			}
+			else
+			{
 				motion = new NJS_MOTION();
 			}
 

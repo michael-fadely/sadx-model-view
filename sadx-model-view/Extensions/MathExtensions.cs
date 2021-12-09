@@ -4,7 +4,7 @@ using SharpDX;
 
 namespace sadx_model_view.Extensions
 {
-	static class MathExtensions
+	internal static class MathExtensions
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool NearEqual(this float a, float b)

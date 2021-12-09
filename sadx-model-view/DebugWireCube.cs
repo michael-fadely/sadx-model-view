@@ -8,7 +8,7 @@ namespace sadx_model_view
 
 		public readonly DebugLine[] Lines;
 
-		public DebugWireCube(in BoundingBox box, Color4 color)
+		public DebugWireCube(BoundingBox box, Color4 color)
 		{
 			Vector3[] corners = box.GetCorners();
 

@@ -31,17 +31,17 @@ namespace sadx_model_view
 		public int Count { get; private set; }
 
 		// Root node of the octree
-		BoundsOctreeNode<T> rootNode;
+		private BoundsOctreeNode<T> rootNode;
 
 		// Should be a value between 1 and 2. A multiplier for the base size of a node.
 		// 1.0 is a "normal" octree, while values > 1 have overlap
-		readonly float looseness;
+		private readonly float looseness;
 
 		// Size that the octree was on creation
-		readonly float initialSize;
+		private readonly float initialSize;
 
 		// Minimum side length that a node can be - essentially an alternative to having a max depth
-		readonly float minSize;
+		private readonly float minSize;
 
 #if UNITY_EDITOR
 		// For collision visualisation. Automatically removed in builds.
@@ -251,7 +251,7 @@ namespace sadx_model_view
 		/// Grow the octree to fit in all objects.
 		/// </summary>
 		/// <param name="direction">Direction to grow.</param>
-		void Grow(Vector3 direction)
+		private void Grow(Vector3 direction)
 		{
 			BoundsOctreeNode<T> oldRoot = rootNode;
 
@@ -294,7 +294,7 @@ namespace sadx_model_view
 		/// <summary>
 		/// Shrink the octree if possible, else leave it the same.
 		/// </summary>
-		void Shrink()
+		private void Shrink()
 		{
 			rootNode = rootNode.ShrinkIfPossible(initialSize);
 		}
@@ -306,7 +306,7 @@ namespace sadx_model_view
 		/// <param name="yDir">Y direction of growth. 1 or -1.</param>
 		/// <param name="zDir">Z direction of growth. 1 or -1.</param>
 		/// <returns>Octant where the root node should be.</returns>
-		static int GetRootPosIndex(int xDir, int yDir, int zDir)
+		private static int GetRootPosIndex(int xDir, int yDir, int zDir)
 		{
 			int result = xDir > 0 ? 1 : 0;
 

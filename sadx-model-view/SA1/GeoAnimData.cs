@@ -12,15 +12,15 @@ namespace sadx_model_view.SA1
 		public static int SizeInBytes => 0x18;
 
 		// ReSharper disable once NotAccessedField.Local
-		float anonymous_0;
+		private float anonymous_0;
 		// ReSharper disable once NotAccessedField.Local
-		float anonymous_1;
+		private float anonymous_1;
 		// ReSharper disable once NotAccessedField.Local
-		float anonymous_2;
-		public NJS_OBJECT Model;
-		public NJS_ACTION Animation;
+		private float       anonymous_2;
+		public  NJS_OBJECT? Model;
+		public  NJS_ACTION? Animation;
 		// ReSharper disable once NotAccessedField.Local
-		public NJS_TEXLIST TexList;
+		public NJS_TEXLIST? TexList;
 
 		public GeoAnimData(Stream stream)
 		{

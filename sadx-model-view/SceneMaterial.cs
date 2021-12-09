@@ -27,7 +27,7 @@ namespace sadx_model_view
 			       && UseSpecular == other.UseSpecular;
 		}
 
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
 			if (obj is null)
 			{

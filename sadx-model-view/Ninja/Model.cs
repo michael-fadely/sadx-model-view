@@ -166,7 +166,7 @@ namespace sadx_model_view.Ninja
 		public          Vector3            center;    // model center
 		public          float              r;         // radius
 
-		public Buffer VertexBuffer;
+		public Buffer? VertexBuffer;
 
 		public void CommitVertexBuffer(Renderer device)
 		{
@@ -235,7 +235,7 @@ namespace sadx_model_view.Ninja
 			return m;
 		}
 
-		bool isInvalid;
+		private bool isInvalid;
 
 		public bool IsInvalid
 		{

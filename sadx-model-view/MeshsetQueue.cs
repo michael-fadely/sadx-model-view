@@ -8,8 +8,8 @@ namespace sadx_model_view
 {
 	public class MeshsetQueueElementBase
 	{
-		public NJS_OBJECT     Object         { get; }
-		public NJS_MODEL      Model          { get; }
+		public NJS_OBJECT    Object         { get; }
+		public NJS_MODEL     Model          { get; }
 		public NJS_MESHSET    Set            { get; }
 		public Matrix         Transform      { get; }
 		public BoundingBox    BoundingBox    { get; }
@@ -65,8 +65,8 @@ namespace sadx_model_view
 
 	public class MeshsetQueue
 	{
-		readonly List<MeshsetQueueElement> opaqueSets = new List<MeshsetQueueElement>();
-		readonly List<MeshsetQueueElement> alphaSets  = new List<MeshsetQueueElement>();
+		private readonly List<MeshsetQueueElement> opaqueSets = new List<MeshsetQueueElement>();
+		private readonly List<MeshsetQueueElement> alphaSets  = new List<MeshsetQueueElement>();
 
 		public IReadOnlyList<MeshsetQueueElement> OpaqueSets => opaqueSets;
 		public IReadOnlyList<MeshsetQueueElement> AlphaSets  => alphaSets;

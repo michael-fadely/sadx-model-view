@@ -15,7 +15,7 @@ namespace sadx_model_view.Ninja
 	{
 		/// <summary>
 		/// <para>List of triangular polygons.</para>
-		/// <para> Indicates that each polygon is defined by 3 vertices.
+		/// <para>Indicates that each polygon is defined by 3 vertices.
 		/// The number of polygons is defined by <seealso cref="NJS_MESHSET.nbMesh"/>,
 		/// and the number of vertices is <seealso cref="NJS_MESHSET.nbMesh"/> * 3.</para>
 		/// </summary>
@@ -98,8 +98,8 @@ namespace sadx_model_view.Ninja
 		/// </summary>
 		public int VertexCount { get; }
 
-		public Buffer IndexBuffer;
-		public int    IndexCount;
+		public Buffer? IndexBuffer;
+		public int     IndexCount;
 
 		public ushort type_matId;			/* meshset type and attr index
 											   14-15 : meshset type bits
@@ -113,7 +113,7 @@ namespace sadx_model_view.Ninja
 		public readonly List<NJS_COLOR> vertcolor; /* polygon vertex color list    */
 		public readonly List<NJS_TEX>   vertuv;    /* polygon vertex uv list       */
 
-		Vector3[] points;
+		private Vector3[] _points = Array.Empty<Vector3>();
 
 		/// <summary>
 		/// Constructs a <see cref="NJS_MESHSET"/> from a file.
@@ -260,6 +260,12 @@ namespace sadx_model_view.Ninja
 			}
 
 			stream.Position = position;
+
+			meshes.TrimExcess();
+			attrs.TrimExcess();
+			normals.TrimExcess();
+			vertcolor.TrimExcess();
+			vertuv.TrimExcess();
 		}
 
 		/// <summary>
@@ -299,7 +305,7 @@ namespace sadx_model_view.Ninja
 		/// <param name="localIndex">Index of the current UV coordinates and/or color to use.</param>
 		/// <param name="vertexIndex">Index of the vertex in <paramref name="vertices"/>.</param>
 		/// <returns><paramref name="localIndex"/> if the vertex was updated, or a new index if a new vertex was added.</returns>
-		short UpdateVertex(IList<Vertex> vertices, int localIndex, int vertexIndex)
+		private short UpdateVertex(IList<Vertex> vertices, int localIndex, int vertexIndex)
 		{
 			bool added  = false;
 			int result = vertexIndex;
@@ -420,7 +426,7 @@ namespace sadx_model_view.Ninja
 					throw new ArgumentOutOfRangeException();
 			}
 
-			points = indices.Distinct().Select(i => (Vector3)vertices[i].Position).ToArray();
+			_points = indices.Distinct().Select(i => (Vector3)vertices[i].Position).ToArray();
 
 			var tri = new Triangle();
 			int triN = 0;
@@ -454,18 +460,18 @@ namespace sadx_model_view.Ninja
 			IndexBuffer = device.CreateIndexBuffer(indices, IndexCount * sizeof(short));
 		}
 
-		Vector3[] TransformedPoints(ref Matrix m)
+		private Vector3[] TransformedPoints(ref Matrix m)
 		{
-			if (m.IsIdentity)
+			if (m.IsIdentity || _points.Length < 1)
 			{
-				return points;
+				return _points;
 			}
 
-			var transformed = new Vector3[points.Length];
+			var transformed = new Vector3[_points.Length];
 
 			for (int i = 0; i < transformed.Length; i++)
 			{
-				Vector3.Transform(ref points[i], ref m, out transformed[i]);
+				Vector3.Transform(ref _points[i], ref m, out transformed[i]);
 			}
 
 			return transformed;

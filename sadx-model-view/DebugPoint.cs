@@ -15,14 +15,9 @@ namespace sadx_model_view
 			Color = color;
 		}
 
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
-			if (obj is null)
-			{
-				return false;
-			}
-
-			if (!(obj is DebugPoint other))
+			if (obj is not DebugPoint other)
 			{
 				return false;
 			}

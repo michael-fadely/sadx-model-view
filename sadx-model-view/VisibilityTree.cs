@@ -1,14 +1,16 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+
 using sadx_model_view.Ninja;
 using sadx_model_view.SA1;
 using SharpDX;
 
 namespace sadx_model_view
 {
-	class VisibilityTree
+	internal class VisibilityTree
 	{
-		BoundsOctree<MeshsetQueueElementBase> tree;
+		private BoundsOctree<MeshsetQueueElementBase> tree;
 
 		public bool Empty => tree.Count == 0;
 
@@ -16,37 +18,37 @@ namespace sadx_model_view
 		{
 			BoundingBox bounds = default;
 
-			foreach (Col col in landTable.ColList)
+			foreach (Col col in landTable.ColList.Where(col => col.Object is not null))
 			{
-				CalculateBounds(col.Object, ref bounds);
+				CalculateBounds(col.Object!, ref bounds);
 			}
 
 			Debug.Assert(MatrixStack.Empty);
-			Create(in bounds);
+			tree = new BoundsOctree<MeshsetQueueElementBase>(bounds, 0.1f, 1.0f);
 		}
 
 		public VisibilityTree(NJS_OBJECT @object)
 		{
 			BoundingBox bounds = default;
 			CalculateBounds(@object, ref bounds);
-			Create(in bounds);
+			tree = new BoundsOctree<MeshsetQueueElementBase>(bounds, 0.1f, 1.0f);
 		}
 
 		public void Add(LandTable landTable, Renderer renderer)
 		{
-			foreach (Col col in landTable.ColList)
+			foreach (Col col in landTable.ColList.Where(col => col.Object is not null))
 			{
 				// HACK:
 				if ((col.Flags & ColFlags.Visible) != 0)
 				{
-					Add(col.Object, renderer);
+					Add(col.Object!, renderer);
 				}
 			}
 		}
 
 		public void Add(NJS_OBJECT @object, Renderer renderer)
 		{
-			foreach (NJS_OBJECT o in @object)
+			foreach (NJS_OBJECT? o in @object)
 			{
 				if (o.Model == null)
 				{
@@ -74,7 +76,7 @@ namespace sadx_model_view
 			return result;
 		}
 
-		static void CalculateBounds(NJS_OBJECT @object, ref BoundingBox bounds)
+		private static void CalculateBounds(NJS_OBJECT @object, ref BoundingBox bounds)
 		{
 			foreach (NJS_OBJECT o in @object)
 			{
@@ -88,11 +90,6 @@ namespace sadx_model_view
 					bounds = BoundingBox.Merge(bounds, set.GetWorldSpaceBoundingBox());
 				}
 			}
-		}
-
-		void Create(in BoundingBox bounds)
-		{
-			tree = new BoundsOctree<MeshsetQueueElementBase>(bounds, 0.1f, 1.0f);
 		}
 
 		public IEnumerable<BoundingBox> GiveMeTheBounds() => tree.GiveMeTheBounds();

@@ -1,6 +1,6 @@
 namespace sadx_model_view
 {
-	public class Modifiable<T>
+	public class Modifiable<T> where T : struct
 	{
 		public bool Modified { get; private set; }
 
@@ -14,7 +14,7 @@ namespace sadx_model_view
 			current = initialValue;
 		}
 
-		T current;
+		private T current;
 
 		public T Value
 		{

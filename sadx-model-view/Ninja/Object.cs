@@ -8,7 +8,7 @@ using SharpDX;
 namespace sadx_model_view.Ninja
 {
 	[Flags]
-	enum NJD_EVAL : uint
+	internal enum NJD_EVAL : uint
 	{
 		/// <summary>
 		/// Ignore translation.
@@ -148,14 +148,14 @@ namespace sadx_model_view.Ninja
 			Sibling?.Dispose();
 		}
 
-		public uint      evalflags; /* evalation flags              */
-		public NJS_MODEL Model;     /* model data pointer           */
-		public Vector3   Position;  /* translation                  */
-		public Rotation3 Angle;     /* rotation                     */
-		public Vector3   Scale;     /* scaling                      */
+		public uint       evalflags; /* evalation flags              */
+		public NJS_MODEL? Model;     /* model data pointer           */
+		public Vector3    Position;  /* translation                  */
+		public Rotation3  Angle;     /* rotation                     */
+		public Vector3    Scale;     /* scaling                      */
 
-		public NJS_OBJECT Child;
-		public NJS_OBJECT Sibling;
+		public NJS_OBJECT? Child;
+		public NJS_OBJECT? Sibling;
 
 		public float Radius { get; private set; }
 
@@ -300,7 +300,7 @@ namespace sadx_model_view.Ninja
 			}
 		}
 
-		public static NJS_OBJECT Copy(NJS_OBJECT @object, bool copyChildren, bool copySiblings)
+		public static NJS_OBJECT? Copy(NJS_OBJECT? @object, bool copyChildren, bool copySiblings)
 		{
 			if (@object == null)
 			{
@@ -334,7 +334,7 @@ namespace sadx_model_view.Ninja
 			return new ObjectTriangles(this, triangles);
 		}
 
-		bool isInvalid;
+		private bool isInvalid;
 
 		public bool IsInvalid
 		{
@@ -365,26 +365,28 @@ namespace sadx_model_view.Ninja
 			return GetEnumerator(this);
 		}
 
-		static IEnumerator<NJS_OBJECT> GetEnumerator(NJS_OBJECT o)
+		private static IEnumerator<NJS_OBJECT> GetEnumerator(NJS_OBJECT o)
 		{
+			NJS_OBJECT? @object = o;
+
 			do
 			{
 				MatrixStack.Push();
-				o.PushTransform();
+				@object.PushTransform();
 
-				yield return o;
+				yield return @object;
 
-				if (o.Child != null)
+				if (@object.Child != null)
 				{
-					foreach (NJS_OBJECT c in o.Child)
+					foreach (NJS_OBJECT? c in @object.Child)
 					{
 						yield return c;
 					}
 				}
 
 				MatrixStack.Pop();
-				o = o.Sibling;
-			} while (o != null);
+				@object = @object.Sibling;
+			} while (@object != null);
 		}
 
 		IEnumerator IEnumerable.GetEnumerator()

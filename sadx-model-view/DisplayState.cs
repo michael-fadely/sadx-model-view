@@ -18,9 +18,9 @@ namespace sadx_model_view
 
 		public void Dispose()
 		{
-			Sampler?.Dispose();
-			Raster?.Dispose();
-			Blend?.Dispose();
+			Sampler.Dispose();
+			Raster.Dispose();
+			Blend.Dispose();
 		}
 	}
 }

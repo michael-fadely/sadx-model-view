@@ -5,13 +5,13 @@ namespace sadx_model_view
 {
 	public class Camera
 	{
-		const float PitchThreshold = MathUtil.PiOverTwo - 0.0017453292519943296f;
+		private const float PitchThreshold = MathUtil.PiOverTwo - 0.0017453292519943296f;
 
 		public bool Invalid { get; private set; } = true;
 
-		Vector3 position;
-		Vector3 rotation;
-		Matrix  rotationMatrix = Matrix.Identity;
+		private Vector3 position;
+		private Vector3 rotation;
+		private Matrix  rotationMatrix = Matrix.Identity;
 
 		// ReSharper disable once UnusedMember.Global
 		public Vector3 Position
@@ -88,7 +88,7 @@ namespace sadx_model_view
 			MaxDrawDistance = far;
 		}
 
-		void UpdateProjectionMatrix()
+		private void UpdateProjectionMatrix()
 		{
 			if (!Invalid)
 			{
@@ -138,7 +138,7 @@ namespace sadx_model_view
 			UpdateRotationMatrix();
 		}
 
-		void UpdateRotationMatrix()
+		private void UpdateRotationMatrix()
 		{
 			if (!Invalid)
 			{
@@ -150,7 +150,7 @@ namespace sadx_model_view
 			                 Matrix.RotationZ(rotation.Z);
 		}
 
-		static void LimitRotation(ref Vector3 v)
+		private static void LimitRotation(ref Vector3 v)
 		{
 			v.X = MathUtil.Clamp(v.X, -PitchThreshold, PitchThreshold);
 			v.Y = MathUtil.Wrap(v.Y, 0, MathUtil.TwoPi);

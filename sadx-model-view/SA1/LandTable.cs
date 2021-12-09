@@ -27,61 +27,75 @@ namespace sadx_model_view.SA1
 		public readonly List<Col> ColList;
 		public readonly List<GeoAnimData> AnimData;
 
-		public string      TexName;
-		public NJS_TEXLIST TexList;
-		public int         Unknown_2;
-		public int         Unknown_3;
+		public string       TexName;
+		public NJS_TEXLIST? TexList;
+		public int          Unknown_2;
+		public int          Unknown_3;
 
 		public uint TexListPointer;
 
 		public LandTable(Stream stream)
 		{
-			ColList = new List<Col>();
-			AnimData = new List<GeoAnimData>();
 			TexList = null;
 
 			byte[] buffer = new byte[SizeInBytes];
 			stream.Read(buffer, 0, buffer.Length);
 
-			short col_count = BitConverter.ToInt16(buffer, 0x00);
-			short anim_count = BitConverter.ToInt16(buffer, 0x02);
+			short colCount = BitConverter.ToInt16(buffer, 0x00);
+			short animCount = BitConverter.ToInt16(buffer, 0x02);
 
 			Flags = (LandTableFlags)BitConverter.ToInt32(buffer, 0x04);
 			Unknown_1 = BitConverter.ToSingle(buffer, 0x08);
 
-			uint col_ptr    = BitConverter.ToUInt32(buffer, 0x0C);
-			uint anim_ptr   = BitConverter.ToUInt32(buffer, 0x10);
-			uint name_ptr   = BitConverter.ToUInt32(buffer, 0x14);
-			TexListPointer = BitConverter.ToUInt32(buffer, 0x18);
+			uint colOffset  = BitConverter.ToUInt32(buffer, 0x0C);
+			uint animOffset = BitConverter.ToUInt32(buffer, 0x10);
+			uint nameOffset = BitConverter.ToUInt32(buffer, 0x14);
+			TexListPointer  = BitConverter.ToUInt32(buffer, 0x18);
 
 			Unknown_2 = BitConverter.ToInt32(buffer, 0x1C);
 			Unknown_3 = BitConverter.ToInt32(buffer, 0x20);
 
 			long position = stream.Position;
 
-			if (col_count > 0 && col_ptr > 0)
+			if (colCount > 0 && colOffset > 0)
 			{
-				stream.Position = col_ptr;
-				for (int i = 0; i < col_count; i++)
+				ColList = new List<Col>(capacity: colCount);
+
+				stream.Position = colOffset;
+				for (int i = 0; i < colCount; i++)
 				{
 					ColList.Add(new Col(stream));
 				}
 			}
-
-			if (anim_count > 0 && anim_ptr > 0)
+			else
 			{
-				stream.Position = anim_ptr;
-				for (int i = 0; i < anim_count; i++)
+				ColList = new List<Col>();
+			}
+
+			if (animCount > 0 && animOffset > 0)
+			{
+				AnimData = new List<GeoAnimData>(capacity: animCount);
+
+				stream.Position = animOffset;
+				for (int i = 0; i < animCount; i++)
 				{
 					AnimData.Add(new GeoAnimData(stream));
 				}
 			}
+			else
+			{
+				AnimData = new List<GeoAnimData>();
+			}
 
-			if (name_ptr > 0)
+			if (nameOffset > 0)
 			{
 				byte[] str = new byte[255];
-				stream.Position = name_ptr;
+				stream.Position = nameOffset;
 				TexName = Encoding.UTF8.GetString(str, 0, stream.ReadString(ref str));
+			}
+			else
+			{
+				TexName = string.Empty;
 			}
 
 			stream.Position = position;
@@ -128,14 +142,14 @@ namespace sadx_model_view.SA1
 		{
 			foreach (Col col in ColList)
 			{
-				col?.Dispose();
+				col.Dispose();
 			}
 
 			ColList.Clear();
 
 			foreach (GeoAnimData anim in AnimData)
 			{
-				anim?.Dispose();
+				anim.Dispose();
 			}
 
 			AnimData.Clear();

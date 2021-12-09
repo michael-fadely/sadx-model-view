@@ -4,9 +4,9 @@ using SharpDX.D3DCompiler;
 
 namespace sadx_model_view
 {
-	class DefaultIncludeHandler : Include
+	internal class DefaultIncludeHandler : Include
 	{
-		public IDisposable Shadow { get; set; }
+		public IDisposable? Shadow { get; set; }
 
 		public void Dispose()
 		{
@@ -19,7 +19,7 @@ namespace sadx_model_view
 
 		public void Close(Stream stream)
 		{
-			stream?.Close();
+			stream.Close();
 		}
 	}
 }

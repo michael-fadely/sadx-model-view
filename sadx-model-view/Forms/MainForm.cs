@@ -24,23 +24,24 @@ namespace sadx_model_view.Forms
 {
 	public partial class MainForm : Form
 	{
-		float speed = 0.5f;
-		System.Drawing.Point lastMouse = System.Drawing.Point.Empty;
-		CameraControls cameraControls = CameraControls.None;
+		private float                _speed          = 0.5f;
+		private System.Drawing.Point _lastMouse      = System.Drawing.Point.Empty;
+		private CameraControls       _cameraControls = CameraControls.None;
 
-		VisibilityTree objectTree, landTableTree;
-		BoundsOctree<ObjectTriangles> triangleTree;
-		Renderer renderer;
+		private VisibilityTree?                _objectTree;
+		private VisibilityTree?                _landTableTree;
+		private BoundsOctree<ObjectTriangles>? _triangleTree;
+		private Renderer?                      _renderer;
 
 		// SADX's default horizontal field of view.
-		static readonly float fovX = MathUtil.DegreesToRadians(70);
+		private static readonly float fovX = MathUtil.DegreesToRadians(70);
 		// SADX's default vertical field of view (55.412927352596554 degrees)
-		static readonly float fovY = 2.0f * (float)Math.Atan(Math.Tan(fovX / 2.0f) * (3.0f / 4.0f));
+		private static readonly float fovY = 2.0f * (float)Math.Atan(Math.Tan(fovX / 2.0f) * (3.0f / 4.0f));
 
-		NJS_OBJECT obj;
-		LandTable landTable;
+		private NJS_OBJECT? _object;
+		private LandTable?  _landTable;
 
-		enum ChunkTypes : uint
+		private enum ChunkTypes : uint
 		{
 			Label = 0x4C42414C,
 			Animations = 0x4D494E41,
@@ -54,14 +55,14 @@ namespace sadx_model_view.Forms
 			End = 0x444E45
 		}
 
-		readonly Camera camera = new Camera();
+		private readonly Camera camera = new Camera();
 
 		public MainForm()
 		{
 			InitializeComponent();
 		}
 
-		void openToolStripMenuItem_Click(object sender, EventArgs e)
+		private void openToolStripMenuItem_Click(object sender, EventArgs e)
 		{
 			OpenFileDialog dialog = openModelDialog;
 			if (dialog.ShowDialog(this) != DialogResult.OK)
@@ -69,7 +70,7 @@ namespace sadx_model_view.Forms
 				return;
 			}
 
-			renderer.ClearTexturePool();
+			_renderer!.ClearTexturePool();
 
 			using var file = new FileStream(dialog.FileName, FileMode.Open);
 			byte[] signature = new byte[6];
@@ -97,32 +98,32 @@ namespace sadx_model_view.Forms
 
 			file.Position = object_ptr;
 
-			obj?.Dispose();
-			obj = null;
+			_object?.Dispose();
+			_object = null;
 
-			landTable?.Dispose();
-			landTable = null;
+			_landTable?.Dispose();
+			_landTable = null;
 
-			objectTree    = null;
-			landTableTree = null;
+			_objectTree    = null;
+			_landTableTree = null;
 
 			switch (signatureStr)
 			{
 				case "SA1MDL":
 				{
-					obj = ObjectCache.FromStream(file, object_ptr);
-					obj.CommitVertexBuffer(renderer);
-					obj.CalculateRadius();
+					_object = ObjectCache.FromStream(file, object_ptr);
+					_object.CommitVertexBuffer(_renderer);
+					_object.CalculateRadius();
 
-					camera.Position = obj.Position;
-					camera.Translate(Vector3.BackwardRH, obj.Radius * 2.0f);
-					camera.LookAt(obj.Position);
+					camera.Position = _object.Position;
+					camera.Translate(Vector3.BackwardRH, _object.Radius * 2.0f);
+					camera.LookAt(_object.Position);
 
-					objectTree = new VisibilityTree(obj);
+					_objectTree = new VisibilityTree(_object);
 
 					var triangles = new List<ObjectTriangles>();
 
-					foreach (NJS_OBJECT o in obj)
+					foreach (NJS_OBJECT o in _object)
 					{
 						if (o.Model == null)
 						{
@@ -133,7 +134,7 @@ namespace sadx_model_view.Forms
 					}
 
 					BoundingBox bb = BoundingBox.FromPoints(triangles.SelectMany(x => x.Triangles).SelectMany(x => x.ToArray()).ToArray());
-					triangleTree = new BoundsOctree<ObjectTriangles>(bb, 0.1f, 1.0f);
+					_triangleTree = new BoundsOctree<ObjectTriangles>(bb, 0.1f, 1.0f);
 
 					foreach (ObjectTriangles pair in triangles)
 					{
@@ -144,7 +145,7 @@ namespace sadx_model_view.Forms
 
 						Vector3[] a = pair.Triangles.SelectMany(x => x.ToArray()).ToArray();
 						bb = BoundingBox.FromPoints(a);
-						triangleTree.Add(pair, bb);
+						_triangleTree.Add(pair, bb);
 					}
 
 					break;
@@ -152,13 +153,13 @@ namespace sadx_model_view.Forms
 
 				case "SA1LVL":
 				{
-					landTable = new LandTable(file);
-					landTable.CommitVertexBuffer(renderer);
-					landTableTree = new VisibilityTree(landTable);
+					_landTable = new LandTable(file);
+					_landTable.CommitVertexBuffer(_renderer);
+					_landTableTree = new VisibilityTree(_landTable);
 
-					List<ObjectTriangles> triangles = landTable.GetTriangles().ToList();
+					List<ObjectTriangles> triangles = _landTable.GetTriangles().ToList();
 					BoundingBox bb = BoundingBox.FromPoints(triangles.SelectMany(x => x.Triangles).SelectMany(x => x.ToArray()).ToArray());
-					triangleTree = new BoundsOctree<ObjectTriangles>(bb, 0.1f, 1.0f);
+					_triangleTree = new BoundsOctree<ObjectTriangles>(bb, 0.1f, 1.0f);
 
 					foreach (ObjectTriangles pair in triangles)
 					{
@@ -169,7 +170,7 @@ namespace sadx_model_view.Forms
 
 						Vector3[] a = pair.Triangles.SelectMany(x => x.ToArray()).ToArray();
 						bb = BoundingBox.FromPoints(a);
-						triangleTree.Add(pair, bb);
+						_triangleTree.Add(pair, bb);
 					}
 
 					break;
@@ -302,7 +303,7 @@ namespace sadx_model_view.Forms
 #endif
 		}
 
-		void openTexturesToolStripMenuItem_Click(object sender, EventArgs e)
+		private void openTexturesToolStripMenuItem_Click(object sender, EventArgs e)
 		{
 			OpenFileDialog dialog = openTexturesDialog;
 			if (dialog.ShowDialog(this) != DialogResult.OK)
@@ -312,13 +313,13 @@ namespace sadx_model_view.Forms
 
 			string extension = Path.GetExtension(dialog.FileName);
 
-			if (extension == null)
+			if (string.IsNullOrEmpty(extension))
 			{
 				MessageBox.Show(this, "no extension wtf", "wtf");
 				return;
 			}
 
-			renderer.ClearTexturePool();
+			_renderer!.ClearTexturePool();
 
 			if (extension.Equals(".txt", StringComparison.OrdinalIgnoreCase))
 			{
@@ -334,7 +335,7 @@ namespace sadx_model_view.Forms
 			}
 		}
 
-		void LoadTextureIndex(string fileName)
+		private void LoadTextureIndex(string fileName)
 		{
 			using var factory = new ImagingFactory2();
 			string   directory = Path.GetDirectoryName(fileName) ?? string.Empty;
@@ -352,18 +353,18 @@ namespace sadx_model_view.Forms
 				if (!File.Exists(texturePath))
 				{
 					MessageBox.Show($"Missing texture on line {lineNumber}: {texturePath}");
-					renderer.ClearTexturePool();
+					_renderer!.ClearTexturePool();
 					break;
 				}
 
 				using var decoder = new BitmapDecoder(factory, texturePath, DecodeOptions.CacheOnDemand);
 				using var converter = new FormatConverter(factory);
 				converter.Initialize(decoder.GetFrame(0), PixelFormat.Format32bppPRGBA, BitmapDitherType.None, null, 0.0, BitmapPaletteType.Custom);
-				renderer.CreateTextureFromBitmapSource(converter);
+				_renderer!.CreateTextureFromBitmapSource(converter);
 			}
 		}
 
-		void LoadPRS(string fileName)
+		private void LoadPRS(string fileName)
 		{
 			var prs = new PrsCompression();
 
@@ -377,13 +378,13 @@ namespace sadx_model_view.Forms
 			LoadPVM(stream);
 		}
 
-		void LoadPVM(string fileName)
+		private void LoadPVM(string fileName)
 		{
 			using var file = new FileStream(fileName, FileMode.Open);
 			LoadPVM(file);
 		}
 
-		void LoadPVM(Stream stream)
+		private void LoadPVM(Stream stream)
 		{
 			if (!PvmArchive.Identify(stream))
 			{
@@ -413,11 +414,11 @@ namespace sadx_model_view.Forms
 					rawTextures.Add(new RawTexture(mipmapDecoder.Width, mipmapDecoder.Height, mipmapDecoder.GetPixelData()));
 				}
 
-				renderer.CreateTextureFromRawTextures(rawTextures);
+				_renderer!.CreateTextureFromRawTextures(rawTextures);
 			}
 		}
 
-		void OnShown(object sender, EventArgs e)
+		private void OnShown(object sender, EventArgs e)
 		{
 #if DEBUG
 			showOctreeToolStripMenuItem.Checked = true;
@@ -428,7 +429,7 @@ namespace sadx_model_view.Forms
 
 			try
 			{
-				renderer = new Renderer(w, h, scene.Handle);
+				_renderer = new Renderer(w, h, scene.Handle);
 			}
 			catch (InsufficientFeatureLevelException)
 			{
@@ -453,13 +454,13 @@ namespace sadx_model_view.Forms
 				return;
 			}
 
-			enableOITToolStripMenuItem.Enabled = renderer.OITCapable;
+			enableOITToolStripMenuItem.Enabled = _renderer.OITCapable;
 
 			UpdateProjection();
 			scene.SizeChanged += OnSizeChanged;
 		}
 
-		void UpdateProjection()
+		private void UpdateProjection()
 		{
 			float width = scene.ClientRectangle.Width;
 			float height = scene.ClientRectangle.Height;
@@ -476,43 +477,43 @@ namespace sadx_model_view.Forms
 			camera.SetProjection(fov, ratio, 1.0f, 100000.0f);
 		}
 
-		void UpdateCamera()
+		private void UpdateCamera()
 		{
-			if (cameraControls != CameraControls.None)
+			if (_cameraControls != CameraControls.None)
 			{
 				var v = new Vector3();
 
-				if (cameraControls.HasFlag(CameraControls.Forward))
+				if (_cameraControls.HasFlag(CameraControls.Forward))
 				{
 					v.Z -= 1.0f;
 				}
 
-				if (cameraControls.HasFlag(CameraControls.Backward))
+				if (_cameraControls.HasFlag(CameraControls.Backward))
 				{
 					v.Z += 1.0f;
 				}
 
-				if (cameraControls.HasFlag(CameraControls.Right))
+				if (_cameraControls.HasFlag(CameraControls.Right))
 				{
 					v.X += 1.0f;
 				}
 
-				if (cameraControls.HasFlag(CameraControls.Left))
+				if (_cameraControls.HasFlag(CameraControls.Left))
 				{
 					v.X -= 1.0f;
 				}
 
-				if (cameraControls.HasFlag(CameraControls.Up))
+				if (_cameraControls.HasFlag(CameraControls.Up))
 				{
 					v.Y += 1.0f;
 				}
 
-				if (cameraControls.HasFlag(CameraControls.Down))
+				if (_cameraControls.HasFlag(CameraControls.Down))
 				{
 					v.Y -= 1.0f;
 				}
 
-				camera.Translate(v, speed * DeltaTime.Delta);
+				camera.Translate(v, _speed * DeltaTime.Delta);
 			}
 
 			if (!camera.Invalid)
@@ -523,13 +524,13 @@ namespace sadx_model_view.Forms
 			camera.Update();
 
 			Matrix m = camera.Projection;
-			renderer.SetTransform(TransformState.Projection, in m);
+			_renderer!.SetTransform(TransformState.Projection, in m);
 			m = camera.View;
-			renderer.SetTransform(TransformState.View, in m);
+			_renderer.SetTransform(TransformState.View, in m);
 		}
 
-		Ray lastRay;
-		RayHit? lastHit;
+		private Ray     lastRay;
+		private RayHit? lastHit;
 
 		// TODO: conditional render (only render when the scene has been invalidated)
 		public void MainLoop()
@@ -543,61 +544,61 @@ namespace sadx_model_view.Forms
 
 			UpdateCamera();
 
-			if (renderer == null)
+			if (_renderer == null)
 			{
 				return;
 			}
 
-			renderer.Clear();
+			_renderer.Clear();
 
 			if (lastHit != null)
 			{
-				renderer.DrawDebugLine(new DebugLine(new DebugPoint(lastRay.Position, Color.DarkGreen),
+				_renderer.DrawDebugLine(new DebugLine(new DebugPoint(lastRay.Position, Color.DarkGreen),
 				                                     new DebugPoint(lastRay.Position + (lastRay.Direction * lastHit.Value.Distance), Color.DarkGreen)));
 			}
 			else
 			{
-				renderer.DrawDebugLine(new DebugLine(new DebugPoint(lastRay.Position, Color.Blue),
+				_renderer.DrawDebugLine(new DebugLine(new DebugPoint(lastRay.Position, Color.Blue),
 				                                     new DebugPoint(lastRay.Position + (lastRay.Direction * 16777215f), Color.Blue)));
 			}
 
-			if (obj != null)
+			if (_object is not null && _objectTree is not null)
 			{
-				if (objectTree.Empty)
+				if (_objectTree.Empty)
 				{
-					objectTree.Add(obj, renderer);
+					_objectTree.Add(_object, _renderer);
 				}
 
 				if (showOctreeToolStripMenuItem.Checked)
 				{
-					foreach (BoundingBox bounds in objectTree.GiveMeTheBounds())
+					foreach (BoundingBox bounds in _objectTree.GiveMeTheBounds())
 					{
 						Color4 color = camera.Frustum.Contains(bounds) == ContainmentType.Contains
 							? new Color4(0f, 1f, 0f, 1f)
 							: new Color4(1f, 0f, 0f, 1f);
-						renderer.DrawBounds(in bounds, color);
+						_renderer.DrawBounds(in bounds, color);
 					}
 				}
 
-				List<MeshsetQueueElementBase> visible = objectTree.GetVisible(camera);
+				List<MeshsetQueueElementBase> visible = _objectTree.GetVisible(camera);
 				base.Text = $"{visible.Count}";
 
-				renderer.Draw(visible, camera);
+				_renderer.Draw(visible, camera);
 			}
 
-			if (landTable != null)
+			if (_landTable is not null && _landTableTree is not null)
 			{
-				renderer.FlowControl.UseMaterialFlags = true;
-				renderer.FlowControl.Add(0, NJD_FLAG.IgnoreSpecular);
+				_renderer.FlowControl.UseMaterialFlags = true;
+				_renderer.FlowControl.Add(0, NJD_FLAG.IgnoreSpecular);
 
-				if (landTableTree.Empty)
+				if (_landTableTree.Empty)
 				{
-					landTableTree.Add(landTable, renderer);
+					_landTableTree.Add(_landTable, _renderer);
 				}
 
 				if (showOctreeToolStripMenuItem.Checked)
 				{
-					foreach (BoundingBox bounds in landTableTree.GiveMeTheBounds())
+					foreach (BoundingBox bounds in _landTableTree.GiveMeTheBounds())
 					{
 						//Color4 color = camera.Frustum.Contains(bounds) == ContainmentType.Contains
 						//	? new Color4(0f, 1f, 0f, 1f)
@@ -607,46 +608,46 @@ namespace sadx_model_view.Forms
 
 						if (camera.Frustum.Contains(bounds) == ContainmentType.Contains)
 						{
-							renderer.DrawBounds(in bounds, new Color4(1.0f, 0.0f, 1.0f, 1.0f));
+							_renderer.DrawBounds(in bounds, new Color4(1.0f, 0.0f, 1.0f, 1.0f));
 						}
 						else
 						{
-							renderer.DrawBounds(in bounds, new Color4(1.0f, 0.0f, 0.0f, 1.0f));
+							_renderer.DrawBounds(in bounds, new Color4(1.0f, 0.0f, 0.0f, 1.0f));
 						}
 					}
 				}
 
-				List<MeshsetQueueElementBase> visible = landTableTree.GetVisible(camera);
+				List<MeshsetQueueElementBase> visible = _landTableTree.GetVisible(camera);
 				base.Text = $"{visible.Count}";
 
-				renderer.Draw(visible, camera);
-				renderer.FlowControl.Reset();
+				_renderer.Draw(visible, camera);
+				_renderer.FlowControl.Reset();
 			}
 
-			renderer.Present(camera);
+			_renderer.Present(camera);
 		}
 
-		void OnSizeChanged(object sender, EventArgs e)
+		private void OnSizeChanged(object? sender, EventArgs e)
 		{
 			if (WindowState == FormWindowState.Minimized)
 			{
 				return;
 			}
 
-			renderer.RefreshDevice(scene.ClientRectangle.Width, scene.ClientRectangle.Height);
+			_renderer?.RefreshDevice(scene.ClientRectangle.Width, scene.ClientRectangle.Height);
 			UpdateProjection();
 			UpdateCamera();
 		}
 
-		void OnClosed(object sender, FormClosedEventArgs e)
+		private void OnClosed(object sender, FormClosedEventArgs e)
 		{
-			obj?.Dispose();
-			landTable?.Dispose();
-			renderer?.Dispose();
+			_object?.Dispose();
+			_landTable?.Dispose();
+			_renderer?.Dispose();
 		}
 
 		[Flags]
-		enum CameraControls
+		private enum CameraControls
 		{
 			None,
 			Forward  = 1 << 0,
@@ -658,99 +659,103 @@ namespace sadx_model_view.Forms
 			Look     = 1 << 6
 		}
 
-		void scene_KeyDown(object sender, KeyEventArgs e)
+		private void scene_KeyDown(object sender, KeyEventArgs e)
 		{
 			switch (e.KeyCode)
 			{
 				case Keys.Subtract:
-					speed = Math.Max(0.125f, speed - 0.125f);
+					_speed = Math.Max(0.125f, _speed - 0.125f);
 					break;
 
 				case Keys.Add:
-					speed += 0.125f;
+					_speed += 0.125f;
 					break;
 
 				case Keys.F:
-					if (obj != null)
+					if (_object != null)
 					{
-						camera.LookAt(obj.Position);
+						camera.LookAt(_object.Position);
 					}
 					break;
 
 				case Keys.C:
-					renderer.DefaultCullMode = renderer.DefaultCullMode == CullMode.Back ? CullMode.None : CullMode.Back;
+					if (_renderer != null)
+					{
+						_renderer.DefaultCullMode = _renderer.DefaultCullMode == CullMode.Back ? CullMode.None : CullMode.Back;
+					}
+
 					break;
 
 				case Keys.W:
-					cameraControls |= CameraControls.Forward;
+					_cameraControls |= CameraControls.Forward;
 					break;
 
 				case Keys.S:
-					cameraControls |= CameraControls.Backward;
+					_cameraControls |= CameraControls.Backward;
 					break;
 
 				case Keys.A:
-					cameraControls |= CameraControls.Left;
+					_cameraControls |= CameraControls.Left;
 					break;
 
 				case Keys.D:
-					cameraControls |= CameraControls.Right;
+					_cameraControls |= CameraControls.Right;
 					break;
 
 				case Keys.Up:
-					cameraControls |= CameraControls.Up;
+					_cameraControls |= CameraControls.Up;
 					break;
 
 				case Keys.Down:
-					cameraControls |= CameraControls.Down;
+					_cameraControls |= CameraControls.Down;
 					break;
 
 				case Keys.Space:
-					cameraControls |= CameraControls.Look;
+					_cameraControls |= CameraControls.Look;
 					break;
 			}
 		}
 
-		void scene_KeyUp(object sender, KeyEventArgs e)
+		private void scene_KeyUp(object sender, KeyEventArgs e)
 		{
 			switch (e.KeyCode)
 			{
 				case Keys.W:
-					cameraControls &= ~CameraControls.Forward;
+					_cameraControls &= ~CameraControls.Forward;
 					break;
 
 				case Keys.S:
-					cameraControls &= ~CameraControls.Backward;
+					_cameraControls &= ~CameraControls.Backward;
 					break;
 
 				case Keys.A:
-					cameraControls &= ~CameraControls.Left;
+					_cameraControls &= ~CameraControls.Left;
 					break;
 
 				case Keys.D:
-					cameraControls &= ~CameraControls.Right;
+					_cameraControls &= ~CameraControls.Right;
 					break;
 
 				case Keys.Up:
-					cameraControls &= ~CameraControls.Up;
+					_cameraControls &= ~CameraControls.Up;
 					break;
 
 				case Keys.Down:
-					cameraControls &= ~CameraControls.Down;
+					_cameraControls &= ~CameraControls.Down;
 					break;
 
 				case Keys.Space:
-					cameraControls &= ~CameraControls.Look;
+					_cameraControls &= ~CameraControls.Look;
 					break;
 			}
 		}
 
-		void scene_MouseMove(object sender, MouseEventArgs e)
+		private void scene_MouseMove(object sender, MouseEventArgs e)
 		{
-			var delta = new System.Drawing.Point(e.Location.X - lastMouse.X, e.Location.Y - lastMouse.Y);
-			lastMouse = e.Location;
+			var delta = new System.Drawing.Point(e.Location.X - _lastMouse.X, e.Location.Y - _lastMouse.Y);
+			_lastMouse = e.Location;
 
-			if (!cameraControls.HasFlag(CameraControls.Look))
+			if (!_cameraControls.HasFlag(CameraControls.Look))
 			{
 				return;
 			}
@@ -762,13 +767,13 @@ namespace sadx_model_view.Forms
 			camera.Rotate(rotation);
 		}
 
-		void recompileShadersToolStripMenuItem_Click(object sender, EventArgs e)
+		private void recompileShadersToolStripMenuItem_Click(object sender, EventArgs e)
 		{
 			while (true)
 			{
 				try
 				{
-					renderer?.LoadShaders();
+					_renderer?.LoadShaders();
 					break;
 				}
 				catch (Exception ex)
@@ -780,7 +785,7 @@ namespace sadx_model_view.Forms
 
 		private void scene_MouseUp(object sender, MouseEventArgs e)
 		{
-			if (triangleTree == null)
+			if (_triangleTree == null)
 			{
 				return;
 			}
@@ -789,7 +794,7 @@ namespace sadx_model_view.Forms
 			var ray = Ray.GetPickRay(e.X, e.Y, viewport, camera.Frustum.Matrix);
 
 			var colliding = new List<RayCollisionResult<ObjectTriangles>>();
-			triangleTree.GetColliding(colliding, in ray);
+			_triangleTree.GetColliding(colliding, in ray);
 
 			lastRay = ray;
 			lastHit = null;
@@ -832,17 +837,17 @@ namespace sadx_model_view.Forms
 
 		private void enableOITToolStripMenuItem_CheckedChanged(object sender, EventArgs e)
 		{
-			if (renderer != null)
+			if (_renderer != null)
 			{
-				renderer.OITEnabled = enableOITToolStripMenuItem.Checked;
+				_renderer.OITEnabled = enableOITToolStripMenuItem.Checked;
 			}
 		}
 
-		void enableAlphaToolStripMenuItem_CheckedChanged(object sender, EventArgs e)
+		private void enableAlphaToolStripMenuItem_CheckedChanged(object sender, EventArgs e)
 		{
-			if (renderer != null)
+			if (_renderer != null)
 			{
-				renderer.EnableAlpha = enableAlphaToolStripMenuItem.Checked;
+				_renderer.EnableAlpha = enableAlphaToolStripMenuItem.Checked;
 			}
 		}
 	}

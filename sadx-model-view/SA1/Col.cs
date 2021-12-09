@@ -54,14 +54,14 @@ namespace sadx_model_view.SA1
 		public float   Radius;
 
 		// ReSharper disable once NotAccessedField.Local
-		int pad_a;
+		private int pad_a;
 		// ReSharper disable once NotAccessedField.Local
-		int pad_b;
+		private int pad_b;
 
-		public NJS_OBJECT Object;
+		public NJS_OBJECT? Object;
 		// ReSharper disable once NotAccessedField.Local
-		int anonymous_6;
-		public ColFlags Flags;
+		private int      anonymous_6;
+		public  ColFlags Flags;
 
 		/// <summary>
 		/// Constructs a Col object from a stream.

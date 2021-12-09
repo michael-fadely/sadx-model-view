@@ -27,16 +27,16 @@ namespace sadx_model_view.Ninja
 
 	public class NJS_TEXSURFACE : IDisposable
 	{
-		public uint      Type;
-		public uint      BitDepth;
-		public uint      PixelFormat;
-		public uint      nWidth;
-		public uint      nHeight;
-		public uint      TextureSize;
-		public uint      fSurfaceFlags;
-		public Texture2D pSurface;
-		public int       pVirtual;  // TODO: Uint32*
-		public int       pPhysical; // TODO: Uint32*
+		public uint       Type;
+		public uint       BitDepth;
+		public uint       PixelFormat;
+		public uint       nWidth;
+		public uint       nHeight;
+		public uint       TextureSize;
+		public uint       fSurfaceFlags;
+		public Texture2D? pSurface;
+		public int        pVirtual;  // TODO: Uint32*
+		public int        pPhysical; // TODO: Uint32*
 
 		public NJS_TEXSURFACE()
 		{
@@ -71,20 +71,20 @@ namespace sadx_model_view.Ninja
 
 		public void Dispose()
 		{
-			texsurface?.Dispose();
+			texsurface.Dispose();
 		}
 	}
 
 	public class NJS_TEXMEMLIST : IDisposable
 	{
-		public uint           globalIndex;
-		public NJS_TEXPALETTE bank;
-		public uint           tspparambuffer;
-		public uint           texparambuffer;
-		public uint           texaddr;
-		public NJS_TEXINFO    texinfo;
-		public ushort         count;
-		public ushort         dummy;
+		public uint            globalIndex;
+		public NJS_TEXPALETTE? bank;
+		public uint            tspparambuffer;
+		public uint            texparambuffer;
+		public uint            texaddr;
+		public NJS_TEXINFO?    texinfo;
+		public ushort          count;
+		public ushort          dummy;
 
 		public NJS_TEXMEMLIST()
 		{
@@ -126,11 +126,11 @@ namespace sadx_model_view.Ninja
 		// Otherwise, use filename.
 		// In the original structure, filename is a void* that points
 		// to one or the other depending on that flag.
-		public string      filename = string.Empty;
-		public NJS_TEXINFO texinfo  = null;
+		public string       filename = string.Empty;
+		public NJS_TEXINFO? texinfo  = null;
 
-		public NJD_TEXATTR    attr;
-		public NJS_TEXMEMLIST texaddr = null;
+		public NJD_TEXATTR     attr;
+		public NJS_TEXMEMLIST? texaddr = null;
 
 		public NJS_TEXNAME(Stream stream)
 		{
@@ -138,11 +138,11 @@ namespace sadx_model_view.Ninja
 			stream.Read(buffer, 0, buffer.Length);
 			long position = stream.Position;
 
-			uint data_ptr = BitConverter.ToUInt32(buffer, 0);
+			uint dataOffset = BitConverter.ToUInt32(buffer, 0);
 			attr = (NJD_TEXATTR)BitConverter.ToUInt32(buffer, 0x04);
-			uint tex_ptr = BitConverter.ToUInt32(buffer, 0x08);
+			uint texPtr = BitConverter.ToUInt32(buffer, 0x08);
 
-			if (tex_ptr > 0)
+			if (texPtr > 0)
 			{
 				throw new Exception("texaddr was not null! NJS_TEXMEMLIST should always be dynamically allocated!");
 			}
@@ -152,9 +152,9 @@ namespace sadx_model_view.Ninja
 				throw new Exception("attr was not 0! Flags are for runtime only!");
 			}
 
-			if (data_ptr > 0)
+			if (dataOffset > 0)
 			{
-				stream.Position = data_ptr;
+				stream.Position = dataOffset;
 				byte[] str = new byte[255];
 				filename = Encoding.UTF8.GetString(str, 0, stream.ReadString(ref str));
 			}

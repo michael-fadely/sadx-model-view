@@ -16,8 +16,8 @@ namespace sadx_model_view
 
 		public void Dispose()
 		{
-			Texture?.Dispose();
-			ShaderResource?.Dispose();
+			Texture.Dispose();
+			ShaderResource.Dispose();
 		}
 	}
 }

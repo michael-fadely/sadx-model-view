@@ -12,14 +12,9 @@
 			PointB = b;
 		}
 
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
-			if (obj is null)
-			{
-				return false;
-			}
-
-			if (!(obj is DebugLine other))
+			if (obj is not DebugLine other)
 			{
 				return false;
 			}

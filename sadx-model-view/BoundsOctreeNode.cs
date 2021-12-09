@@ -27,7 +27,7 @@ namespace sadx_model_view
 		/// If there are already numObjectsAllowed in a node, we split it into children.
 		/// A generally good number seems to be something around 8-15.
 		/// </summary>
-		const int numObjectsAllowed = 16; // TODO: configurable
+		private const int numObjectsAllowed = 16; // TODO: configurable
 
 		/// <summary>
 		/// Center of this node
@@ -42,45 +42,51 @@ namespace sadx_model_view
 		/// <summary>
 		/// Looseness value for this node
 		/// </summary>
-		float looseness;
+		private float looseness;
 
 		/// <summary>
 		/// Minimum size for a node in this octree
 		/// </summary>
-		float minimumSize;
+		private float minimumSize;
 
 		/// <summary>
 		/// Actual length of sides, taking the looseness value into account
 		/// </summary>
-		float looseLength;
+		private float looseLength;
 
 		/// <summary>
 		/// Bounding box that represents this node
 		/// </summary>
-		BoundingBox bounds;
+		private BoundingBox bounds;
 
 		/// <summary>
 		/// Objects in this node
 		/// </summary>
-		readonly List<OctreeObject> objects = new List<OctreeObject>();
+		private readonly List<OctreeObject> objects = new List<OctreeObject>();
 
 		/// <summary>
 		/// Child nodes, if any
 		/// </summary>
-		BoundsOctreeNode<T>[] children;
+		private BoundsOctreeNode<T>[]? children;
 
 		/// <summary>
 		/// Bounds of potential children in this node. These are actual size (with looseness taken into account), not base size.
 		/// </summary>
-		BoundingBox[] childBounds;
+		private BoundingBox[]? childBounds;
 
 		/// <summary>
 		/// An object in the octree
 		/// </summary>
-		class OctreeObject
+		private class OctreeObject
 		{
 			public T Object;
 			public BoundingBox Bounds;
+
+			public OctreeObject(T o, BoundingBox bounds)
+			{
+				Object = o;
+				Bounds = bounds;
+			}
 		}
 
 		/// <summary>
@@ -125,7 +131,7 @@ namespace sadx_model_view
 
 			for (int i = 0; i < objects.Count; i++)
 			{
-				if (objects[i].Object.Equals(obj))
+				if (Equals(objects[i].Object, obj))
 				{
 					removed = objects.Remove(objects[i]);
 					break;
@@ -297,7 +303,7 @@ namespace sadx_model_view
 			GetCollidingImpl(in checkBounds, result, false);
 		}
 
-		void GetCollidingImpl(in BoundingBox checkBounds, List<T> result, bool contains)
+		private void GetCollidingImpl(in BoundingBox checkBounds, List<T> result, bool contains)
 		{
 			ContainmentType containment = contains ? ContainmentType.Contains : bounds.Contains(checkBounds);
 
@@ -352,7 +358,7 @@ namespace sadx_model_view
 			GetCollidingImpl(in checkBounds, result, false);
 		}
 
-		void GetCollidingImpl(in BoundingSphere checkBounds, List<T> result, bool contains)
+		private void GetCollidingImpl(in BoundingSphere checkBounds, List<T> result, bool contains)
 		{
 			ContainmentType containment = contains ? ContainmentType.Contains : bounds.Contains(checkBounds);
 
@@ -441,7 +447,7 @@ namespace sadx_model_view
 			GetCollidingImpl(in frustum, result, false);
 		}
 
-		void GetCollidingImpl(in BoundingFrustum frustum, List<T> result, bool contains)
+		private void GetCollidingImpl(in BoundingFrustum frustum, List<T> result, bool contains)
 		{
 			ContainmentType containment = contains ? ContainmentType.Contains : frustum.Contains(ref bounds);
 
@@ -526,6 +532,11 @@ namespace sadx_model_view
 				return this;
 			}
 
+			if (childBounds is null)
+			{
+				throw new InvalidOperationException();
+			}
+
 			// Check objects in root
 			int bestFit = -1;
 			for (int i = 0; i < objects.Count; i++)
@@ -607,7 +618,7 @@ namespace sadx_model_view
 		/// <param name="minSize">Minimum size of nodes in this octree.</param>
 		/// <param name="loosenessVal">Multiplier for <paramref name="baseLength"/> to get the actual size.</param>
 		/// <param name="center">Center position of this node.</param>
-		void SetValues(float baseLength, float minSize, float loosenessVal, in Vector3 center)
+		private void SetValues(float baseLength, float minSize, float loosenessVal, in Vector3 center)
 		{
 			if (childBounds is null)
 			{
@@ -645,18 +656,13 @@ namespace sadx_model_view
 		/// </summary>
 		/// <param name="obj">Object to add.</param>
 		/// <param name="box">3D bounding box around the object.</param>
-		void SubAdd(T obj, in BoundingBox box)
+		private void SubAdd(T obj, in BoundingBox box)
 		{
 			// We know it fits at this level if we've got this far
 			// Just add if few objects are here, or children would be below min size
 			if (objects.Count < numObjectsAllowed || BaseLength / 2f < minimumSize)
 			{
-				var newObj = new OctreeObject
-				{
-					Object = obj,
-					Bounds = box
-				};
-
+				var newObj = new OctreeObject(obj, bounds);
 				objects.Add(newObj);
 				return;
 			}
@@ -678,7 +684,7 @@ namespace sadx_model_view
 					// object's center is located in relation to the octree's center.
 					bestFitChild = BestFitChild(existing.Bounds);
 					// Does it fit?
-					if (Encapsulates(children[bestFitChild].bounds, existing.Bounds))
+					if (Encapsulates(children![bestFitChild].bounds, existing.Bounds))
 					{
 						BoundingBox b = existing.Bounds;
 						children[bestFitChild].SubAdd(existing.Object, in b); // Go a level deeper
@@ -690,18 +696,13 @@ namespace sadx_model_view
 			// Now handle the new object we're adding now
 			bestFitChild = BestFitChild(box);
 
-			if (Encapsulates(children[bestFitChild].bounds, box))
+			if (Encapsulates(children![bestFitChild].bounds, box))
 			{
 				children[bestFitChild].SubAdd(obj, in box);
 			}
 			else
 			{
-				var newObj = new OctreeObject
-				{
-					Object = obj,
-					Bounds = box
-				};
-
+				var newObj = new OctreeObject(obj, bounds);
 				objects.Add(newObj);
 			}
 		}
@@ -712,13 +713,13 @@ namespace sadx_model_view
 		/// <param name="obj">Object to remove.</param>
 		/// <param name="objBounds">3D bounding box around the object.</param>
 		/// <returns><value>true</value> if the object was removed successfully.</returns>
-		bool SubRemove(T obj, in BoundingBox objBounds)
+		private bool SubRemove(T obj, in BoundingBox objBounds)
 		{
 			bool removed = false;
 
 			for (int i = 0; i < objects.Count; i++)
 			{
-				if (objects[i].Object.Equals(obj))
+				if (Equals(objects[i].Object, obj))
 				{
 					removed = objects.Remove(objects[i]);
 					break;
@@ -746,7 +747,7 @@ namespace sadx_model_view
 		/// <summary>
 		/// Splits the octree into eight children.
 		/// </summary>
-		void Split()
+		private void Split()
 		{
 			if (children is null)
 			{
@@ -771,12 +772,12 @@ namespace sadx_model_view
 		/// Note: We only have to check one level down since a merge will never happen if the children already have children,
 		/// since THAT won't happen unless there are already too many objects to merge.
 		/// </summary>
-		void Merge()
+		private void Merge()
 		{
 			// Note: We know children != null or we wouldn't be merging
 			for (int i = 0; i < 8; i++)
 			{
-				BoundsOctreeNode<T> curChild = children[i];
+				BoundsOctreeNode<T> curChild = children![i];
 				int numObjects = curChild.objects.Count;
 				for (int j = numObjects - 1; j >= 0; j--)
 				{
@@ -796,7 +797,7 @@ namespace sadx_model_view
 		/// <param name="innerBounds">Inner bounds.</param>
 		/// <returns><value>true</value> if innerBounds is fully encapsulated by outerBounds.</returns>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		static bool Encapsulates(BoundingBox outerBounds, BoundingBox innerBounds)
+		private static bool Encapsulates(BoundingBox outerBounds, BoundingBox innerBounds)
 		{
 			//return outerBounds.Contains(innerBounds.Minimum) && outerBounds.Contains(innerBounds.Maximum);
 			return outerBounds.Contains(ref innerBounds) == ContainmentType.Contains;
@@ -808,7 +809,7 @@ namespace sadx_model_view
 		/// <param name="objBounds">The object's bounds.</param>
 		/// <returns>One of the eight child octants.</returns>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		int BestFitChild(BoundingBox objBounds)
+		private int BestFitChild(BoundingBox objBounds)
 		{
 			return (objBounds.Center.X <= Center.X ? 0 : 1) + (objBounds.Center.Y >= Center.Y ? 0 : 4) + (objBounds.Center.Z <= Center.Z ? 0 : 2);
 		}
@@ -817,7 +818,7 @@ namespace sadx_model_view
 		/// Checks if there are few enough objects in this node and its children that the children should all be merged into this.
 		/// </summary>
 		/// <returns><value>true</value> there are less or the same abount of objects in this and its children than numObjectsAllowed.</returns>
-		bool ShouldMerge()
+		private bool ShouldMerge()
 		{
 			int totalObjects = objects.Count;
 
