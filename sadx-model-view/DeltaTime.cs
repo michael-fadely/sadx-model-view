@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace sadx_model_view
 {
@@ -8,15 +9,18 @@ namespace sadx_model_view
 		public static double   DeltaD { get; private set; }
 		public static float    Delta  => (float)DeltaD;
 
-		private static DateTime _lastTime = DateTime.Now;
+		private static readonly Stopwatch Stopwatch = new();
+
+		static DeltaTime()
+		{
+			Stopwatch.Start();
+		}
 
 		public static void Update()
 		{
-			DateTime now  = DateTime.Now;
-			TimeSpan span = now - _lastTime;
-
-			_lastTime = now;
-			DeltaD    = span.TotalMilliseconds / Target.TotalMilliseconds;
+			TimeSpan span = Stopwatch.Elapsed;
+			DeltaD = span.TotalMilliseconds / Target.TotalMilliseconds;
+			Stopwatch.Restart();
 		}
 	}
 }
