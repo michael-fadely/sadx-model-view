@@ -24,7 +24,7 @@ namespace sadx_model_view.Forms
 {
 	public partial class MainForm : Form
 	{
-		private float                _speed          = 0.5f;
+		private float                _speed          = 30.0f;
 		private System.Drawing.Point _lastMouse      = System.Drawing.Point.Empty;
 		private CameraControls       _cameraControls = CameraControls.None;
 
@@ -510,7 +510,7 @@ namespace sadx_model_view.Forms
 					v.Y -= 1.0f;
 				}
 
-				camera.Translate(v, _speed * DeltaTime.Delta);
+				camera.Translate(v, _speed * DeltaTime.SecondsElapsed);
 			}
 
 			if (!camera.Invalid)
@@ -661,11 +661,11 @@ namespace sadx_model_view.Forms
 			switch (e.KeyCode)
 			{
 				case Keys.Subtract:
-					_speed = Math.Max(0.125f, _speed - 0.125f);
+					_speed = Math.Max(7.5f, _speed - 7.5f);
 					break;
 
 				case Keys.Add:
-					_speed += 0.125f;
+					_speed += 7.5f;
 					break;
 
 				case Keys.F:

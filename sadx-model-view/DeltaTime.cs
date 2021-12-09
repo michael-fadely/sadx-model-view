@@ -5,22 +5,42 @@ namespace sadx_model_view
 {
 	internal static class DeltaTime
 	{
-		public static TimeSpan Target = TimeSpan.FromMilliseconds(1000.0 / 60.0);
-		public static double   DeltaD { get; private set; }
-		public static float    Delta  => (float)DeltaD;
+		private static readonly Stopwatch _stopwatch = new();
 
-		private static readonly Stopwatch Stopwatch = new();
+		private static double _secondsElapsedD;
+		private static float  _secondsElapsed;
+
+		public static double SecondsElapsedD
+		{
+			get => _secondsElapsedD;
+			private set
+			{
+				_secondsElapsedD = value;
+				_secondsElapsed = (float)value;
+			}
+		}
+
+		public static float SecondsElapsed
+		{
+			get => _secondsElapsed;
+			private set
+			{
+				_secondsElapsedD = value;
+				_secondsElapsed = value;
+			}
+		}
 
 		static DeltaTime()
 		{
-			Stopwatch.Start();
+			_stopwatch.Start();
 		}
 
 		public static void Update()
 		{
-			TimeSpan span = Stopwatch.Elapsed;
-			DeltaD = span.TotalMilliseconds / Target.TotalMilliseconds;
-			Stopwatch.Restart();
+			_stopwatch.Stop();
+			TimeSpan span = _stopwatch.Elapsed;
+			SecondsElapsedD = span.TotalSeconds;
+			_stopwatch.Restart();
 		}
 	}
 }
