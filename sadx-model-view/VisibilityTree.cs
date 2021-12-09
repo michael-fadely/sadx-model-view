@@ -10,9 +10,9 @@ namespace sadx_model_view
 {
 	internal class VisibilityTree
 	{
-		private BoundsOctree<MeshsetQueueElementBase> tree;
+		private readonly BoundsOctree<MeshsetQueueElementBase> _tree;
 
-		public bool Empty => tree.Count == 0;
+		public bool Empty => _tree.Count == 0;
 
 		public VisibilityTree(LandTable landTable)
 		{
@@ -24,14 +24,14 @@ namespace sadx_model_view
 			}
 
 			Debug.Assert(MatrixStack.Empty);
-			tree = new BoundsOctree<MeshsetQueueElementBase>(bounds, 0.1f, 1.0f);
+			_tree = new BoundsOctree<MeshsetQueueElementBase>(bounds, 0.1f, 1.0f);
 		}
 
 		public VisibilityTree(NJS_OBJECT @object)
 		{
 			BoundingBox bounds = default;
 			CalculateBounds(@object, ref bounds);
-			tree = new BoundsOctree<MeshsetQueueElementBase>(bounds, 0.1f, 1.0f);
+			_tree = new BoundsOctree<MeshsetQueueElementBase>(bounds, 0.1f, 1.0f);
 		}
 
 		public void Add(LandTable landTable, Renderer renderer)
@@ -58,7 +58,7 @@ namespace sadx_model_view
 				foreach (NJS_MESHSET set in o.Model.meshsets)
 				{
 					var element = new MeshsetQueueElementBase(renderer, o, o.Model, set);
-					tree.Add(element, element.BoundingBox);
+					_tree.Add(element, element.BoundingBox);
 				}
 			}
 		}
@@ -72,7 +72,7 @@ namespace sadx_model_view
 		public List<MeshsetQueueElementBase> GetVisible(in BoundingFrustum frustum)
 		{
 			var result = new List<MeshsetQueueElementBase>();
-			tree.GetColliding(result, in frustum);
+			_tree.GetColliding(result, in frustum);
 			return result;
 		}
 
@@ -92,6 +92,6 @@ namespace sadx_model_view
 			}
 		}
 
-		public IEnumerable<BoundingBox> GiveMeTheBounds() => tree.GiveMeTheBounds();
+		public IEnumerable<BoundingBox> GiveMeTheBounds() => _tree.GiveMeTheBounds();
 	}
 }

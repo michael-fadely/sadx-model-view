@@ -102,25 +102,25 @@ namespace sadx_model_view.Ninja
 			Scale.Y = BitConverter.ToSingle(buffer, 0x20 + 4);
 			Scale.Z = BitConverter.ToSingle(buffer, 0x20 + 8);
 
-			uint model_ptr   = BitConverter.ToUInt32(buffer, 0x04);
-			uint child_ptr   = BitConverter.ToUInt32(buffer, 0x2C);
-			uint sibling_ptr = BitConverter.ToUInt32(buffer, 0x30);
+			uint modelOffset   = BitConverter.ToUInt32(buffer, 0x04);
+			uint childOffset   = BitConverter.ToUInt32(buffer, 0x2C);
+			uint siblingOffset = BitConverter.ToUInt32(buffer, 0x30);
 
 			long position = stream.Position;
 
-			if (model_ptr != 0)
+			if (modelOffset != 0)
 			{
-				Model = ModelCache.FromStream(stream, model_ptr);
+				Model = ModelCache.FromStream(stream, modelOffset);
 			}
 
-			if (child_ptr != 0)
+			if (childOffset != 0)
 			{
-				Child = ObjectCache.FromStream(stream, child_ptr);
+				Child = ObjectCache.FromStream(stream, childOffset);
 			}
 
-			if (sibling_ptr != 0)
+			if (siblingOffset != 0)
 			{
-				Sibling = ObjectCache.FromStream(stream, sibling_ptr);
+				Sibling = ObjectCache.FromStream(stream, siblingOffset);
 			}
 
 			stream.Position = position;
@@ -337,14 +337,14 @@ namespace sadx_model_view.Ninja
 			return new ObjectTriangles(this, triangles);
 		}
 
-		private bool isInvalid;
+		private bool _isInvalid;
 
 		public bool IsInvalid
 		{
-			get => isInvalid;
+			get => _isInvalid;
 			set
 			{
-				isInvalid = value;
+				_isInvalid = value;
 
 				if (Model != null && Model.IsInvalid != value)
 				{

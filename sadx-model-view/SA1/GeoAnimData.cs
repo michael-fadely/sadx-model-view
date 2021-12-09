@@ -34,24 +34,24 @@ namespace sadx_model_view.SA1
 			anonymous_1 = BitConverter.ToSingle(buffer, 0x04);
 			anonymous_2 = BitConverter.ToSingle(buffer, 0x08);
 
-			uint object_ptr  = BitConverter.ToUInt32(buffer, 0x0C);
-			uint anim_ptr    = BitConverter.ToUInt32(buffer, 0x10);
-			uint texlist_ptr = BitConverter.ToUInt32(buffer, 0x14);
+			uint objectOffset    = BitConverter.ToUInt32(buffer, 0x0C);
+			uint animationOffset = BitConverter.ToUInt32(buffer, 0x10);
+			uint texlistOffset   = BitConverter.ToUInt32(buffer, 0x14);
 
-			if (object_ptr > 0)
+			if (objectOffset > 0)
 			{
-				Model = ObjectCache.FromStream(stream, object_ptr);
+				Model = ObjectCache.FromStream(stream, objectOffset);
 			}
 
-			if (anim_ptr > 0)
+			if (animationOffset > 0)
 			{
-				stream.Position = anim_ptr;
+				stream.Position = animationOffset;
 				Animation = new NJS_ACTION(stream);
 			}
 
-			if (texlist_ptr > 0)
+			if (texlistOffset > 0)
 			{
-				stream.Position = texlist_ptr;
+				stream.Position = texlistOffset;
 				TexList = new NJS_TEXLIST(stream);
 			}
 

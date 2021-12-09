@@ -178,12 +178,12 @@ namespace sadx_model_view.Ninja
 			stream.Read(buffer, 0, buffer.Length);
 			long position = stream.Position;
 
-			uint textures_ptr = BitConverter.ToUInt32(buffer, 0);
+			uint texturesOffset = BitConverter.ToUInt32(buffer, 0);
 			uint count = BitConverter.ToUInt32(buffer, 4);
 
-			if (count > 0 && textures_ptr > 0)
+			if (count > 0 && texturesOffset > 0)
 			{
-				stream.Position = textures_ptr;
+				stream.Position = texturesOffset;
 				for (int i = 0; i < count; i++)
 				{
 					textures.Add(new NJS_TEXNAME(stream));

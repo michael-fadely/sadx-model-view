@@ -31,17 +31,17 @@ namespace sadx_model_view
 		public int Count { get; private set; }
 
 		// Root node of the octree
-		private BoundsOctreeNode<T> rootNode;
+		private BoundsOctreeNode<T> _rootNode;
 
 		// Should be a value between 1 and 2. A multiplier for the base size of a node.
 		// 1.0 is a "normal" octree, while values > 1 have overlap
-		private readonly float looseness;
+		private readonly float _looseness;
 
 		// Size that the octree was on creation
-		private readonly float initialSize;
+		private readonly float _initialSize;
 
 		// Minimum side length that a node can be - essentially an alternative to having a max depth
-		private readonly float minSize;
+		private readonly float _minSize;
 
 #if UNITY_EDITOR
 		// For collision visualisation. Automatically removed in builds.
@@ -88,17 +88,17 @@ namespace sadx_model_view
 				minNodeSize = initialWorldSize;
 			}
 
-			Count       = 0;
-			initialSize = initialWorldSize;
-			minSize     = minNodeSize;
-			looseness   = loosenessVal.Clamp(1.0f, 2.0f);
-			rootNode    = new BoundsOctreeNode<T>(initialSize, minSize, looseness, initialWorldPos);
+			Count        = 0;
+			_initialSize = initialWorldSize;
+			_minSize     = minNodeSize;
+			_looseness   = loosenessVal.Clamp(1.0f, 2.0f);
+			_rootNode    = new BoundsOctreeNode<T>(_initialSize, _minSize, _looseness, initialWorldPos);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public IEnumerable<BoundingBox> GiveMeTheBounds()
 		{
-			return rootNode.GiveMeTheBounds();
+			return _rootNode.GiveMeTheBounds();
 		}
 
 		/// <summary>
@@ -109,9 +109,9 @@ namespace sadx_model_view
 		public void Add(T obj, BoundingBox objBounds)
 		{
 			// Add object or expand the octree until it can be added
-			while (!rootNode.Add(obj, in objBounds))
+			while (!_rootNode.Add(obj, in objBounds))
 			{
-				Grow(objBounds.Center - rootNode.Center);
+				Grow(objBounds.Center - _rootNode.Center);
 			}
 
 			Count++;
@@ -124,7 +124,7 @@ namespace sadx_model_view
 		/// <returns><value>true</value> if the object was removed successfully.</returns>
 		public bool Remove(T obj)
 		{
-			bool removed = rootNode.Remove(obj);
+			bool removed = _rootNode.Remove(obj);
 
 			// See if we can shrink the octree down now that we've removed the item
 			if (removed)
@@ -144,7 +144,7 @@ namespace sadx_model_view
 		/// <returns><value>true</value> if the object was removed successfully.</returns>
 		public bool Remove(T obj, in BoundingBox objBounds)
 		{
-			bool removed = rootNode.Remove(obj, in objBounds);
+			bool removed = _rootNode.Remove(obj, in objBounds);
 
 			// See if we can shrink the octree down now that we've removed the item
 			if (removed)
@@ -164,7 +164,7 @@ namespace sadx_model_view
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool IsColliding(in BoundingBox checkBounds)
 		{
-			return rootNode.IsColliding(in checkBounds);
+			return _rootNode.IsColliding(in checkBounds);
 		}
 
 		/// <summary>
@@ -175,7 +175,7 @@ namespace sadx_model_view
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool IsColliding(in BoundingSphere checkBounds)
 		{
-			return rootNode.IsColliding(in checkBounds);
+			return _rootNode.IsColliding(in checkBounds);
 		}
 
 		/// <summary>
@@ -187,7 +187,7 @@ namespace sadx_model_view
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool IsColliding(in Ray checkRay, float maxDistance)
 		{
-			return rootNode.IsColliding(in checkRay, maxDistance);
+			return _rootNode.IsColliding(in checkRay, maxDistance);
 		}
 
 		/// <summary>
@@ -199,7 +199,7 @@ namespace sadx_model_view
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void GetColliding(List<T> collidingWith, in BoundingBox checkBounds)
 		{
-			rootNode.GetColliding(in checkBounds, collidingWith);
+			_rootNode.GetColliding(in checkBounds, collidingWith);
 		}
 
 		/// <summary>
@@ -211,7 +211,7 @@ namespace sadx_model_view
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void GetColliding(List<T> collidingWith, in BoundingSphere checkBounds)
 		{
-			rootNode.GetColliding(in checkBounds, collidingWith);
+			_rootNode.GetColliding(in checkBounds, collidingWith);
 		}
 
 		/// <summary>
@@ -224,7 +224,7 @@ namespace sadx_model_view
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void GetColliding(List<RayCollisionResult<T>> collidingWith, in Ray checkRay, float maxDistance = float.PositiveInfinity)
 		{
-			rootNode.GetColliding(in checkRay, collidingWith, maxDistance);
+			_rootNode.GetColliding(in checkRay, collidingWith, maxDistance);
 		}
 
 		/// <summary>
@@ -236,13 +236,13 @@ namespace sadx_model_view
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void GetColliding(List<T> collidingWith, in BoundingFrustum frustum)
 		{
-			rootNode.GetColliding(in frustum, collidingWith);
+			_rootNode.GetColliding(in frustum, collidingWith);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public BoundingBox GetMaxBounds()
 		{
-			return rootNode.GetBounds();
+			return _rootNode.GetBounds();
 		}
 
 		// #### PRIVATE METHODS ####
@@ -253,17 +253,17 @@ namespace sadx_model_view
 		/// <param name="direction">Direction to grow.</param>
 		private void Grow(Vector3 direction)
 		{
-			BoundsOctreeNode<T> oldRoot = rootNode;
+			BoundsOctreeNode<T> oldRoot = _rootNode;
 
 			int     xDirection = direction.X >= 0 ? 1 : -1;
 			int     yDirection = direction.Y >= 0 ? 1 : -1;
 			int     zDirection = direction.Z >= 0 ? 1 : -1;
-			float   half       = rootNode.BaseLength / 2;
-			float   newLength  = rootNode.BaseLength * 2;
-			Vector3 newCenter  = rootNode.Center + new Vector3(xDirection * half, yDirection * half, zDirection * half);
+			float   half       = _rootNode.BaseLength / 2;
+			float   newLength  = _rootNode.BaseLength * 2;
+			Vector3 newCenter  = _rootNode.Center + new Vector3(xDirection * half, yDirection * half, zDirection * half);
 
 			// Create a new, bigger octree root node
-			rootNode = new BoundsOctreeNode<T>(newLength, minSize, looseness, newCenter);
+			_rootNode = new BoundsOctreeNode<T>(newLength, _minSize, _looseness, newCenter);
 
 			if (oldRoot.HasAnyObjects())
 			{
@@ -282,12 +282,12 @@ namespace sadx_model_view
 						xDirection  = i % 2 == 0 ? -1 : 1;
 						yDirection  = i > 3 ? -1 : 1;
 						zDirection  = i < 2 || i > 3 && i < 6 ? -1 : 1;
-						children[i] = new BoundsOctreeNode<T>(rootNode.BaseLength, minSize, looseness, newCenter + new Vector3(xDirection * half, yDirection * half, zDirection * half));
+						children[i] = new BoundsOctreeNode<T>(_rootNode.BaseLength, _minSize, _looseness, newCenter + new Vector3(xDirection * half, yDirection * half, zDirection * half));
 					}
 				}
 
 				// Attach the new children to the new root node
-				rootNode.SetChildren(children);
+				_rootNode.SetChildren(children);
 			}
 		}
 
@@ -296,7 +296,7 @@ namespace sadx_model_view
 		/// </summary>
 		private void Shrink()
 		{
-			rootNode = rootNode.ShrinkIfPossible(initialSize);
+			_rootNode = _rootNode.ShrinkIfPossible(_initialSize);
 		}
 
 		/// <summary>

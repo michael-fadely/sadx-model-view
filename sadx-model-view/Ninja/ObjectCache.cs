@@ -5,46 +5,46 @@ namespace sadx_model_view.Ninja
 {
 	internal static class ObjectCache
 	{
-		private static readonly Dictionary<long, NJS_OBJECT> objectCache = new Dictionary<long, NJS_OBJECT>();
+		private static readonly Dictionary<long, NJS_OBJECT> s_objectCache = new Dictionary<long, NJS_OBJECT>();
 
 		public static NJS_OBJECT FromStream(Stream stream, long offset)
 		{
-			lock (objectCache)
+			lock (s_objectCache)
 			{
 				// HACK: disabled
 				// TODO: replace with offset as unique identifier to update shared references, but allow multiple instances
-				//objectCache.TryGetValue(offset, out NJS_OBJECT result);
+				//s_objectCache.TryGetValue(offset, out NJS_OBJECT? result);
 
-				//if (result != null)
+				//if (result is not null)
 				//{
 				//	return result;
 				//}
 
 				stream.Position = offset;
 				var result = new NJS_OBJECT(stream);
-				//objectCache[offset] = result;
+				//s_objectCache[offset] = result;
 				return result;
 			}
 		}
 
 		public static void Clear()
 		{
-			lock (objectCache)
+			lock (s_objectCache)
 			{
-				objectCache.Clear();
+				s_objectCache.Clear();
 			}
 		}
 
 		public static void DisposeObjects()
 		{
-			lock (objectCache)
+			lock (s_objectCache)
 			{
-				foreach (NJS_OBJECT obj in objectCache.Values)
+				foreach (NJS_OBJECT obj in s_objectCache.Values)
 				{
 					obj.Dispose();
 				}
 
-				objectCache.Clear();
+				s_objectCache.Clear();
 			}
 		}
 	}

@@ -7,9 +7,9 @@ namespace sadx_model_view.Ninja
 {
 	public static class MatrixStack
 	{
-		private static readonly Stack<Matrix> Stack = new Stack<Matrix>();
+		private static readonly Stack<Matrix> s_stack = new Stack<Matrix>();
 
-		public static bool Empty => Stack.Count == 0;
+		public static bool Empty => s_stack.Count == 0;
 
 		private const int M00 = 0x0;
 		private const int M01 = 0x1;
@@ -30,7 +30,7 @@ namespace sadx_model_view.Ninja
 
 		public static void Push(in Matrix m)
 		{
-			Stack.Push(m);
+			s_stack.Push(m);
 		}
 
 		public static void Push()
@@ -41,7 +41,7 @@ namespace sadx_model_view.Ninja
 			}
 			else
 			{
-				Matrix m = Stack.Peek();
+				Matrix m = s_stack.Peek();
 				Push(in m);
 			}
 		}
@@ -54,7 +54,7 @@ namespace sadx_model_view.Ninja
 
 		public static void Pop(int n)
 		{
-			if (Stack.Count < 1)
+			if (s_stack.Count < 1)
 			{
 				return;
 			}
@@ -66,23 +66,23 @@ namespace sadx_model_view.Ninja
 
 			do
 			{
-				Stack.Pop();
-			} while (--n > 0 && Stack.Count > 0);
+				s_stack.Pop();
+			} while (--n > 0 && s_stack.Count > 0);
 		}
 
 		public static Matrix Pop()
 		{
-			return Stack.Pop();
+			return s_stack.Pop();
 		}
 
 		public static void Clear()
 		{
-			Stack.Clear();
+			s_stack.Clear();
 		}
 
 		public static Matrix Peek()
 		{
-			return Stack.Peek();
+			return s_stack.Peek();
 		}
 
 		public static void Translate(in Vector3 v)

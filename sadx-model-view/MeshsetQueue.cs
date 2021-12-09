@@ -1,5 +1,7 @@
 using sadx_model_view.Ninja;
+
 using SharpDX;
+
 using System.Collections.Generic;
 
 // TODO: opaque instancing
@@ -8,8 +10,8 @@ namespace sadx_model_view
 {
 	public class MeshsetQueueElementBase
 	{
-		public NJS_OBJECT    Object         { get; }
-		public NJS_MODEL     Model          { get; }
+		public NJS_OBJECT     Object         { get; }
+		public NJS_MODEL      Model          { get; }
 		public NJS_MESHSET    Set            { get; }
 		public Matrix         Transform      { get; }
 		public BoundingBox    BoundingBox    { get; }
@@ -65,16 +67,16 @@ namespace sadx_model_view
 
 	public class MeshsetQueue
 	{
-		private readonly List<MeshsetQueueElement> opaqueSets = new List<MeshsetQueueElement>();
-		private readonly List<MeshsetQueueElement> alphaSets  = new List<MeshsetQueueElement>();
+		private readonly List<MeshsetQueueElement> _opaqueSets = new List<MeshsetQueueElement>();
+		private readonly List<MeshsetQueueElement> _alphaSets  = new List<MeshsetQueueElement>();
 
-		public IReadOnlyList<MeshsetQueueElement> OpaqueSets => opaqueSets;
-		public IReadOnlyList<MeshsetQueueElement> AlphaSets  => alphaSets;
+		public IReadOnlyList<MeshsetQueueElement> OpaqueSets => _opaqueSets;
+		public IReadOnlyList<MeshsetQueueElement> AlphaSets  => _alphaSets;
 
 		public void Clear()
 		{
-			opaqueSets.Clear();
-			alphaSets.Clear();
+			_opaqueSets.Clear();
+			_alphaSets.Clear();
 		}
 
 		/// <summary>
@@ -82,7 +84,7 @@ namespace sadx_model_view
 		/// </summary>
 		public void SortOpaque()
 		{
-			opaqueSets.Sort((a, b) =>
+			_opaqueSets.Sort((a, b) =>
 			{
 				if (a.Set == b.Set)
 				{
@@ -108,7 +110,7 @@ namespace sadx_model_view
 		/// </summary>
 		public void SortAlpha()
 		{
-			alphaSets.Sort((a, b) =>
+			_alphaSets.Sort((a, b) =>
 			{
 				if (a.Distance > b.Distance)
 				{
@@ -133,11 +135,11 @@ namespace sadx_model_view
 		{
 			if (element.Transparent)
 			{
-				alphaSets.Add(element);
+				_alphaSets.Add(element);
 			}
 			else
 			{
-				opaqueSets.Add(element);
+				_opaqueSets.Add(element);
 			}
 		}
 	}

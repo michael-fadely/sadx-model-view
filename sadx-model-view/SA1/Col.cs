@@ -81,11 +81,11 @@ namespace sadx_model_view.SA1
 			pad_a  = BitConverter.ToInt32(buffer, 0x10);
 			pad_b  = BitConverter.ToInt32(buffer, 0x14);
 
-			uint object_ptr = BitConverter.ToUInt32(buffer, 0x18);
+			uint objectOffset = BitConverter.ToUInt32(buffer, 0x18);
 
-			if (object_ptr > 0)
+			if (objectOffset > 0)
 			{
-				Object = ObjectCache.FromStream(stream, object_ptr);
+				Object = ObjectCache.FromStream(stream, objectOffset);
 			}
 
 			anonymous_6 = BitConverter.ToInt32(buffer, 0x1C);

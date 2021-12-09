@@ -40,7 +40,7 @@ namespace sadx_model_view
 	{
 		// TODO: do this with code generator?
 		public bool Modified => World.Modified ||
-		                        wvMatrixInvT.Modified ||
+		                        WvMatrixInvT.Modified ||
 		                        DrawCall.Modified ||
 		                        SourceBlend.Modified ||
 		                        DestinationBlend.Modified ||
@@ -48,7 +48,7 @@ namespace sadx_model_view
 		                        IsStandardBlending.Modified;
 
 		public readonly Modifiable<Matrix> World              = new Modifiable<Matrix>();
-		public readonly Modifiable<Matrix> wvMatrixInvT       = new Modifiable<Matrix>();
+		public readonly Modifiable<Matrix> WvMatrixInvT       = new Modifiable<Matrix>();
 		public readonly Modifiable<uint>   DrawCall           = new Modifiable<uint>(0);
 		public readonly Modifiable<uint>   SourceBlend        = new Modifiable<uint>(0);
 		public readonly Modifiable<uint>   DestinationBlend   = new Modifiable<uint>(0);
@@ -59,7 +59,7 @@ namespace sadx_model_view
 		public void Clear()
 		{
 			World.Clear();
-			wvMatrixInvT.Clear();
+			WvMatrixInvT.Clear();
 			DrawCall.Clear();
 			SourceBlend.Clear();
 			DestinationBlend.Clear();
@@ -71,7 +71,7 @@ namespace sadx_model_view
 		public override void Write(CBufferWriter writer)
 		{
 			writer.Add(World);
-			writer.Add(wvMatrixInvT);
+			writer.Add(WvMatrixInvT);
 			writer.Add(DrawCall);
 			writer.Add(SourceBlend);
 			writer.Add(DestinationBlend);

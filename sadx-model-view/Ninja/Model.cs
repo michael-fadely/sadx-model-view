@@ -239,11 +239,11 @@ namespace sadx_model_view.Ninja
 			return m;
 		}
 
-		private bool isInvalid;
+		private bool _isInvalid;
 
 		public bool IsInvalid
 		{
-			get => isInvalid;
+			get => _isInvalid;
 			set
 			{
 				foreach (NJS_MESHSET set in meshsets)
@@ -251,7 +251,7 @@ namespace sadx_model_view.Ninja
 					set.IsInvalid = value;
 				}
 
-				isInvalid = value;
+				_isInvalid = value;
 			}
 		}
 

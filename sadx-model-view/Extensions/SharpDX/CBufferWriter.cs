@@ -75,17 +75,17 @@ namespace sadx_model_view.Extensions.SharpDX
 
 	public class CBufferStreamWriter : CBufferWriter
 	{
-		private readonly DataStream stream;
+		private readonly DataStream _stream;
 
 		public CBufferStreamWriter(DataStream stream)
 		{
-			this.stream = stream;
+			this._stream = stream;
 		}
 
 		/// <inheritdoc />
 		public override void Add<T>(in T data) where T : struct
 		{
-			stream.Write(data);
+			_stream.Write(data);
 		}
 	}
 

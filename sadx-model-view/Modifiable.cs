@@ -6,23 +6,23 @@ namespace sadx_model_view
 
 		public Modifiable()
 		{
-			current = default;
+			_current = default;
 		}
 
 		public Modifiable(T initialValue)
 		{
-			current = initialValue;
+			_current = initialValue;
 		}
 
-		private T current;
+		private T _current;
 
 		public T Value
 		{
-			get => current;
+			get => _current;
 			set
 			{
-				Modified = Modified || !current.Equals(value);
-				current  = value;
+				Modified = Modified || !_current.Equals(value);
+				_current = value;
 			}
 		}
 

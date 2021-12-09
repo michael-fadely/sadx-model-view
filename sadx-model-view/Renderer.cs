@@ -31,9 +31,9 @@ namespace sadx_model_view
 
 	public class Renderer : IDisposable
 	{
-		private static readonly NJS_MATERIAL NullMaterial = new();
+		private static readonly NJS_MATERIAL s_nullMaterial = new();
 
-		private static readonly BlendOption[] BlendModes =
+		private static readonly BlendOption[] s_blendModes =
 		{
 			BlendOption.Zero,
 			BlendOption.One,
@@ -760,7 +760,7 @@ namespace sadx_model_view
 			List<NJS_MATERIAL> mats = parent.mats;
 
 			ushort materialId = set.MaterialId;
-			NJS_MATERIAL njMaterial = mats.Count > 0 && materialId < mats.Count ? mats[materialId] : NullMaterial;
+			NJS_MATERIAL njMaterial = mats.Count > 0 && materialId < mats.Count ? mats[materialId] : s_nullMaterial;
 
 			FlowControl flowControl = FlowControl;
 
@@ -838,7 +838,7 @@ namespace sadx_model_view
 			Matrix wvMatrixInvT = _perModelData.World.Value * _perSceneData.View.Value;
 			Matrix.Invert(ref wvMatrixInvT, out wvMatrixInvT);
 
-			_perModelData.wvMatrixInvT.Value = wvMatrixInvT;
+			_perModelData.WvMatrixInvT.Value = wvMatrixInvT;
 
 			using (stream)
 			{
@@ -1558,8 +1558,8 @@ namespace sadx_model_view
 			ref RenderTargetBlendDescription rt = ref blendDesc.RenderTarget[0];
 
 			rt.IsBlendEnabled        = (flags & NJD_FLAG.UseAlpha) != 0;
-			rt.SourceBlend           = BlendModes[material.SourceBlend];
-			rt.DestinationBlend      = BlendModes[material.DestinationBlend];
+			rt.SourceBlend           = s_blendModes[material.SourceBlend];
+			rt.DestinationBlend      = s_blendModes[material.DestinationBlend];
 			rt.BlendOperation        = BlendOperation.Add;
 			rt.SourceAlphaBlend      = BlendOption.Zero;
 			rt.DestinationAlphaBlend = BlendOption.Zero;
