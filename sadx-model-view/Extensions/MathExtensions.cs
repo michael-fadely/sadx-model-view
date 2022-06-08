@@ -43,7 +43,8 @@ namespace sadx_model_view.Extensions
 				return value;
 			}
 
-			value += alignment - (value % alignment);
+			value += alignment - 1;
+			value -= value % alignment;
 			return value;
 		}
 
