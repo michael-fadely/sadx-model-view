@@ -8,7 +8,7 @@ namespace sadx_model_view.Ninja
 	/// </summary>
 	public struct Vertex
 	{
-		public static int SizeInBytes => 2 * Vector3.SizeInBytes + sizeof(uint) + Vector2.SizeInBytes;
+		public static int SizeInBytes => (2 * Vector3.SizeInBytes) + sizeof(uint) + Vector2.SizeInBytes;
 
 		public RawVector3    Position;
 		public RawVector3    Normal;

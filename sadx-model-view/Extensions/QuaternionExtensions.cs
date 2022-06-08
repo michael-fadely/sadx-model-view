@@ -1,4 +1,5 @@
 using System;
+
 using SharpDX;
 
 namespace sadx_model_view.Extensions
@@ -19,21 +20,21 @@ namespace sadx_model_view.Extensions
 		{
 			float x2 = q.X * q.X;
 			float y2 = q.Y * q.Y;
-			return (float)Math.Atan2(2.0f * q.Y * q.W - 2.0f * q.Z * q.X,
-				1.0f - 2.0f * y2 - 2.0f * x2);
+			return MathF.Atan2((2.0f * q.Y * q.W) - (2.0f * q.Z * q.X),
+			                   1.0f - (2.0f * y2) - (2.0f * x2));
 		}
 
 		private static float GetPitch(this Quaternion q)
 		{
-			return (float)-Math.Asin(2.0f * q.Z * q.Y + 2.0f * q.X * q.W);
+			return -MathF.Asin((2.0f * q.Z * q.Y) + (2.0f * q.X * q.W));
 		}
 
 		private static float GetRoll(this Quaternion q)
 		{
 			float x2 = q.X * q.X;
 			float z2 = q.Z * q.Z;
-			return (float)-Math.Atan2(2.0f * q.Z * q.W - 2.0f * q.Y * q.X,
-				1.0f - 2.0f * z2 - 2.0f * x2);
+			return -MathF.Atan2((2.0f * q.Z * q.W) - (2.0f * q.Y * q.X),
+			                    1.0f - (2.0f * z2) - (2.0f * x2));
 		}
 	}
 }

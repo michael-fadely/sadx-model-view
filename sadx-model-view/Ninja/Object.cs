@@ -17,38 +17,47 @@ namespace sadx_model_view.Ninja
 		/// Ignore translation.
 		/// </summary>
 		UNIT_POS = 1 << 0,
+
 		/// <summary>
 		/// Ignore rotation.
 		/// </summary>
 		UNIT_ANG = 1 << 1,
+
 		/// <summary>
 		/// Ignore scale.
 		/// </summary>
 		UNIT_SCL = 1 << 2,
+
 		/// <summary>
 		/// Don't draw this model.
 		/// </summary>
 		HIDE = 1 << 3,
+
 		/// <summary>
 		/// Terminate tracing children. (Don't draw children)
 		/// </summary>
 		BREAK = 1 << 4,
+
 		/// <summary>
 		/// Use ZXY rotation.
 		/// </summary>
 		ZXY_ANG = 1 << 5,
+
 		/// <summary>
 		/// Skip animation.
 		/// </summary>
 		SKIP = 1 << 6,
+
 		/// <summary>
 		/// Unknown.
 		/// </summary>
 		SHAPE_SKIP = 1 << 7,
+
 		/// <summary>
 		/// Unknown.
 		/// </summary>
 		CLIP = 1 << 8,
+
 		/// <summary>
 		/// Unknown.
 		/// </summary>
@@ -72,7 +81,9 @@ namespace sadx_model_view.Ninja
 	/// See also:
 	/// <seealso cref="NJS_MODEL"/>
 	/// </summary>
-	public class NJS_OBJECT : IDisposable, IInvalidatable, IEnumerable<NJS_OBJECT>
+	public class NJS_OBJECT : IDisposable,
+	                          IInvalidatable,
+	                          IEnumerable<NJS_OBJECT>
 	{
 		/// <summary>
 		/// Native structure size in bytes.
@@ -293,13 +304,13 @@ namespace sadx_model_view.Ninja
 			if (Child != null)
 			{
 				Child.CalculateRadius();
-				Radius = Math.Max(Radius, Child.Radius);
+				Radius = MathF.Max(Radius, Child.Radius);
 			}
 
 			if (Sibling != null)
 			{
 				Sibling.CalculateRadius();
-				Radius = Math.Max(Radius, Sibling.Radius);
+				Radius = MathF.Max(Radius, Sibling.Radius);
 			}
 		}
 

@@ -93,10 +93,10 @@ namespace sadx_model_view.Ninja
 			float y = v.Y;
 			float z = v.Z;
 
-			m[M30] = z * m[M20] + y * m[M10] + x * m[M00] + m[M30];
-			m[M31] = z * m[M21] + y * m[M11] + x * m[M01] + m[M31];
-			m[M32] = z * m[M22] + y * m[M12] + x * m[M02] + m[M32];
-			m[M33] = z * m[M23] + y * m[M13] + x * m[M03] + m[M33];
+			m[M30] = (z * m[M20]) + (y * m[M10]) + (x * m[M00]) + m[M30];
+			m[M31] = (z * m[M21]) + (y * m[M11]) + (x * m[M01]) + m[M31];
+			m[M32] = (z * m[M22]) + (y * m[M12]) + (x * m[M02]) + m[M32];
+			m[M33] = (z * m[M23]) + (y * m[M13]) + (x * m[M03]) + m[M33];
 
 			Push(in m);
 		}
@@ -109,118 +109,118 @@ namespace sadx_model_view.Ninja
 			{
 				if (v.Y != 0)
 				{
-					float sin = (float)Math.Sin(v.Y);
-					float cos = (float)Math.Cos(v.Y);
+					float sin = MathF.Sin(v.Y);
+					float cos = MathF.Cos(v.Y);
 					float m00 = m[M00];
 					float m01 = m[M01];
 					float m02 = m[M02];
 					float m03 = m[M03];
 
-					m[M00] = m00 * cos - sin * m[M20];
-					m[M01] = m01 * cos - sin * m[M21];
-					m[M02] = m02 * cos - sin * m[M22];
-					m[M03] = m03 * cos - sin * m[M23];
-					m[M20] = cos * m[M20] + m00 * sin;
-					m[M21] = cos * m[M21] + m01 * sin;
-					m[M22] = cos * m[M22] + m02 * sin;
-					m[M23] = cos * m[M23] + m03 * sin;
+					m[M00] = (m00 * cos) - (sin * m[M20]);
+					m[M01] = (m01 * cos) - (sin * m[M21]);
+					m[M02] = (m02 * cos) - (sin * m[M22]);
+					m[M03] = (m03 * cos) - (sin * m[M23]);
+					m[M20] = (cos * m[M20]) + (m00 * sin);
+					m[M21] = (cos * m[M21]) + (m01 * sin);
+					m[M22] = (cos * m[M22]) + (m02 * sin);
+					m[M23] = (cos * m[M23]) + (m03 * sin);
 				}
 
 				if (v.X != 0)
 				{
-					float sin = (float)Math.Sin(v.X);
-					float cos = (float)Math.Cos(v.X);
+					float sin = MathF.Sin(v.X);
+					float cos = MathF.Cos(v.X);
 					float m10 = m[M10];
 					float m11 = m[M11];
 					float m12 = m[M12];
 					float m13 = m[M13];
 
-					m[M10] = sin * m[M20] + m10 * cos;
-					m[M11] = sin * m[M21] + m11 * cos;
-					m[M12] = sin * m[M22] + m12 * cos;
-					m[M13] = sin * m[M23] + m13 * cos;
-					m[M20] = cos * m[M20] - m10 * sin;
-					m[M21] = cos * m[M21] - m11 * sin;
-					m[M22] = cos * m[M22] - m12 * sin;
-					m[M23] = cos * m[M23] - m13 * sin;
+					m[M10] = (sin * m[M20]) + (m10 * cos);
+					m[M11] = (sin * m[M21]) + (m11 * cos);
+					m[M12] = (sin * m[M22]) + (m12 * cos);
+					m[M13] = (sin * m[M23]) + (m13 * cos);
+					m[M20] = (cos * m[M20]) - (m10 * sin);
+					m[M21] = (cos * m[M21]) - (m11 * sin);
+					m[M22] = (cos * m[M22]) - (m12 * sin);
+					m[M23] = (cos * m[M23]) - (m13 * sin);
 				}
 
 				if (v.Z != 0)
 				{
-					float sin = (float)Math.Sin(v.Z);
-					float cos = (float)Math.Cos(v.Z);
+					float sin = MathF.Sin(v.Z);
+					float cos = MathF.Cos(v.Z);
 					float m00 = m[M00];
 					float m01 = m[M01];
 					float m02 = m[M02];
 					float m03 = m[M03];
 
-					m[M00] = sin * m[M10] + m00 * cos;
-					m[M01] = sin * m[M11] + m01 * cos;
-					m[M02] = sin * m[M12] + m02 * cos;
-					m[M03] = m03 * cos + sin * m[M13];
-					m[M10] = cos * m[M10] - m00 * sin;
-					m[M11] = cos * m[M11] - m01 * sin;
-					m[M12] = cos * m[M12] - m02 * sin;
-					m[M13] = cos * m[M13] - m03 * sin;
+					m[M00] = (sin * m[M10]) + (m00 * cos);
+					m[M01] = (sin * m[M11]) + (m01 * cos);
+					m[M02] = (sin * m[M12]) + (m02 * cos);
+					m[M03] = (m03 * cos) + (sin * m[M13]);
+					m[M10] = (cos * m[M10]) - (m00 * sin);
+					m[M11] = (cos * m[M11]) - (m01 * sin);
+					m[M12] = (cos * m[M12]) - (m02 * sin);
+					m[M13] = (cos * m[M13]) - (m03 * sin);
 				}
 			}
 			else
 			{
 				if (v.Z != 0)
 				{
-					float sin = (float)Math.Sin(v.Z);
-					float cos = (float)Math.Cos(v.Z);
+					float sin = MathF.Sin(v.Z);
+					float cos = MathF.Cos(v.Z);
 					float m00 = m[M00];
 					float m01 = m[M01];
 					float m02 = m[M02];
 					float m03 = m[M03];
 
-					m[M00] = sin * m[M10] + m00 * cos;
-					m[M01] = sin * m[M11] + m01 * cos;
-					m[M02] = sin * m[M12] + m02 * cos;
-					m[M03] = m03 * cos + sin * m[M13];
-					m[M10] = cos * m[M10] - m00 * sin;
-					m[M11] = cos * m[M11] - m01 * sin;
-					m[M12] = cos * m[M12] - m02 * sin;
-					m[M13] = cos * m[M13] - m03 * sin;
+					m[M00] = (sin * m[M10]) + (m00 * cos);
+					m[M01] = (sin * m[M11]) + (m01 * cos);
+					m[M02] = (sin * m[M12]) + (m02 * cos);
+					m[M03] = (m03 * cos) + (sin * m[M13]);
+					m[M10] = (cos * m[M10]) - (m00 * sin);
+					m[M11] = (cos * m[M11]) - (m01 * sin);
+					m[M12] = (cos * m[M12]) - (m02 * sin);
+					m[M13] = (cos * m[M13]) - (m03 * sin);
 				}
 
 				if (v.Y != 0)
 				{
-					float sin = (float)Math.Sin(v.Y);
-					float cos = (float)Math.Cos(v.Y);
+					float sin = MathF.Sin(v.Y);
+					float cos = MathF.Cos(v.Y);
 					float m00 = m[M00];
 					float m01 = m[M01];
 					float m02 = m[M02];
 					float m03 = m[M03];
 
-					m[M00] = m00 * cos - sin * m[M20];
-					m[M01] = m01 * cos - sin * m[M21];
-					m[M02] = m02 * cos - sin * m[M22];
-					m[M03] = m03 * cos - sin * m[M23];
-					m[M20] = cos * m[M20] + m00 * sin;
-					m[M21] = cos * m[M21] + m01 * sin;
-					m[M22] = cos * m[M22] + m02 * sin;
-					m[M23] = cos * m[M23] + m03 * sin;
+					m[M00] = (m00 * cos) - (sin * m[M20]);
+					m[M01] = (m01 * cos) - (sin * m[M21]);
+					m[M02] = (m02 * cos) - (sin * m[M22]);
+					m[M03] = (m03 * cos) - (sin * m[M23]);
+					m[M20] = (cos * m[M20]) + (m00 * sin);
+					m[M21] = (cos * m[M21]) + (m01 * sin);
+					m[M22] = (cos * m[M22]) + (m02 * sin);
+					m[M23] = (cos * m[M23]) + (m03 * sin);
 				}
 
 				if (v.X != 0)
 				{
-					float sin = (float)Math.Sin(v.X);
-					float cos = (float)Math.Cos(v.X);
+					float sin = MathF.Sin(v.X);
+					float cos = MathF.Cos(v.X);
 					float m10 = m[M10];
 					float m11 = m[M11];
 					float m12 = m[M12];
 					float m13 = m[M13];
 
-					m[M10] = sin * m[M20] + m10 * cos;
-					m[M11] = sin * m[M21] + m11 * cos;
-					m[M12] = sin * m[M22] + m12 * cos;
-					m[M13] = sin * m[M23] + m13 * cos;
-					m[M20] = cos * m[M20] - m10 * sin;
-					m[M21] = cos * m[M21] - m11 * sin;
-					m[M22] = cos * m[M22] - m12 * sin;
-					m[M23] = cos * m[M23] - m13 * sin;
+					m[M10] = (sin * m[M20]) + (m10 * cos);
+					m[M11] = (sin * m[M21]) + (m11 * cos);
+					m[M12] = (sin * m[M22]) + (m12 * cos);
+					m[M13] = (sin * m[M23]) + (m13 * cos);
+					m[M20] = (cos * m[M20]) - (m10 * sin);
+					m[M21] = (cos * m[M21]) - (m11 * sin);
+					m[M22] = (cos * m[M22]) - (m12 * sin);
+					m[M23] = (cos * m[M23]) - (m13 * sin);
 				}
 			}
 
@@ -265,9 +265,9 @@ namespace sadx_model_view.Ninja
 			float y = vs.Y;
 			float z = vs.Z;
 
-			vd.X = z * m[M20] + y * m[M10] + x * m[M00] + m[M30];
-			vd.Y = z * m[M21] + y * m[M11] + x * m[M01] + m[M31];
-			vd.Z = z * m[M22] + y * m[M12] + x * m[M02] + m[M32];
+			vd.X = (z * m[M20]) + (y * m[M10]) + (x * m[M00]) + m[M30];
+			vd.Y = (z * m[M21]) + (y * m[M11]) + (x * m[M01]) + m[M31];
+			vd.Z = (z * m[M22]) + (y * m[M12]) + (x * m[M02]) + m[M32];
 		}
 
 		public static void CalcVector(in Vector3 vs, out Vector3 vd)
@@ -277,9 +277,9 @@ namespace sadx_model_view.Ninja
 			float y = vs.Y;
 			float z = vs.Z;
 
-			vd.X = z * m[M20] + y * m[M10] + x * m[M00];
-			vd.Y = z * m[M21] + y * m[M11] + x * m[M01];
-			vd.Z = z * m[M22] + y * m[M12] + x * m[M02];
+			vd.X = (z * m[M20]) + (y * m[M10]) + (x * m[M00]);
+			vd.Y = (z * m[M21]) + (y * m[M11]) + (x * m[M01]);
+			vd.Z = (z * m[M22]) + (y * m[M12]) + (x * m[M02]);
 		}
 
 		public static void Multiply(in Matrix m)

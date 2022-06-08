@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+
 using SharpDX;
 
 namespace sadx_model_view.Ninja
@@ -41,32 +42,32 @@ namespace sadx_model_view.Ninja
 
 		public static float DegreeToRadian(float n)
 		{
-			return (float)(n * Math.PI / 180.0f);
+			return n * MathF.PI / 180.0f;
 		}
 
 		public static int DegreeToAngle(float n)
 		{
-			return (int)(n * 65536.0 / 360.0);
+			return (int)(n * 65536.0f / 360.0f);
 		}
 
 		public static int RadToAngle(float n)
 		{
-			return (int)(n * 65536.0 / (2 * Math.PI));
+			return (int)(n * 65536.0f / (2 * MathF.PI));
 		}
 
 		public static float RadToDegree(float n)
 		{
-			return (float)(n * 180.0 / Math.PI);
+			return n * 180.0f / MathF.PI;
 		}
 
 		public static float AngleToDegree(int n)
 		{
-			return (float)(n * 360.0 / 65536.0);
+			return n * 360.0f / 65536.0f;
 		}
 
 		public static float AngleToRadian(int n)
 		{
-			return (float)(n * (2 * Math.PI) / 65536.0);
+			return n * (2 * MathF.PI) / 65536.0f;
 		}
 
 		public static Vector3 AngleToRadian(in Rotation3 n)

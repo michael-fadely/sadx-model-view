@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -37,7 +36,7 @@ namespace sadx_model_view.Forms
 		// SADX's default horizontal field of view.
 		private static readonly float s_fovX = MathUtil.DegreesToRadians(70);
 		// SADX's default vertical field of view (55.412927352596554 degrees)
-		private static readonly float s_fovY = 2.0f * (float)Math.Atan(Math.Tan(s_fovX / 2.0f) * (3.0f / 4.0f));
+		private static readonly float s_fovY = 2.0f * MathF.Atan(MathF.Tan(s_fovX / 2.0f) * (3.0f / 4.0f));
 
 		private NJS_OBJECT? _object;
 		private LandTable?  _landTable;
@@ -475,11 +474,11 @@ namespace sadx_model_view.Forms
 			float ratio = width / height;
 
 			float fov = s_fovY;
-			float h = 2 * (float)Math.Atan(Math.Tan(s_fovY / 2.0f) * ratio);
+			float h = 2f * MathF.Atan(MathF.Tan(s_fovY / 2.0f) * ratio);
 
 			if (h < s_fovX)
 			{
-				fov = 2 * (float)Math.Atan(Math.Tan(s_fovX / 2.0f) * (height / width));
+				fov = 2f * MathF.Atan(MathF.Tan(s_fovX / 2.0f) * (height / width));
 			}
 
 			_camera.SetProjection(fov, ratio, 1.0f, 100000.0f);
@@ -672,7 +671,7 @@ namespace sadx_model_view.Forms
 			switch (e.KeyCode)
 			{
 				case Keys.Subtract:
-					_speed = Math.Max(7.5f, _speed - 7.5f);
+					_speed = MathF.Max(7.5f, _speed - 7.5f);
 					break;
 
 				case Keys.Add:
@@ -769,8 +768,8 @@ namespace sadx_model_view.Forms
 			}
 
 			Vector3 rotation;
-			rotation.Y = (float)(Math.PI * (delta.X / (float)ClientRectangle.Width));
-			rotation.X = (float)(Math.PI * (delta.Y / (float)ClientRectangle.Height));
+			rotation.Y = MathF.PI * (delta.X / (float)ClientRectangle.Width);
+			rotation.X = MathF.PI * (delta.Y / (float)ClientRectangle.Height);
 			rotation.Z = 0.0f;
 			_camera.Rotate(rotation);
 		}
