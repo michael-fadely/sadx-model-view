@@ -97,7 +97,7 @@ namespace sadx_model_view.Ninja
 		public NJS_OBJECT(Stream stream)
 		{
 			byte[] buffer = new byte[SizeInBytes];
-			stream.Read(buffer, 0, buffer.Length);
+			stream.ReadExact(buffer);
 
 			evalflags = BitConverter.ToUInt32(buffer, 0);
 

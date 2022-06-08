@@ -24,6 +24,7 @@ namespace sadx_model_view.Ninja
 		/// and the number of vertices is <seealso cref="NJS_MESHSET.nbMesh"/> * 3.</para>
 		/// </summary>
 		Tri = 0x0000,
+
 		/// <summary>
 		/// <para>List of quadrilateral polygons.</para>
 		/// <para>Indicates that each polygon is defined by 4 vertices.
@@ -31,6 +32,7 @@ namespace sadx_model_view.Ninja
 		/// and the number of vertices is <seealso cref="NJS_MESHSET.nbMesh"/> * 4.</para>
 		/// </summary>
 		Quad = 0x4000,
+
 		/// <summary>
 		/// <para>List of N-sided polygons, where N is 5 or more.</para>
 		/// <para>Each polygon is preceded by the number of vertices defining it. Subsequently,
@@ -38,6 +40,7 @@ namespace sadx_model_view.Ninja
 		/// The number of polygons is defined by <seealso cref="NJS_MESHSET.nbMesh"/>.</para>
 		/// </summary>
 		NSided = 0x8000,
+
 		/// <summary>
 		/// <para>List of contiguous polygons (triangle strip).</para>
 		/// <para>Each polygon is preceded by the number of vertices defining it. Subsequently,
@@ -53,7 +56,8 @@ namespace sadx_model_view.Ninja
 	/// <seealso cref="NJD_MESHSET"/>
 	/// <seealso cref="NJS_MODEL"/>
 	/// </summary>
-	public class NJS_MESHSET : IDisposable, IInvalidatable
+	public class NJS_MESHSET : IDisposable,
+	                           IInvalidatable
 	{
 		/// <summary>
 		/// Native structure size in bytes.
@@ -126,7 +130,7 @@ namespace sadx_model_view.Ninja
 		public NJS_MESHSET(Stream stream)
 		{
 			byte[] buffer = new byte[SizeInBytes];
-			stream.Read(buffer, 0, buffer.Length);
+			stream.ReadExact(buffer);
 
 			IndexBuffer = null;
 
@@ -152,7 +156,7 @@ namespace sadx_model_view.Ninja
 			if (meshesOffset != 0)
 			{
 				stream.Position = meshesOffset;
-				byte[] meshesBuffer = new byte[2];
+				byte[] meshesBuffer = new byte[sizeof(short)];
 
 				Type = Type;
 
@@ -163,7 +167,7 @@ namespace sadx_model_view.Ninja
 
 						for (int i = 0; i < VertexCount; i++)
 						{
-							stream.Read(meshesBuffer, 0, sizeof(short));
+							stream.ReadExact(meshesBuffer);
 							meshes.Add(BitConverter.ToInt16(meshesBuffer, 0));
 						}
 
@@ -174,7 +178,7 @@ namespace sadx_model_view.Ninja
 
 						for (int i = 0; i < VertexCount; i++)
 						{
-							stream.Read(meshesBuffer, 0, sizeof(short));
+							stream.ReadExact(meshesBuffer);
 							meshes.Add(BitConverter.ToInt16(meshesBuffer, 0));
 						}
 
@@ -184,7 +188,7 @@ namespace sadx_model_view.Ninja
 					case NJD_MESHSET.Strip:
 						for (int i = 0; i < nbMesh; i++)
 						{
-							stream.Read(meshesBuffer, 0, sizeof(short));
+							stream.ReadExact(meshesBuffer);
 							short n = BitConverter.ToInt16(meshesBuffer, 0);
 							meshes.Add(n);
 
@@ -194,7 +198,7 @@ namespace sadx_model_view.Ninja
 
 							for (int j = 0; j < n; j++)
 							{
-								stream.Read(meshesBuffer, 0, sizeof(short));
+								stream.ReadExact(meshesBuffer);
 								meshes.Add(BitConverter.ToInt16(meshesBuffer, 0));
 							}
 
@@ -217,7 +221,7 @@ namespace sadx_model_view.Ninja
 			{
 				stream.Position = attrsOffset;
 				byte[] attrsBuffer = new byte[sizeof(uint) * VertexCount];
-				stream.Read(attrsBuffer, 0, attrsBuffer.Length);
+				stream.ReadExact(attrsBuffer);
 
 				for (int i = 0; i < VertexCount; i++)
 				{
@@ -230,7 +234,7 @@ namespace sadx_model_view.Ninja
 			{
 				stream.Position = normalsOffset;
 				byte[] normalsBuffer = new byte[Vector3.SizeInBytes * VertexCount];
-				stream.Read(normalsBuffer, 0, normalsBuffer.Length);
+				stream.ReadExact(normalsBuffer);
 
 				for (int i = 0; i < VertexCount; i++)
 				{
@@ -243,7 +247,7 @@ namespace sadx_model_view.Ninja
 			{
 				stream.Position = vertcolorOffset;
 				byte[] vertcolorBuffer = new byte[sizeof(int) * VertexCount];
-				stream.Read(vertcolorBuffer, 0, vertcolorBuffer.Length);
+				stream.ReadExact(vertcolorBuffer);
 
 				for (int i = 0; i < VertexCount; i++)
 				{
@@ -255,7 +259,7 @@ namespace sadx_model_view.Ninja
 			{
 				stream.Position = vertuvOffset;
 				byte[] vertuvBuffer = new byte[NJS_TEX.SizeInBytes * VertexCount];
-				stream.Read(vertuvBuffer, 0, vertuvBuffer.Length);
+				stream.ReadExact(vertuvBuffer);
 
 				for (int i = 0; i < VertexCount; i++)
 				{
@@ -311,7 +315,7 @@ namespace sadx_model_view.Ninja
 		/// <returns><paramref name="localIndex"/> if the vertex was updated, or a new index if a new vertex was added.</returns>
 		private short UpdateVertex(IList<Vertex> vertices, int localIndex, int vertexIndex)
 		{
-			bool added  = false;
+			bool added = false;
 			int result = vertexIndex;
 
 			Vertex vertex = vertices[vertexIndex];
@@ -387,10 +391,11 @@ namespace sadx_model_view.Ninja
 				case NJD_MESHSET.Strip:
 				{
 					int index = 0;
+
 					for (int i = 0; i < nbMesh; i++)
 					{
-						short n    = meshes[index++];
-						bool  flip = (n & 0x8000) == 0;
+						short n = meshes[index++];
+						bool flip = (n & 0x8000) == 0;
 						n &= 0x3FFF;
 
 						var tempIndices = new List<short>();
@@ -408,6 +413,7 @@ namespace sadx_model_view.Ninja
 							short v2 = tempIndices[k + 2];
 
 							flip = !flip;
+
 							if (!flip)
 							{
 								indices.Add(v2);
@@ -484,7 +490,7 @@ namespace sadx_model_view.Ninja
 		public BoundingBox GetWorldSpaceBoundingBox()
 		{
 			Matrix m = MatrixStack.Peek();
-			BoundingBox worldBox  = BoundingBox.FromPoints(TransformedPoints(ref m));
+			BoundingBox worldBox = BoundingBox.FromPoints(TransformedPoints(ref m));
 			return worldBox;
 		}
 
@@ -498,7 +504,6 @@ namespace sadx_model_view.Ninja
 			get => true;
 			set
 			{
-		
 			}
 		}
 	}

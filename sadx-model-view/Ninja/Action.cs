@@ -35,10 +35,7 @@ namespace sadx_model_view.Ninja
 		{
 			byte[] buffer = new byte[SizeInBytes];
 
-			if (stream.Read(buffer, 0, buffer.Length) < SizeInBytes)
-			{
-				throw new InvalidOperationException();
-			}
+			stream.ReadExact(buffer);
 
 			long position = stream.Position;
 

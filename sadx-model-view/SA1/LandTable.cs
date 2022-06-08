@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+
 using sadx_model_view.Extensions;
 using sadx_model_view.Ninja;
 
@@ -24,7 +25,7 @@ namespace sadx_model_view.SA1
 		public LandTableFlags Flags;
 		public float          Unknown_1;
 
-		public readonly List<Col> ColList;
+		public readonly List<Col>         ColList;
 		public readonly List<GeoAnimData> AnimData;
 
 		public string       TexName;
@@ -39,7 +40,7 @@ namespace sadx_model_view.SA1
 			TexList = null;
 
 			byte[] buffer = new byte[SizeInBytes];
-			stream.Read(buffer, 0, buffer.Length);
+			stream.ReadExact(buffer);
 
 			short colCount = BitConverter.ToInt16(buffer, 0x00);
 			short animCount = BitConverter.ToInt16(buffer, 0x02);
@@ -62,6 +63,7 @@ namespace sadx_model_view.SA1
 				ColList = new List<Col>(capacity: colCount);
 
 				stream.Position = colOffset;
+
 				for (int i = 0; i < colCount; i++)
 				{
 					ColList.Add(new Col(stream));
@@ -77,6 +79,7 @@ namespace sadx_model_view.SA1
 				AnimData = new List<GeoAnimData>(capacity: animCount);
 
 				stream.Position = animOffset;
+
 				for (int i = 0; i < animCount; i++)
 				{
 					AnimData.Add(new GeoAnimData(stream));
@@ -91,7 +94,7 @@ namespace sadx_model_view.SA1
 			{
 				byte[] str = new byte[255];
 				stream.Position = nameOffset;
-				TexName = Encoding.UTF8.GetString(str, 0, stream.ReadString(ref str));
+				TexName = Encoding.UTF8.GetString(str, 0, stream.ReadString(str));
 			}
 			else
 			{

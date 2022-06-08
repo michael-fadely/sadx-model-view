@@ -62,6 +62,7 @@ namespace sadx_model_view.SA1
 		private int pad_b;
 
 		public NJS_OBJECT? Object;
+
 		// ReSharper disable once NotAccessedField.Local
 		private int      anonymous_6;
 		public  ColFlags Flags;
@@ -73,7 +74,7 @@ namespace sadx_model_view.SA1
 		public Col(Stream stream)
 		{
 			byte[] buffer = new byte[SizeInBytes];
-			stream.Read(buffer, 0, buffer.Length);
+			stream.ReadExact(buffer);
 			long position = stream.Position;
 
 			Center = Util.VectorFromStream(in buffer, 0x00);

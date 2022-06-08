@@ -12,7 +12,8 @@ using Buffer = SharpDX.Direct3D11.Buffer;
 
 namespace sadx_model_view.Ninja
 {
-	public class NJS_MODEL : IDisposable, IInvalidatable
+	public class NJS_MODEL : IDisposable,
+	                         IInvalidatable
 	{
 		/// <summary>
 		/// Native structure size in bytes.
@@ -29,7 +30,7 @@ namespace sadx_model_view.Ninja
 		public NJS_MODEL(Stream stream)
 		{
 			byte[] buffer = new byte[SizeInBytes];
-			stream.Read(buffer, 0, buffer.Length);
+			stream.ReadExact(buffer);
 
 			nbPoint   = BitConverter.ToInt32(buffer, 0x08);
 			nbMeshset = BitConverter.ToUInt16(buffer, 0x14);
@@ -75,9 +76,11 @@ namespace sadx_model_view.Ninja
 			}
 
 			uint meshsetsOffset = BitConverter.ToUInt32(buffer, 0x0C);
+
 			if (nbMeshset > 0 && meshsetsOffset > 0)
 			{
 				stream.Position = meshsetsOffset;
+
 				for (int i = 0; i < nbMeshset; i++)
 				{
 					meshsets.Add(new NJS_MESHSET(stream));
@@ -85,9 +88,11 @@ namespace sadx_model_view.Ninja
 			}
 
 			uint matsOffset = BitConverter.ToUInt32(buffer, 0x10);
+
 			if (nbMat > 0 && matsOffset > 0)
 			{
 				stream.Position = matsOffset;
+
 				for (int i = 0; i < nbMat; i++)
 				{
 					mats.Add(new NJS_MATERIAL(stream));
@@ -112,6 +117,7 @@ namespace sadx_model_view.Ninja
 			// TODO: copy vertex buffer?
 
 			meshsets = new List<NJS_MESHSET>();
+
 			foreach (NJS_MESHSET meshset in model.meshsets)
 			{
 				meshsets.Add(new NJS_MESHSET(meshset));
@@ -120,6 +126,7 @@ namespace sadx_model_view.Ninja
 			nbMeshset = (ushort)meshsets.Count;
 
 			mats = new List<NJS_MATERIAL>();
+
 			foreach (NJS_MATERIAL mat in model.mats)
 			{
 				mats.Add(new NJS_MATERIAL(mat));
@@ -226,7 +233,7 @@ namespace sadx_model_view.Ninja
 
 			var m = new SceneMaterial
 			{
-				Diffuse     = new Color4(diffuse.r / 255.0f,  diffuse.g / 255.0f,  diffuse.b / 255.0f,  diffuse.a / 255.0f),
+				Diffuse     = new Color4(diffuse.r / 255.0f, diffuse.g / 255.0f, diffuse.b / 255.0f, diffuse.a / 255.0f),
 				Specular    = new Color4(specular.r / 255.0f, specular.g / 255.0f, specular.b / 255.0f, specular.a / 255.0f),
 				Exponent    = material.exponent,
 				UseAlpha    = (flags & NJD_FLAG.UseAlpha) != 0,

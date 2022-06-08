@@ -27,7 +27,7 @@ namespace sadx_model_view.SA1
 		public GeoAnimData(Stream stream)
 		{
 			byte[] buffer = new byte[SizeInBytes];
-			stream.Read(buffer, 0, buffer.Length);
+			stream.ReadExact(buffer);
 			long position = stream.Position;
 
 			anonymous_0 = BitConverter.ToSingle(buffer, 0x00);

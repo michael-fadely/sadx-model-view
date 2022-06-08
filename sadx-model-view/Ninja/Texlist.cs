@@ -62,7 +62,7 @@ namespace sadx_model_view.Ninja
 
 	public class NJS_TEXINFO : IDisposable
 	{
-		public int texaddr; // TODO: void*
+		public int            texaddr; // TODO: void*
 		public NJS_TEXSURFACE texsurface;
 
 		public NJS_TEXINFO()
@@ -137,7 +137,7 @@ namespace sadx_model_view.Ninja
 		public NJS_TEXNAME(Stream stream)
 		{
 			byte[] buffer = new byte[SizeInBytes];
-			stream.Read(buffer, 0, buffer.Length);
+			stream.ReadExact(buffer);
 			long position = stream.Position;
 
 			uint dataOffset = BitConverter.ToUInt32(buffer, 0);
@@ -158,7 +158,7 @@ namespace sadx_model_view.Ninja
 			{
 				stream.Position = dataOffset;
 				byte[] str = new byte[255];
-				filename = Encoding.UTF8.GetString(str, 0, stream.ReadString(ref str));
+				filename = Encoding.UTF8.GetString(str, 0, stream.ReadString(str));
 			}
 
 			stream.Position = position;
@@ -170,12 +170,13 @@ namespace sadx_model_view.Ninja
 		public static int SizeInBytes => 0x8;
 
 		public readonly List<NJS_TEXNAME> textures = new List<NJS_TEXNAME>();
+
 		public uint nbTexture => (uint)textures.Count;
 
 		public NJS_TEXLIST(Stream stream)
 		{
 			byte[] buffer = new byte[SizeInBytes];
-			stream.Read(buffer, 0, buffer.Length);
+			stream.ReadExact(buffer);
 			long position = stream.Position;
 
 			uint texturesOffset = BitConverter.ToUInt32(buffer, 0);
@@ -184,6 +185,7 @@ namespace sadx_model_view.Ninja
 			if (count > 0 && texturesOffset > 0)
 			{
 				stream.Position = texturesOffset;
+
 				for (int i = 0; i < count; i++)
 				{
 					textures.Add(new NJS_TEXNAME(stream));

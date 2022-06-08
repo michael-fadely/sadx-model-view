@@ -74,7 +74,7 @@ namespace sadx_model_view.Forms
 
 			using var file = new FileStream(dialog.FileName, FileMode.Open);
 			byte[] signature = new byte[6];
-			file.Read(signature, 0, 6);
+			file.ReadExact(signature, 0, 6);
 			string signatureStr = Encoding.UTF8.GetString(signature);
 
 			if (signatureStr != "SA1MDL" && signatureStr != "SA1LVL")
@@ -84,14 +84,14 @@ namespace sadx_model_view.Forms
 
 			byte[] buffer = new byte[4096];
 			file.Position += 1;
-			file.Read(buffer, 0, 1);
+			file.ReadExact(buffer, 0, 1);
 
 			if (buffer[0] != 3)
 			{
 				throw new NotImplementedException();
 			}
 
-			file.Read(buffer, 0, sizeof(int) * 2);
+			file.ReadExact(buffer, 0, sizeof(int) * 2);
 
 			uint objectOffset   = BitConverter.ToUInt32(buffer, 0);
 			uint metadataOffset = BitConverter.ToUInt32(buffer, 4);
@@ -201,7 +201,7 @@ namespace sadx_model_view.Forms
 
 			while (!done)
 			{
-				file.Read(buffer, 0, 8);
+				file.ReadExact(buffer, 0, 8);
 				long offset = file.Position;
 				var type = (ChunkTypes)BitConverter.ToUInt32(buffer, 0);
 				int size = BitConverter.ToInt32(buffer, 4);
@@ -211,7 +211,7 @@ namespace sadx_model_view.Forms
 					case ChunkTypes.Label:
 						while (true)
 						{
-							file.Read(buffer, 0, 8);
+							file.ReadExact(buffer, 0, 8);
 							uint labelOffset = BitConverter.ToUInt32(buffer, 0);
 
 							if (labelOffset == 0xFFFFFFFF)
@@ -229,7 +229,7 @@ namespace sadx_model_view.Forms
 							long pos = file.Position;
 							file.Position = offset + nameOffset;
 
-							int i = file.ReadString(ref buffer);
+							int i = file.ReadString(buffer);
 
 							file.Position = pos;
 							string name = Encoding.UTF8.GetString(buffer, 0, i);
@@ -244,7 +244,7 @@ namespace sadx_model_view.Forms
 						}
 
 						// ReSharper disable once RedundantAssignment
-						animations = Encoding.UTF8.GetString(buffer, 0, file.ReadString(ref buffer));
+						animations = Encoding.UTF8.GetString(buffer, 0, file.ReadString(buffer));
 						break;
 
 					case ChunkTypes.Author:
@@ -254,7 +254,7 @@ namespace sadx_model_view.Forms
 						}
 
 						// ReSharper disable once RedundantAssignment
-						author = Encoding.UTF8.GetString(buffer, 0, file.ReadString(ref buffer));
+						author = Encoding.UTF8.GetString(buffer, 0, file.ReadString(buffer));
 						break;
 
 					case ChunkTypes.Tool:
@@ -264,7 +264,7 @@ namespace sadx_model_view.Forms
 						}
 
 						// ReSharper disable once RedundantAssignment
-						tool = Encoding.UTF8.GetString(buffer, 0, file.ReadString(ref buffer));
+						tool = Encoding.UTF8.GetString(buffer, 0, file.ReadString(buffer));
 						break;
 
 					case ChunkTypes.Description:
@@ -274,7 +274,7 @@ namespace sadx_model_view.Forms
 						}
 
 						// ReSharper disable once RedundantAssignment
-						description = Encoding.UTF8.GetString(buffer, 0, file.ReadString(ref buffer));
+						description = Encoding.UTF8.GetString(buffer, 0, file.ReadString(buffer));
 						break;
 
 					case ChunkTypes.End:

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
 
+using sadx_model_view.Extensions;
+
 using SharpDX;
 
 namespace sadx_model_view.Ninja
@@ -17,13 +19,13 @@ namespace sadx_model_view.Ninja
 			Vector3 vector;
 
 			byte[] buffer = new byte[sizeof(float)];
-			stream.Read(buffer, 0, buffer.Length);
+			stream.ReadExact(buffer);
 			vector.X = BitConverter.ToSingle(buffer, 0);
 
-			stream.Read(buffer, 0, buffer.Length);
+			stream.ReadExact(buffer);
 			vector.Y = BitConverter.ToSingle(buffer, 0);
 
-			stream.Read(buffer, 0, buffer.Length);
+			stream.ReadExact(buffer);
 			vector.Z = BitConverter.ToSingle(buffer, 0);
 
 			return vector;

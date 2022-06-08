@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
 
+using sadx_model_view.Extensions;
+
 namespace sadx_model_view.Ninja
 {
 	// TODO: blend modes
@@ -44,7 +46,7 @@ namespace sadx_model_view.Ninja
 		public NJS_MATERIAL(Stream stream)
 		{
 			byte[] buffer = new byte[SizeInBytes];
-			stream.Read(buffer, 0, buffer.Length);
+			stream.ReadExact(buffer);
 
 			diffuse    = new NJS_COLOR(BitConverter.ToInt32(buffer, 0x00));
 			specular   = new NJS_COLOR(BitConverter.ToInt32(buffer, 0x04));
