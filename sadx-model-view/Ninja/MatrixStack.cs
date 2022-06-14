@@ -7,7 +7,7 @@ namespace sadx_model_view.Ninja
 {
 	public static class MatrixStack
 	{
-		private static readonly Stack<Matrix> s_stack = new Stack<Matrix>();
+		private static readonly Stack<Matrix> s_stack = new();
 
 		public static bool Empty => s_stack.Count == 0;
 

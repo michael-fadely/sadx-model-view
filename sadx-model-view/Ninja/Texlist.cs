@@ -169,7 +169,7 @@ namespace sadx_model_view.Ninja
 	{
 		public static int SizeInBytes => 0x8;
 
-		public readonly List<NJS_TEXNAME> textures = new List<NJS_TEXNAME>();
+		public readonly IReadOnlyList<NJS_TEXNAME> textures;
 
 		public uint nbTexture => (uint)textures.Count;
 
@@ -182,15 +182,19 @@ namespace sadx_model_view.Ninja
 			uint texturesOffset = BitConverter.ToUInt32(buffer, 0);
 			uint count = BitConverter.ToUInt32(buffer, 4);
 
+			var texturesTemp = new List<NJS_TEXNAME>(capacity: checked((int)count));
+
 			if (count > 0 && texturesOffset > 0)
 			{
 				stream.Position = texturesOffset;
 
 				for (int i = 0; i < count; i++)
 				{
-					textures.Add(new NJS_TEXNAME(stream));
+					texturesTemp.Add(new NJS_TEXNAME(stream));
 				}
 			}
+
+			textures = texturesTemp;
 
 			stream.Position = position;
 		}

@@ -55,7 +55,7 @@ namespace sadx_model_view.Forms
 			End = 0x444E45
 		}
 
-		private readonly Camera _camera = new Camera();
+		private readonly Camera _camera = new();
 
 		public MainForm()
 		{

@@ -67,8 +67,8 @@ namespace sadx_model_view
 
 	public class MeshsetQueue
 	{
-		private readonly List<MeshsetQueueElement> _opaqueSets = new List<MeshsetQueueElement>();
-		private readonly List<MeshsetQueueElement> _alphaSets  = new List<MeshsetQueueElement>();
+		private readonly List<MeshsetQueueElement> _opaqueSets = new();
+		private readonly List<MeshsetQueueElement> _alphaSets  = new();
 
 		public IReadOnlyList<MeshsetQueueElement> OpaqueSets => _opaqueSets;
 		public IReadOnlyList<MeshsetQueueElement> AlphaSets  => _alphaSets;

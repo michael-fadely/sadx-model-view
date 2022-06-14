@@ -5,7 +5,7 @@ namespace sadx_model_view.Ninja
 {
 	internal static class ModelCache
 	{
-		private static readonly Dictionary<long, NJS_MODEL> s_modelCache = new Dictionary<long, NJS_MODEL>();
+		private static readonly Dictionary<long, NJS_MODEL> s_modelCache = new();
 
 		public static NJS_MODEL FromStream(Stream stream, long offset)
 		{

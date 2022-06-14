@@ -62,7 +62,7 @@ namespace sadx_model_view
 		/// <summary>
 		/// Objects in this node
 		/// </summary>
-		private readonly List<OctreeObject> _objects = new List<OctreeObject>();
+		private readonly List<OctreeObject> _objects = new();
 
 		/// <summary>
 		/// Child nodes, if any

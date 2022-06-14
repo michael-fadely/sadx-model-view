@@ -350,7 +350,7 @@ namespace sadx_model_view.Ninja
 			return (short)result;
 		}
 
-		public readonly List<Triangle> Triangles = new List<Triangle>();
+		public readonly List<Triangle> Triangles = new();
 
 		public void CommitIndexBuffer(Renderer device, List<Vertex> vertices)
 		{

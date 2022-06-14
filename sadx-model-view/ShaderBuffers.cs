@@ -12,10 +12,10 @@ namespace sadx_model_view
 		                        CameraPosition.Modified ||
 		                        BufferLength.Modified;
 
-		public readonly Modifiable<Matrix>  View           = new Modifiable<Matrix>();
-		public readonly Modifiable<Matrix>  Projection     = new Modifiable<Matrix>();
-		public readonly Modifiable<Vector3> CameraPosition = new Modifiable<Vector3>();
-		public readonly Modifiable<uint>    BufferLength   = new Modifiable<uint>(0);
+		public readonly Modifiable<Matrix>  View           = new();
+		public readonly Modifiable<Matrix>  Projection     = new();
+		public readonly Modifiable<Vector3> CameraPosition = new();
+		public readonly Modifiable<uint>    BufferLength   = new(0);
 
 		// TODO: do this with code generator?
 		public void Clear()
@@ -47,13 +47,13 @@ namespace sadx_model_view
 		                        BlendOperation.Modified ||
 		                        IsStandardBlending.Modified;
 
-		public readonly Modifiable<Matrix> World              = new Modifiable<Matrix>();
-		public readonly Modifiable<Matrix> WvMatrixInvT       = new Modifiable<Matrix>();
-		public readonly Modifiable<uint>   DrawCall           = new Modifiable<uint>(0);
-		public readonly Modifiable<uint>   SourceBlend        = new Modifiable<uint>(0);
-		public readonly Modifiable<uint>   DestinationBlend   = new Modifiable<uint>(0);
-		public readonly Modifiable<uint>   BlendOperation     = new Modifiable<uint>(0);
-		public readonly Modifiable<bool>   IsStandardBlending = new Modifiable<bool>(true);
+		public readonly Modifiable<Matrix> World              = new();
+		public readonly Modifiable<Matrix> WvMatrixInvT       = new();
+		public readonly Modifiable<uint>   DrawCall           = new(0);
+		public readonly Modifiable<uint>   SourceBlend        = new(0);
+		public readonly Modifiable<uint>   DestinationBlend   = new(0);
+		public readonly Modifiable<uint>   BlendOperation     = new(0);
+		public readonly Modifiable<bool>   IsStandardBlending = new(true);
 
 		// TODO: do this with code generator?
 		public void Clear()
@@ -82,8 +82,8 @@ namespace sadx_model_view
 
 	public class MaterialBuffer : CBuffer, IModifiable
 	{
-		public readonly Modifiable<SceneMaterial> Material = new Modifiable<SceneMaterial>();
-		public readonly Modifiable<bool> WriteDepth = new Modifiable<bool>(true);
+		public readonly Modifiable<SceneMaterial> Material   = new();
+		public readonly Modifiable<bool>          WriteDepth = new(true);
 
 		/// <inheritdoc />
 		public override void Write(CBufferWriter writer)

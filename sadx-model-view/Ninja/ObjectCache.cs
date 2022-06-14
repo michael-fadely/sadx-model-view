@@ -5,7 +5,7 @@ namespace sadx_model_view.Ninja
 {
 	internal static class ObjectCache
 	{
-		private static readonly Dictionary<long, NJS_OBJECT> s_objectCache = new Dictionary<long, NJS_OBJECT>();
+		private static readonly Dictionary<long, NJS_OBJECT> s_objectCache = new();
 
 		public static NJS_OBJECT FromStream(Stream stream, long offset)
 		{
