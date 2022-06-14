@@ -8,7 +8,7 @@
 		/// <summary>
 		/// Native structure size in bytes.
 		/// </summary>
-		public static int SizeInBytes => sizeof(int) * 3;
+		public static readonly int SizeInBytes = sizeof(int) * 3;
 
 		public int X, Y, Z;
 

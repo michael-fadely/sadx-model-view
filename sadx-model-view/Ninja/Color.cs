@@ -11,7 +11,7 @@ namespace sadx_model_view.Ninja
 		/// <summary>
 		/// Native structure size in bytes.
 		/// </summary>
-		public static int SizeInBytes => sizeof(int);
+		public static readonly int SizeInBytes = sizeof(int);
 
 		/// <summary>
 		/// Blue component.
@@ -80,7 +80,7 @@ namespace sadx_model_view.Ninja
 		/// <summary>
 		/// Native structure size in bytes.
 		/// </summary>
-		public static int SizeInBytes => sizeof(int);
+		public static readonly int SizeInBytes = sizeof(int);
 
 		/// <summary>
 		/// The 32-bit integer representation of the color.

@@ -12,7 +12,7 @@ namespace sadx_model_view.Ninja
 		/// <summary>
 		/// Native structure size in bytes.
 		/// </summary>
-		public static int SizeInBytes => sizeof(short) * 2;
+		public static readonly int SizeInBytes = sizeof(short) * 2;
 
 		public NJS_TEX(ref byte[] buffer, int offset = 0)
 		{

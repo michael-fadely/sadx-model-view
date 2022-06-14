@@ -4,7 +4,7 @@ namespace sadx_model_view
 {
 	public struct DebugWireCube
 	{
-		public static int SizeInBytes => DebugLine.SizeInBytes * 12;
+		public static readonly int SizeInBytes = DebugLine.SizeInBytes * 12;
 
 		public readonly DebugLine[] Lines;
 

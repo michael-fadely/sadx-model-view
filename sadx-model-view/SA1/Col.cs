@@ -51,7 +51,7 @@ namespace sadx_model_view.SA1
 	/// </summary>
 	public class Col : IDisposable
 	{
-		public static int SizeInBytes => 0x24;
+		public static readonly int SizeInBytes = 0x24;
 
 		public Vector3 Center;
 		public float   Radius;

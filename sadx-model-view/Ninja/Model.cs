@@ -18,7 +18,7 @@ namespace sadx_model_view.Ninja
 		/// <summary>
 		/// Native structure size in bytes.
 		/// </summary>
-		public static int SizeInBytes => 0x28;
+		public static readonly int SizeInBytes = 0x28;
 
 		/// <summary>
 		/// Constructs <see cref="NJS_MODEL"/>, its points, normals, materials, and meshsets from a file.<para/>

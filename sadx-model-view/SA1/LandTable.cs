@@ -18,7 +18,7 @@ namespace sadx_model_view.SA1
 
 	public class LandTable : IDisposable
 	{
-		public static int SizeInBytes => 0x24;
+		public static readonly int SizeInBytes = 0x24;
 
 		public short          COLCount  => (short)ColList.Count;
 		public short          AnimCount => (short)AnimData.Count;

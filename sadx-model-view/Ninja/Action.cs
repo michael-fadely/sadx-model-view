@@ -26,7 +26,7 @@ namespace sadx_model_view.Ninja
 
 	public class NJS_ACTION : IDisposable
 	{
-		public static int SizeInBytes => 0x8;
+		public static readonly int SizeInBytes = 0x8;
 
 		public NJS_OBJECT? @object;
 		public NJS_MOTION  motion;

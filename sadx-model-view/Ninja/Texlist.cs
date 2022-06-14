@@ -122,7 +122,7 @@ namespace sadx_model_view.Ninja
 
 	public class NJS_TEXNAME
 	{
-		public static int SizeInBytes => 0xC;
+		public static readonly int SizeInBytes = 0xC;
 
 		// If attr has the flag NJD_TEXATTR_TYPE_MEMORY, use texinfo.
 		// Otherwise, use filename.
@@ -167,7 +167,7 @@ namespace sadx_model_view.Ninja
 
 	public class NJS_TEXLIST
 	{
-		public static int SizeInBytes => 0x8;
+		public static readonly int SizeInBytes = 0x8;
 
 		public readonly IReadOnlyList<NJS_TEXNAME> textures;
 

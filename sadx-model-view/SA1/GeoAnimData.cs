@@ -11,7 +11,7 @@ namespace sadx_model_view.SA1
 	/// </summary>
 	public class GeoAnimData : IDisposable
 	{
-		public static int SizeInBytes => 0x18;
+		public static readonly int SizeInBytes = 0x18;
 
 		// ReSharper disable once NotAccessedField.Local
 		private float anonymous_0;

@@ -62,7 +62,7 @@ namespace sadx_model_view.Ninja
 		/// <summary>
 		/// Native structure size in bytes.
 		/// </summary>
-		public static int SizeInBytes => 0x18;
+		public static readonly int SizeInBytes = 0x18;
 
 		/// <summary>
 		/// The mesh type for this meshset defined in the bits 14-15 of <seealso cref="NJS_MESHSET.type_matId"/>.<para/>

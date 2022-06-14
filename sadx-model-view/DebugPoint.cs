@@ -4,7 +4,7 @@ namespace sadx_model_view
 {
 	public struct DebugPoint
 	{
-		public static int SizeInBytes => Vector3.SizeInBytes + Vector4.SizeInBytes;
+		public static readonly int SizeInBytes = Vector3.SizeInBytes + Vector4.SizeInBytes;
 
 		public Vector3 Point;
 		public Color4 Color;

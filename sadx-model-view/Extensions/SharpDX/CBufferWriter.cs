@@ -67,7 +67,7 @@ namespace sadx_model_view.Extensions.SharpDX
 			Add(value ? 1 : 0);
 		}
 
-		public void Add<T>(Modifiable<T> modifiable) where T : struct
+		public void Add<T>(in Modifiable<T> modifiable) where T : struct
 		{
 			Add(modifiable.Value);
 		}

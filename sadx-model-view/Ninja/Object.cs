@@ -88,7 +88,7 @@ namespace sadx_model_view.Ninja
 		/// <summary>
 		/// Native structure size in bytes.
 		/// </summary>
-		public static int SizeInBytes => 0x34;
+		public static readonly int SizeInBytes = 0x34;
 
 		/// <summary>
 		/// Constructs <see cref="NJS_OBJECT"/>, its children, and all of its available members from a file.
