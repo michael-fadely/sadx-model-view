@@ -15,7 +15,7 @@ namespace sadx_model_view
 		public readonly Modifiable<Matrix>  View           = new();
 		public readonly Modifiable<Matrix>  Projection     = new();
 		public readonly Modifiable<Vector3> CameraPosition = new();
-		public readonly Modifiable<uint>    BufferLength   = new(0);
+		public readonly Modifiable<uint>    BufferLength   = new(initialValue: 0);
 
 		// TODO: do this with code generator?
 		public void Clear()
@@ -24,6 +24,15 @@ namespace sadx_model_view
 			Projection.Clear();
 			CameraPosition.Clear();
 			BufferLength.Clear();
+		}
+
+		// TODO: do this with code generator?
+		public void Mark()
+		{
+			View.Mark();
+			Projection.Mark();
+			CameraPosition.Mark();
+			BufferLength.Mark();
 		}
 
 		/// <inheritdoc />
@@ -49,11 +58,11 @@ namespace sadx_model_view
 
 		public readonly Modifiable<Matrix> World              = new();
 		public readonly Modifiable<Matrix> WvMatrixInvT       = new();
-		public readonly Modifiable<uint>   DrawCall           = new(0);
-		public readonly Modifiable<uint>   SourceBlend        = new(0);
-		public readonly Modifiable<uint>   DestinationBlend   = new(0);
-		public readonly Modifiable<uint>   BlendOperation     = new(0);
-		public readonly Modifiable<bool>   IsStandardBlending = new(true);
+		public readonly Modifiable<uint>   DrawCall           = new(initialValue: 0);
+		public readonly Modifiable<uint>   SourceBlend        = new(initialValue: 0);
+		public readonly Modifiable<uint>   DestinationBlend   = new(initialValue: 0);
+		public readonly Modifiable<uint>   BlendOperation     = new(initialValue: 0);
+		public readonly Modifiable<bool>   IsStandardBlending = new(initialValue: true);
 
 		// TODO: do this with code generator?
 		public void Clear()
@@ -65,6 +74,18 @@ namespace sadx_model_view
 			DestinationBlend.Clear();
 			BlendOperation.Clear();
 			IsStandardBlending.Clear();
+		}
+
+		// TODO: do this with code generator?
+		public void Mark()
+		{
+			World.Mark();
+			WvMatrixInvT.Mark();
+			DrawCall.Mark();
+			SourceBlend.Mark();
+			DestinationBlend.Mark();
+			BlendOperation.Mark();
+			IsStandardBlending.Mark();
 		}
 
 		/// <inheritdoc />
@@ -83,12 +104,12 @@ namespace sadx_model_view
 	public class MaterialBuffer : CBuffer, IModifiable
 	{
 		public readonly Modifiable<SceneMaterial> Material   = new();
-		public readonly Modifiable<bool>          WriteDepth = new(true);
+		public readonly Modifiable<bool>          WriteDepth = new(initialValue: true);
 
 		/// <inheritdoc />
 		public override void Write(CBufferWriter writer)
 		{
-			Material.Value.Write(writer);
+			Material.ValueReference.Write(writer);
 			writer.Align();
 			writer.Add(WriteDepth.Value);
 		}
@@ -101,6 +122,12 @@ namespace sadx_model_view
 		{
 			Material.Clear();
 			WriteDepth.Clear();
+		}
+
+		public void Mark()
+		{
+			Material.Mark();
+			WriteDepth.Mark();
 		}
 	}
 }

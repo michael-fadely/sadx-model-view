@@ -1,20 +1,12 @@
+using sadx_model_view.Interfaces;
+
 namespace sadx_model_view
 {
-	public class Modifiable<T> where T : struct
+	public class Modifiable<T> : IModifiable where T : struct
 	{
-		public bool Modified { get; private set; }
-
-		public Modifiable()
-		{
-			_current = default;
-		}
-
-		public Modifiable(T initialValue)
-		{
-			_current = initialValue;
-		}
-
 		private T _current;
+
+		public bool Modified { get; private set; }
 
 		public T Value
 		{
@@ -26,12 +18,29 @@ namespace sadx_model_view
 			}
 		}
 
+		public ref T ValueReference => ref _current;
+
+		public Modifiable()
+		{
+			_current = default;
+		}
+
+		public Modifiable(in T initialValue)
+		{
+			_current = initialValue;
+		}
+
 		public void Clear()
 		{
 			Modified = false;
 		}
 
-		public static explicit operator T(Modifiable<T> value)
+		public void Mark()
+		{
+			Modified = true;
+		}
+
+		public static explicit operator T(in Modifiable<T> value)
 		{
 			return value.Value;
 		}

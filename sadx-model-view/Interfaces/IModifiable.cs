@@ -1,8 +1,7 @@
-namespace sadx_model_view.Interfaces
+namespace sadx_model_view.Interfaces;
+
+public interface IModifiable : IReadOnlyModifiable
 {
-	public interface IModifiable
-	{
-		bool Modified { get; }
-		void Clear();
-	}
+	void Clear();
+	void Mark();
 }
