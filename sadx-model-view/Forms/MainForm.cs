@@ -595,8 +595,8 @@ namespace sadx_model_view.Forms
 
 			if (_landTable is not null && _landTableTree is not null)
 			{
-				_renderer.FlowControl.UseMaterialFlags = true;
-				_renderer.FlowControl.Add(0, NJD_FLAG.IgnoreSpecular);
+				_renderer.MaterialFlagOverride.Enabled = true;
+				_renderer.MaterialFlagOverride.Add(0, NJD_FLAG.IgnoreSpecular);
 
 				if (_landTableTree.Empty)
 				{
@@ -628,7 +628,7 @@ namespace sadx_model_view.Forms
 				base.Text = $"{visible.Count}";
 
 				_renderer.Draw(visible, _camera);
-				_renderer.FlowControl.Reset();
+				_renderer.MaterialFlagOverride.Reset();
 			}
 
 			_renderer.Present(_camera);

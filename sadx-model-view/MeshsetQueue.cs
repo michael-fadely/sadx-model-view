@@ -18,14 +18,14 @@ namespace sadx_model_view
 		public BoundingSphere BoundingSphere { get; }
 		public bool           Transparent    { get; }
 
-		public readonly FlowControl FlowControl;
+		public readonly MaterialFlagOverrideManager MaterialFlagOverride;
 
 		public MeshsetQueueElementBase(Renderer renderer, NJS_OBJECT @object, NJS_MODEL model, NJS_MESHSET set)
 		{
 			Object      = @object;
 			Model       = model;
 			Set         = set;
-			FlowControl = renderer.FlowControl;
+			MaterialFlagOverride = renderer.MaterialFlagOverride;
 			Transform   = MatrixStack.Peek();
 
 			ushort matId = set.MaterialId;
@@ -46,7 +46,7 @@ namespace sadx_model_view
 			BoundingBox    = b.BoundingBox;
 			BoundingSphere = b.BoundingSphere;
 			Transparent    = b.Transparent;
-			FlowControl    = b.FlowControl;
+			MaterialFlagOverride    = b.MaterialFlagOverride;
 		}
 	}
 

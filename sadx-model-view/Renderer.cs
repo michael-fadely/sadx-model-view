@@ -47,7 +47,7 @@ namespace sadx_model_view
 
 		private int _lastVisibleCount;
 
-		public FlowControl FlowControl;
+		public MaterialFlagOverrideManager MaterialFlagOverride;
 		public bool EnableAlpha = true;
 
 		private CullMode _defaultCullMode = CullMode.None;
@@ -153,7 +153,7 @@ namespace sadx_model_view
 
 		public Renderer(int screenWidth, int screenHeight, IntPtr sceneHandle)
 		{
-			FlowControl.Reset();
+			MaterialFlagOverride.Reset();
 
 			var desc = new SwapChainDescription
 			{
@@ -762,17 +762,17 @@ namespace sadx_model_view
 			ushort materialId = set.MaterialId;
 			NJS_MATERIAL njMaterial = mats.Count > 0 && materialId < mats.Count ? mats[materialId] : s_nullMaterial;
 
-			FlowControl flowControl = FlowControl;
+			MaterialFlagOverrideManager materialFlagOverride = MaterialFlagOverride;
 
 			if (_texturePool.Count < 1)
 			{
-				if (!FlowControl.UseMaterialFlags)
+				if (!MaterialFlagOverride.Enabled)
 				{
-					FlowControl.Reset();
-					FlowControl.UseMaterialFlags = true;
+					MaterialFlagOverride.Reset();
+					MaterialFlagOverride.Enabled = true;
 				}
 
-				FlowControl.Set(FlowControl.AndFlags & ~NJD_FLAG.UseTexture, FlowControl.OrFlags);
+				MaterialFlagOverride.Set(MaterialFlagOverride.AndFlags & ~NJD_FLAG.UseTexture, MaterialFlagOverride.OrFlags);
 			}
 
 			SceneMaterial sceneMaterial = NJS_MODEL.GetSADXMaterial(this, njMaterial);
@@ -780,7 +780,7 @@ namespace sadx_model_view
 
 			DisplayState state = GetSADXDisplayState(njMaterial);
 
-			FlowControl = flowControl;
+			MaterialFlagOverride = materialFlagOverride;
 
 			if (state.Blend != _lastBlend)
 			{
@@ -1045,7 +1045,7 @@ namespace sadx_model_view
 
 		private void DrawMeshsetQueueElement(MeshsetQueueElement e)
 		{
-			FlowControl = e.FlowControl;
+			MaterialFlagOverride = e.MaterialFlagOverride;
 
 			Matrix m = e.Transform;
 			SetTransform(TransformState.World, in m);
@@ -1489,7 +1489,7 @@ namespace sadx_model_view
 			                            | NJD_FLAG.DoubleSide | NJD_FLAG.UseAlpha
 			                            | (NJD_FLAG)0xFC000000 /* blend modes */;
 
-			NJD_FLAG flags = FlowControl.Apply(material.attrflags) & stateMask;
+			NJD_FLAG flags = MaterialFlagOverride.Apply(material.attrflags) & stateMask;
 
 			if (DefaultCullMode == CullMode.None)
 			{
@@ -1545,14 +1545,14 @@ namespace sadx_model_view
 				samplerDesc.AddressV = TextureAddressMode.Wrap;
 			}
 
-			var sampler = new SamplerState(_device, samplerDesc) { DebugName = $"Sampler: {flags.ToString()}" };
+			var sampler = new SamplerState(_device, samplerDesc) { DebugName = $"Sampler: {flags}" };
 
 			// Base it off of the default rasterizer state.
 			RasterizerStateDescription rasterDesc = _rasterizerDescription;
 
 			rasterDesc.CullMode = (flags & NJD_FLAG.DoubleSide) != 0 ? CullMode.None : DefaultCullMode;
 
-			var raster = new RasterizerState(_device, rasterDesc) { DebugName = $"Rasterizer: {flags.ToString()}" };
+			var raster = new RasterizerState(_device, rasterDesc) { DebugName = $"Rasterizer: {flags}" };
 
 			var blendDesc = new BlendStateDescription();
 			ref RenderTargetBlendDescription rt = ref blendDesc.RenderTarget[0];
@@ -1566,7 +1566,7 @@ namespace sadx_model_view
 			rt.AlphaBlendOperation   = BlendOperation.Add;
 			rt.RenderTargetWriteMask = ColorWriteMaskFlags.All;
 
-			var blend = new BlendState(_device, blendDesc) { DebugName = $"Blend: {flags.ToString()}" };
+			var blend = new BlendState(_device, blendDesc) { DebugName = $"Blend: {flags}" };
 
 			var result = new DisplayState(sampler, raster, blend);
 			_displayStates[flags] = result;
